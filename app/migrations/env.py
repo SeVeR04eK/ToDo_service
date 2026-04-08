@@ -5,12 +5,12 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from app.models import Base
-from app.models.users import User
-from app.models.roles import Role
-from app.models.tasks import Task
-from app.models.categories import Category
-from app.models.refresh_tokens import RefreshToken
+from app.models import Base, User, Role, Task, Category, RefreshToken
+# from app.models.users_model import User
+# from app.models.roles_model import Role
+# from app.models.tasks_model import Task
+# from app.models.categories_model import Category
+# from app.models.refresh_tokens_model import RefreshToken
 from app.core.config import settings
 
 # this is the Alembic Config object, which provides

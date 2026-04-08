@@ -11,7 +11,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False, server_default="1")
     role: Mapped["Role"] = relationship(back_populates="users")
 
     tasks: Mapped[list["Task"]] = relationship(back_populates="user")

@@ -7,3 +7,5 @@ pydantic_settings
 alembic
 psycopg2
 black
+passlib
+bcrypt==3.2.2
