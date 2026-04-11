@@ -3,6 +3,7 @@ from sqlalchemy import Integer, String
 
 from app.models import Base
 
+
 class Category(Base):
     __tablename__ = "categories"
 

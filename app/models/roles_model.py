@@ -3,6 +3,7 @@ from sqlalchemy import Integer, String
 
 from app.models import Base
 
+
 class Role(Base):
     __tablename__ = "roles"
 

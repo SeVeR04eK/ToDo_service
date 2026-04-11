@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.models import Base
 
+
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
