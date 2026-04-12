@@ -1,8 +1,10 @@
 from fastapi import APIRouter, status, Depends
 from typing import Annotated
 
+from app.models import User
 from app.schemas import UserRead, UserCreate
-from app.api.deps import db, get_current_user
+from app.api.deps import db
+from app.authorization import require_role
 from app.services import UserService
 
 
@@ -20,14 +22,12 @@ async def create_user(
 @user_router.get("/get_user", response_model = UserRead)
 async def get_user(
         user: Annotated[
-            dict,
-            Depends(get_current_user)
-        ],
-        session: db
+            User,
+            Depends(require_role("user", "admin"))
+        ]
 ):
 
-    service = UserService(session)
-    return await service.get_user_service(user["id"])
+    return await UserService.get_user_service(user)
 
 
 

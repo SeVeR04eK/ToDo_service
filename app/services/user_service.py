@@ -24,9 +24,7 @@ class UserService:
 
         return UserRead.model_validate(user)
 
-    async def get_user_service(self, user_id: int) -> UserRead:
+    @staticmethod
+    async def get_user_service(user: User) -> UserRead:
 
-        result = await self.session.execute(
-            select(User.id, User.username, User.role_id, User.is_active).where(User.id == user_id))
-        row = result.mappings().one()
-        return UserRead.model_validate(dict(row))
+        return UserRead.model_validate(user)
