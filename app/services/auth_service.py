@@ -1,12 +1,10 @@
 from fastapi import status, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import delete, select
-from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime, timezone
 
+from app.repository import RefreshTokenRepository, UserRepository
 from app.core.security import authenticate_user, create_access_token, create_refresh_token, decode_refresh_token
-from app.models import RefreshToken, User
 from app.schemas import TokensResponse
 
 
@@ -19,14 +17,8 @@ class AuthService:
 
         user = await authenticate_user(form_data.username, form_data.password, self.session)
 
-        if user is None:
-            raise HTTPException(
-                status_code = status.HTTP_401_UNAUTHORIZED,
-                detail = "Incorrect username or password"
-            )
-
-        delete_request = delete(RefreshToken).where(RefreshToken.user_id == user.id)
-        await self.session.execute(delete_request)
+        repository = RefreshTokenRepository(session=self.session)
+        await repository.delete_refresh_token(user.id)
 
         access_token = create_access_token(
             username = user.username,
@@ -43,9 +35,8 @@ class AuthService:
 
     async def refresh_service(self, refresh_token: str) -> TokensResponse:
 
-        request = select(RefreshToken).where(RefreshToken.token == refresh_token)
-        result = await self.session.execute(request)
-        db_token = result.scalar_one_or_none()
+        refresh_repository = RefreshTokenRepository(session=self.session)
+        db_token = await refresh_repository.get_token_expires(refresh_token)
 
         if db_token is None or db_token.expires_at < datetime.now(timezone.utc):
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
@@ -54,18 +45,13 @@ class AuthService:
         username = payload["sub"]
         user_id = payload["id"]
 
-        await self.session.delete(db_token)
-        await self.session.commit()
+        await refresh_repository.delete_refresh_token(user_id)
 
-        result = await self.session.execute(select(User)
-                                            .options(selectinload(User.role))
-                                            .where(User.id == user_id))
-        user = result.scalar_one_or_none()
+        user_repository = UserRepository(session=self.session)
+        user_role = await user_repository.get_user_role(user_id)
 
-        if user is None:
+        if user_role is None:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
-
-        user_role = user.role.name
 
         new_refresh = await create_refresh_token(
             username=username,

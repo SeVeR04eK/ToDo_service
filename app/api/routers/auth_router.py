@@ -18,12 +18,12 @@ async def authentication(
         session: db
 ):
 
-    service = AuthService(session)
+    service = AuthService(session=session)
     return await service.authentication_service(form_data)
 
 @auth_router.post("/refresh", response_model = TokensResponse)
 async def refresh(refresh_token_data: RefreshTokenGet, session: db):
 
-    service = AuthService(session)
+    service = AuthService(session=session)
 
     return await service.refresh_service(refresh_token_data.refresh_token)

@@ -1,17 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError
 from fastapi import HTTPException, status
 
-from app.models import User, RefreshToken
+from app.models import User
 from app.core import settings
+from app.repository import UserRepository, RefreshTokenRepository
+from app.utils import verify_password
 
-
-bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/authentication")
 
 
@@ -19,19 +16,17 @@ async def authenticate_user(
         username: str,
         password: str,
         session: AsyncSession
-) -> User | None:
+) -> User:
 
-    request = (select(User)
-               .options(selectinload(User.role))
-               .where(User.username == username))
-    result = await session.execute(request)
-    user = result.scalar_one_or_none()
+    repository = UserRepository(session)
+    user = await repository.get_user_by_username(username)
 
-    if user is None:
-        return None
+    if not verify_password(password, user.hashed_password) or user is None:
 
-    if not bcrypt_context.verify(password, user.hashed_password):
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password"
+        )
 
     return user
 
@@ -60,12 +55,8 @@ async def create_refresh_token(
 
     token = jwt.encode(payload, settings.secret_key, algorithm = settings.algorithm)
 
-    session.add(RefreshToken(
-        user_id = user_id,
-        token = token,
-        expires_at = expires)
-    )
-    await session.commit()
+    repository = RefreshTokenRepository(session)
+    await repository.create_refresh_token(user_id=user_id, token=token, expires=expires)
 
     return token
 

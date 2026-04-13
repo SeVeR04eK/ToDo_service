@@ -16,7 +16,7 @@ async def create_user(
         session: db
 ):
 
-    service = UserService(session)
+    service = UserService(session=session)
     return await service.create_user_service(user)
 
 @user_router.get("/get_user", response_model = UserRead)

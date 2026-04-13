@@ -1,9 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.models import User
 from app.schemas import UserCreate, UserRead
-from app.core.security import bcrypt_context
+from app.repository import UserRepository
 
 
 class UserService:
@@ -13,16 +12,10 @@ class UserService:
 
     async def create_user_service(self, user: UserCreate) -> UserRead:
 
-        user = User(
-            username=user.username,
-            hashed_password=bcrypt_context.hash(user.password),
-        )
+        repository = UserRepository(session=self.session)
+        new_user = await repository.create_user(user)
 
-        self.session.add(user)
-        await self.session.commit()
-        await self.session.refresh(user)
-
-        return UserRead.model_validate(user)
+        return UserRead.model_validate(new_user)
 
     @staticmethod
     async def get_user_service(user: User) -> UserRead:
