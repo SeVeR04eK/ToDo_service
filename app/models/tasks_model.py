@@ -11,7 +11,7 @@ class Task(Base):
     title: Mapped[str] = mapped_column(String(80), nullable=False)
     content: Mapped[str] = mapped_column(String, nullable=False)
 
-    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False)
+    category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), nullable=False, server_default="1")
     category: Mapped["Category"] = relationship(back_populates="tasks")
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
