@@ -1,16 +1,30 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Annotated
 
 
 class UserBase(BaseModel):
     username: str
 
 class UserCreate(UserBase):
-    password: str
+    username: Annotated[
+        str,
+        Field(..., min_length=1, title="Username")
+    ]
+    password: Annotated[
+        str,
+        Field(
+            ...,
+            min_length=8,
+            max_length=128,
+            title="User Password"
+        )
+    ]
 
 class UserRead(UserBase):
-    id: int
-    is_active: bool
-    role_id: int
+    username: Annotated[str, Field(title="Username")]
+    id: Annotated[int, Field(title="User ID")]
+    is_active: Annotated[bool, Field(title="User Active Status")]
+    role: Annotated[str | int, Field(title="User Role ID | User Role ID")]
 
     model_config = {
         "from_attributes": True

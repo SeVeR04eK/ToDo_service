@@ -15,9 +15,20 @@ class UserService:
         repository = UserRepository(session=self.session)
         new_user = await repository.create_user(user)
 
-        return UserRead.model_validate(new_user)
+        return UserRead(
+            id=new_user.id,
+            username=new_user.username,
+            is_active=new_user.is_active,
+            role=new_user.role_id
+        )
+
 
     @staticmethod
     async def get_user_service(user: User) -> UserRead:
 
-        return UserRead.model_validate(user)
+        return UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=user.role.name
+        )
