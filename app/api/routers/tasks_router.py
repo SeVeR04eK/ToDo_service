@@ -10,7 +10,7 @@ from app.services import TaskService
 
 tasks_router = APIRouter(prefix = "/tasks", tags = ["tasks"])
 
-@tasks_router.post("/create_task", status_code = status.HTTP_201_CREATED, response_model = TaskRead)
+@tasks_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = TaskRead)
 async def create_task(
         user: Annotated[
             User,
@@ -24,7 +24,7 @@ async def create_task(
 
     return await service.create_task_service(task, user.id)
 
-@tasks_router.get("/get_tasks", status_code=status.HTTP_200_OK, response_model=list[TaskRead])
+@tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=list[TaskRead])
 async def get_tasks(
         user: Annotated[
                     User,
@@ -37,7 +37,7 @@ async def get_tasks(
 
     return await service.get_tasks_service(user.id)
 
-@tasks_router.get("/get_task/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
+@tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
 async def get_task(
         user: Annotated[
                     User,
@@ -51,8 +51,8 @@ async def get_task(
 
     return await service.get_task_service(task_id, user.id)
 
-@tasks_router.patch("/update_task/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
-async def get_task(
+@tasks_router.patch("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
+async def update_task(
         user: Annotated[
                     User,
                     Depends(require_role("user", "admin"))
@@ -66,8 +66,8 @@ async def get_task(
 
     return await service.update_task_service(task_id, task_update, user.id)
 
-@tasks_router.delete("/delete_task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def get_task(
+@tasks_router.delete("/me/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task(
         user: Annotated[
                     User,
                     Depends(require_role("user", "admin"))

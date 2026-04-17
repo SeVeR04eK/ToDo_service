@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 
@@ -9,7 +9,7 @@ from app.schemas import RefreshTokenGet
 
 auth_router = APIRouter(prefix = "/auth", tags = ["auth"])
 
-@auth_router.post("/authentication", response_model = TokensResponse)
+@auth_router.post("/authentication", status_code=status.HTTP_200_OK, response_model = TokensResponse)
 async def authentication(
         form_data: Annotated[
             OAuth2PasswordRequestForm,
@@ -21,7 +21,7 @@ async def authentication(
     service = AuthService(session=session)
     return await service.authentication_service(form_data)
 
-@auth_router.post("/refresh", response_model = TokensResponse)
+@auth_router.post("/refresh", status_code=status.HTTP_200_OK, response_model = TokensResponse)
 async def refresh(refresh_token_data: RefreshTokenGet, session: db):
 
     service = AuthService(session=session)
