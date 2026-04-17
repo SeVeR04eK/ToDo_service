@@ -18,7 +18,7 @@ class AuthService:
         user = await authenticate_user(form_data.username, form_data.password, self.session)
 
         repository = RefreshTokenRepository(session=self.session)
-        await repository.delete_refresh_token(user.id)
+        await repository.delete_refresh_token_by_user_id(user.id)
 
         access_token = create_access_token(
             username = user.username,
@@ -45,7 +45,7 @@ class AuthService:
         username = payload["sub"]
         user_id = payload["id"]
 
-        await refresh_repository.delete_refresh_token(user_id)
+        await refresh_repository.delete_refresh_token(db_token)
 
         user_repository = UserRepository(session=self.session)
         user_role = await user_repository.get_user_role(user_id)

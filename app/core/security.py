@@ -21,7 +21,14 @@ async def authenticate_user(
     repository = UserRepository(session)
     user = await repository.get_user_by_username(username)
 
-    if not verify_password(password, user.hashed_password) or user is None:
+    if user is None:
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password"
+        )
+
+    if not verify_password(password, user.hashed_password):
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,9 +86,9 @@ def decode_access_token(access_token: str) -> dict:
         payload = jwt.decode(access_token, settings.secret_key, algorithms = [settings.algorithm])
 
         if payload.get("sub") is None or payload.get("id") is None:
-            raise HTTPException(status_code = 401, detail = "Could not validate user")
+            raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail = "Could not validate user")
 
         return payload
 
     except JWTError:
-        raise HTTPException(status_code = 401, detail="Could not validate user")
+        raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")

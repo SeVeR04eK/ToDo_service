@@ -27,6 +27,21 @@ class UserCreate(UserBase):
         )
     ]
 
+class UserUpdate(UserBase):
+    username: Annotated[
+        str,
+        Field(default=None, min_length=1, title="Username")
+    ]
+    password: Annotated[
+        str,
+        Field(
+            default=None,
+            min_length=8,
+            max_length=128,
+            title="User Password"
+        )
+    ]
+
 class UserRead(UserBase):
     username: Annotated[str, Field(title="Username")]
     id: Annotated[int, Field(title="User ID")]

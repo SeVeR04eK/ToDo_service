@@ -1,8 +1,8 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, Path
 from typing import Annotated
 
 from app.models import User
-from app.schemas import TaskCreate, TaskRead
+from app.schemas import TaskCreate, TaskRead, TaskUpdate
 from app.api.deps import db
 from app.authorization import require_role
 from app.services import TaskService
@@ -21,4 +21,62 @@ async def create_task(
 ):
 
     service = TaskService(session=session)
+
     return await service.create_task_service(task, user.id)
+
+@tasks_router.get("/get_tasks", status_code=status.HTTP_200_OK, response_model=list[TaskRead])
+async def get_tasks(
+        user: Annotated[
+                    User,
+                    Depends(require_role("user", "admin"))
+                ],
+        session: db
+):
+
+    service = TaskService(session=session)
+
+    return await service.get_tasks_service(user.id)
+
+@tasks_router.get("/get_task/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
+async def get_task(
+        user: Annotated[
+                    User,
+                    Depends(require_role("user", "admin"))
+                ],
+        task_id: Annotated[int, Path(..., title="Task ID")],
+        session: db
+):
+
+    service = TaskService(session=session)
+
+    return await service.get_task_service(task_id, user.id)
+
+@tasks_router.patch("/update_task/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
+async def get_task(
+        user: Annotated[
+                    User,
+                    Depends(require_role("user", "admin"))
+                ],
+        task_id: Annotated[int, Path(..., title="Task ID")],
+        task_update: TaskUpdate,
+        session: db
+):
+
+    service = TaskService(session=session)
+
+    return await service.update_task_service(task_id, task_update, user.id)
+
+@tasks_router.delete("/delete_task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def get_task(
+        user: Annotated[
+                    User,
+                    Depends(require_role("user", "admin"))
+                ],
+        task_id: Annotated[int, Path(..., title="Task ID")],
+        session: db
+):
+
+    service = TaskService(session=session)
+    await service.delete_task_service(task_id, user.id)
+
+    return True

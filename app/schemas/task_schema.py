@@ -17,6 +17,11 @@ class TaskCreate(BaseModel):
     content: Annotated[str, Field(..., min_length=1, title="Content")]
     status: Annotated[Optional[TaskStatus], Field(default=TaskStatus.todo, title="Status")]
 
+class TaskUpdate(BaseModel):
+    title: Annotated[Optional[str], Field(default=None, min_length=1, max_length=80, title="Title")]
+    content: Annotated[Optional[str], Field(default=None, min_length=1, title="Content")]
+    status: Annotated[Optional[TaskStatus], Field(default=None, title="Status")]
+
 class TaskRead(BaseModel):
     id: Annotated[int, Field(title="ID")]
     title: Annotated[str, Field(title="Title")]

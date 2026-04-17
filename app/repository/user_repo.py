@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.models import User, Role
-from app.schemas import UserCreate
+from app.schemas import UserCreate, UserUpdate
 from app.utils import hash_password
 
 
@@ -30,22 +30,39 @@ class UserRepository:
         request = (select(User)
                    .options(selectinload(User.role))
                    .where(User.username == username))
-        result = await self.session.execute(request)
 
-        return result.scalar_one_or_none()
+        return await self.session.scalar(request)
 
     async def get_user_by_id(self, user_id: int) -> User:
 
         request = (select(User)
                    .options(selectinload(User.role))
                    .where(User.id == user_id))
-        result = await self.session.execute(request)
 
-        return result.scalar_one_or_none()
+        return await self.session.scalar(request)
 
     async def get_user_role(self, user_id) -> str:
 
         request = select(Role.name).join(User.role).where(User.id == user_id)
-        result = await self.session.execute(request)
 
-        return result.scalar_one_or_none()
+        return await self.session.scalar(request)
+
+    async def update_task(self, user: User, user_update: UserUpdate) -> User:
+
+        update_data = user_update.model_dump(exclude_unset=True)
+
+        for key, value in update_data.items():
+            if key == "password":
+                user.hashed_password = hash_password(update_data["password"])
+            else:
+                setattr(user, key, value)
+
+        await self.session.commit()
+        await self.session.refresh(user)
+
+        return user
+
+    async def delete_user(self, user: User) -> None:
+
+        await self.session.delete(user)
+        await self.session.commit()
