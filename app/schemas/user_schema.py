@@ -2,6 +2,13 @@ from pydantic import BaseModel, Field
 from typing import Annotated
 
 
+class RoleRead(BaseModel):
+    name: Annotated[str, Field(title="Role Name")]
+
+    model_config = {
+        "from_attributes": True
+    }
+
 class UserBase(BaseModel):
     username: str
 
@@ -24,7 +31,7 @@ class UserRead(UserBase):
     username: Annotated[str, Field(title="Username")]
     id: Annotated[int, Field(title="User ID")]
     is_active: Annotated[bool, Field(title="User Active Status")]
-    role: Annotated[str | int, Field(title="User Role ID | User Role ID")]
+    role: RoleRead
 
     model_config = {
         "from_attributes": True

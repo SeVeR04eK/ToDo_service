@@ -8,27 +8,18 @@ from app.repository import UserRepository
 class UserService:
 
     def __init__(self, session: AsyncSession):
-        self.session = session
+        self.repository = UserRepository(session)
 
     async def create_user_service(self, user: UserCreate) -> UserRead:
 
-        repository = UserRepository(session=self.session)
-        new_user = await repository.create_user(user)
+        new_user = await self.repository.create_user(user)
 
-        return UserRead(
-            id=new_user.id,
-            username=new_user.username,
-            is_active=new_user.is_active,
-            role=new_user.role_id
-        )
+        user = await self.repository.get_user_by_id(new_user.id)
+
+        return UserRead.model_validate(user)
 
 
     @staticmethod
     async def get_user_service(user: User) -> UserRead:
 
-        return UserRead(
-            id=user.id,
-            username=user.username,
-            is_active=user.is_active,
-            role=user.role.name
-        )
+        return UserRead.model_validate(user)
