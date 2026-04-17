@@ -1,8 +1,8 @@
-from fastapi import APIRouter, status, Depends, Path
-from typing import Annotated
+from fastapi import APIRouter, status, Depends, Path, Query
+from typing import Annotated, Optional
 
 from app.models import User
-from app.schemas import TaskCreate, TaskRead, TaskUpdate
+from app.schemas import TaskCreate, TaskRead, TaskUpdate, TaskStatus
 from app.api.deps import db
 from app.authorization import require_role
 from app.services import TaskService
@@ -30,12 +30,28 @@ async def get_tasks(
                     User,
                     Depends(require_role("user", "admin"))
                 ],
-        session: db
+        session: db,
+        task_status: Annotated[
+            Optional[TaskStatus],
+            Query(title="Task Status")
+        ] = None,
+        limit: Annotated[
+            Optional[int],
+            Query(title="Limit of tasks", ge=1, le=100)
+        ] = None,
+        from_newest: Annotated[
+            Optional[bool],
+            Query(title="Sort from newest")] = False,
 ):
 
     service = TaskService(session=session)
 
-    return await service.get_tasks_service(user.id)
+    return await service.get_tasks_service(
+        user_id=user.id,
+        task_status=task_status,
+        limit=limit,
+        from_newest=from_newest
+    )
 
 @tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
 async def get_task(

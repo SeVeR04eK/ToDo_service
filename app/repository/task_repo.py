@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Sequence
+from typing import Sequence, Optional
 from sqlalchemy import select, delete
 
-from app.schemas import TaskCreate, TaskUpdate
+from app.schemas import TaskCreate, TaskUpdate, TaskStatus
 from app.models import Task
 
 
@@ -26,9 +26,37 @@ class TaskRepository:
 
         return task
 
-    async def get_tasks(self, user_id: int) -> Sequence[Task]:
+    async def get_tasks(
+            self,
+            user_id: int,
+            limit: Optional[int],
+            from_newest: Optional[bool] = False) -> Sequence[Task]:
 
         request = select(Task).where(Task.user_id == user_id)
+
+        if from_newest:
+            request = request.order_by(Task.id.desc())
+
+        if limit is not None:
+            request = request.limit(limit)
+
+        return (await self.session.scalars(request)).all()
+
+    async def get_tasks_by_status(
+            self,
+            user_id: int,
+            task_status: TaskStatus,
+            limit: Optional[int],
+            from_newest: Optional[bool] = False
+    ) -> Sequence[Task]:
+
+        request = select(Task).where(Task.user_id == user_id, Task.status == task_status)
+
+        if from_newest:
+            request = request.order_by(Task.id.desc())
+
+        if limit is not None:
+            request = request.limit(limit)
 
         return (await self.session.scalars(request)).all()
 

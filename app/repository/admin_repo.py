@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select
@@ -11,9 +11,12 @@ class AdminRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_users(self) -> Sequence[User]:
+    async def get_users(self, limit: Optional[int]) -> Sequence[User]:
 
         request = select(User).options(selectinload(User.role))
+
+        if limit is not None:
+            request = request.limit(limit)
 
         return (await self.session.scalars(request)).all()
 

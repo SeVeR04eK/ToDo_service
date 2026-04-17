@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
+from typing import Optional
 
 from app.repository import AdminRepository, UserRepository
 from app.schemas import UserRead
@@ -11,11 +12,16 @@ class AdminService:
         self.admin_repository = AdminRepository(session)
         self.user_repository = UserRepository(session)
 
-    async def get_users_service(self) -> list[UserRead]:
+    async def get_users_service(self, username: Optional[str], limit: Optional[int]) -> list[UserRead] | UserRead:
 
-        users = await self.admin_repository.get_users()
+        if username is None:
+            users = await self.admin_repository.get_users(limit=limit)
 
-        return [UserRead.model_validate(user) for user in users]
+            return [UserRead.model_validate(user) for user in users]
+
+        user = await self.user_repository.get_user_by_username(username=username)
+
+        return UserRead.model_validate(user)
 
     async def get_user_service(self, user_id: int) -> UserRead:
 

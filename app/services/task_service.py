@@ -1,7 +1,8 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
-from app.schemas import TaskRead, TaskCreate, TaskUpdate
+from app.schemas import TaskRead, TaskCreate, TaskUpdate, TaskStatus
 from app.repository import TaskRepository
 
 class TaskService:
@@ -14,9 +15,25 @@ class TaskService:
 
         return TaskRead.model_validate(new_task)
 
-    async def get_tasks_service(self, user_id: int) -> list[TaskRead]:
+    async def get_tasks_service(
+            self,
+            user_id: int,
+            task_status: Optional[TaskStatus],
+            limit: Optional[int],
+            from_newest: Optional[bool] = False
+    ) -> list[TaskRead]:
 
-        tasks = await self.repository.get_tasks(user_id=user_id)
+        if task_status is not None:
+            tasks = await self.repository.get_tasks_by_status(
+                user_id=user_id,
+                task_status=task_status,
+                limit=limit,
+                from_newest=from_newest)
+        else:
+            tasks = await self.repository.get_tasks(
+                user_id=user_id,
+                limit=limit,
+                from_newest=from_newest)
 
         return [TaskRead.model_validate(task) for task in tasks]
 
