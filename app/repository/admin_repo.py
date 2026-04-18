@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import select
 
 from app.models import User, Role
-from app.schemas import UserPermission, RoleCreate
+from app.schemas import OnlyUserPermission, RoleCreate
 
 
 class AdminRepository:
@@ -24,9 +24,9 @@ class AdminRepository:
 
         return (await self.session.scalars(request)).all()
 
-    async def user_perm(self, user: User, user_permission: UserPermission) -> User:
+    async def user_perm(self, user: User, user_permission: OnlyUserPermission) -> User:
 
-        user_data = user_permission.model_dump(exclude_unset=True)
+        user_data = user_permission.model_dump(exclude_unset=True, exclude_none=True)
 
         for key, value in user_data.items():
             setattr(user, key, value)
@@ -45,3 +45,13 @@ class AdminRepository:
         await self.session.refresh(role)
 
         return role
+
+    async def get_roles(self) -> Sequence[Role]:
+
+        return (await self.session.scalars(select(Role))).all()
+
+    async def get_role_id_by_name(self, name: str) -> int:
+
+        request = select(Role.id).where(Role.name == name)
+
+        return await self.session.scalar(request)

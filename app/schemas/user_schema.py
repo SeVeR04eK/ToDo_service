@@ -1,10 +1,16 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Annotated
 
-from app.schemas.role_schema import RoleRead
 
 class UserBase(BaseModel):
     username: str
+
+class UserRole(BaseModel):
+    name: Annotated[str, Field(title="Role Name")]
+
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserCreate(UserBase):
     username: Annotated[
@@ -69,7 +75,7 @@ class UserRead(UserBase):
     username: Annotated[str, Field(title="Username")]
     id: Annotated[int, Field(title="User ID")]
     is_active: Annotated[bool, Field(title="User Active Status")]
-    role: RoleRead
+    role: UserRole
 
     model_config = {
         "from_attributes": True

@@ -3,8 +3,7 @@ from fastapi import HTTPException, status
 from typing import Optional
 
 from app.repository import AdminRepository, UserRepository
-from app.schemas import UserRead, RoleRead, UserPermission, RoleCreate
-from app.repository import get_roles
+from app.schemas import UserRead, RoleRead, UserPermission, RoleCreate, OnlyUserPermission
 
 
 class AdminService:
@@ -49,14 +48,21 @@ class AdminService:
         if user is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-        if (user_permission.role_id is not None and
-                user_permission.role_id not in [role.id for role in await get_roles(session=self.session)]):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+        if user_permission.role is not None:
+            role = await self.admin_repository.get_role_id_by_name(user_permission.role)
+
+            if role is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+
+            only_user = OnlyUserPermission(is_active=user_permission.is_active, role_id=role)
+
+        else:
+            only_user = OnlyUserPermission(is_active=user_permission.is_active, role_id=None)
 
         if user.role.name == "admin":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
 
-        user_updated = await self.admin_repository.user_perm(user=user, user_permission=user_permission)
+        user_updated = await self.admin_repository.user_perm(user=user, user_permission=only_user)
 
         return UserRead.model_validate(user_updated)
 

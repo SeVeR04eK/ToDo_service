@@ -6,6 +6,7 @@ from app.schemas import UserRead, TaskRead, TaskUpdate, TaskStatus, RoleRead, Us
 from app.authorization import require_role
 from app.api.deps import db
 from app.services import AdminService, TaskService
+from app.repository import AdminRepository
 
 admin_router = APIRouter(prefix = "/admin", tags = ["admin"])
 
@@ -173,5 +174,18 @@ async def create_role(
     service = AdminService(session=session)
 
     return await service.create_role_service(new_role=new_role)
+
+@admin_router.get("/roles", status_code=status.HTTP_200_OK, response_model=list[RoleRead])
+async def get_roles(
+        _: Annotated[
+            User,
+            Depends(require_role("admin"))
+        ],
+        session: db):
+
+    repository = AdminRepository(session=session)
+    roles = await repository.get_roles()
+
+    return [RoleRead.model_validate(role) for role in roles]
 
 
