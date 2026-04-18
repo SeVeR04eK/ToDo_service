@@ -39,6 +39,10 @@ async def get_tasks(
             Optional[int],
             Query(title="Limit of tasks", ge=1, le=100)
         ] = None,
+        offset: Annotated[
+            Optional[int],
+            Query(title="Limit of tasks", ge=1, le=100)
+        ] = None,
         from_newest: Annotated[
             Optional[bool],
             Query(title="Sort from newest")] = False,
@@ -50,7 +54,8 @@ async def get_tasks(
         user_id=user.id,
         task_status=task_status,
         limit=limit,
-        from_newest=from_newest
+        from_newest=from_newest,
+        offset=offset
     )
 
 @tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)

@@ -30,12 +30,18 @@ class TaskRepository:
             self,
             user_id: int,
             limit: Optional[int],
+            offset: Optional[int],
             from_newest: Optional[bool] = False) -> Sequence[Task]:
 
         request = select(Task).where(Task.user_id == user_id)
 
         if from_newest:
             request = request.order_by(Task.id.desc())
+        else:
+            request = request.order_by(Task.id.asc())
+
+        if offset is not None:
+            request = request.offset(offset)
 
         if limit is not None:
             request = request.limit(limit)
@@ -47,6 +53,7 @@ class TaskRepository:
             user_id: int,
             task_status: TaskStatus,
             limit: Optional[int],
+            offset: Optional[int],
             from_newest: Optional[bool] = False
     ) -> Sequence[Task]:
 
@@ -54,6 +61,11 @@ class TaskRepository:
 
         if from_newest:
             request = request.order_by(Task.id.desc())
+        else:
+            request = request.order_by(Task.id.asc())
+
+        if offset is not None:
+            request = request.offset(offset)
 
         if limit is not None:
             request = request.limit(limit)

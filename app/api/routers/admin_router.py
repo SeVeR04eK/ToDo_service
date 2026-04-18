@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, Path, Query
 from typing import Annotated, Optional
 
 from app.models import User
-from app.schemas import UserRead, TaskRead, TaskUpdate, TaskStatus
+from app.schemas import UserRead, TaskRead, TaskUpdate, TaskStatus, RoleRead, UserPermission, RoleCreate
 from app.authorization import require_role
 from app.api.deps import db
 from app.services import AdminService, TaskService
@@ -24,11 +24,15 @@ async def get_users(
             Optional[int],
             Query(title="Limit of users", ge=1, le=100)
         ] = None,
+        offset: Annotated[
+            Optional[int],
+            Query(title="Limit of users", ge=1, le=100)
+        ] = None
 ):
 
     service = AdminService(session)
 
-    return await service.get_users_service(username=username, limit=limit)
+    return await service.get_users_service(username=username, limit=limit, offset=offset)
 
 @admin_router.get("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead)
 async def get_user(
@@ -45,19 +49,19 @@ async def get_user(
     return await service.get_user_service(user_id)
 
 @admin_router.patch("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead)
-async def ban_user(
+async def user_permission(
         _: Annotated[
                     User,
                     Depends(require_role("admin"))
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
-        is_active: bool,
+        user_perm: UserPermission,
         session: db
 ):
 
     service = AdminService(session=session)
 
-    return await service.ban_user_service(user_id, is_active)
+    return await service.permission_user_service(user_id=user_id, user_permission=user_perm)
 
 @admin_router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
@@ -90,6 +94,10 @@ async def get_tasks(
             Optional[int],
             Query(title="Limit of tasks", ge=1, le=100)
         ] = None,
+        offset: Annotated[
+            Optional[int],
+            Query(title="Limit of tasks", ge=1, le=100)
+        ] = None,
         from_newest: Annotated[
             Optional[bool],
             Query(title="Sort from newest")] = False,
@@ -101,7 +109,8 @@ async def get_tasks(
         user_id=user_id,
         task_status=task_status,
         limit=limit,
-        from_newest=from_newest
+        from_newest=from_newest,
+        offset=offset
     )
 
 @admin_router.get("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
@@ -117,7 +126,7 @@ async def get_task(
 
     service = TaskService(session=session)
 
-    return await service.get_task_service(task_id, user_id)
+    return await service.get_task_service(task_id=task_id,user_id=user_id)
 
 @admin_router.patch("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
 async def update_task(
@@ -133,7 +142,7 @@ async def update_task(
 
     service = TaskService(session=session)
 
-    return await service.update_task_service(task_id, task_update, user_id)
+    return await service.update_task_service(task_id=task_id, task_update=task_update, user_id=user_id)
 
 @admin_router.delete("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
@@ -147,6 +156,22 @@ async def delete_task(
 ):
 
     service = TaskService(session=session)
-    await service.delete_task_service(task_id, user_id)
+    await service.delete_task_service(task_id=task_id, user_id=user_id)
 
     return True
+
+@admin_router.post("/roles", status_code=status.HTTP_201_CREATED, response_model=RoleRead)
+async def create_role(
+        _: Annotated[
+                    User,
+                    Depends(require_role("admin"))
+                ],
+        new_role: RoleCreate,
+        session: db
+):
+
+    service = AdminService(session=session)
+
+    return await service.create_role_service(new_role=new_role)
+
+

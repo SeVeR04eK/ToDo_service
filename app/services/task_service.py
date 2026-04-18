@@ -20,6 +20,7 @@ class TaskService:
             user_id: int,
             task_status: Optional[TaskStatus],
             limit: Optional[int],
+            offset: Optional[int],
             from_newest: Optional[bool] = False
     ) -> list[TaskRead]:
 
@@ -28,12 +29,16 @@ class TaskService:
                 user_id=user_id,
                 task_status=task_status,
                 limit=limit,
-                from_newest=from_newest)
+                from_newest=from_newest,
+                offset=offset
+            )
         else:
             tasks = await self.repository.get_tasks(
                 user_id=user_id,
                 limit=limit,
-                from_newest=from_newest)
+                from_newest=from_newest,
+                offset=offset
+            )
 
         return [TaskRead.model_validate(task) for task in tasks]
 

@@ -1,13 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Annotated
 
-
-class RoleRead(BaseModel):
-    name: Annotated[str, Field(title="Role Name")]
-
-    model_config = {
-        "from_attributes": True
-    }
+from app.schemas.role_schema import RoleRead
 
 class UserBase(BaseModel):
     username: str
@@ -26,6 +20,21 @@ class UserCreate(UserBase):
             title="User Password"
         )
     ]
+    password_confirm: Annotated[
+        str,
+        Field(
+            ...,
+            min_length=8,
+            max_length=128,
+            title="User Password Confirm"
+        )
+    ]
+
+    @model_validator(mode="after")
+    def passwords_match(self):
+        if self.password != self.password_confirm:
+            raise ValueError("Passwords do not match")
+        return self
 
 class UserUpdate(UserBase):
     username: Annotated[
@@ -41,6 +50,20 @@ class UserUpdate(UserBase):
             title="User Password"
         )
     ]
+    password_confirm: Annotated[
+        str,
+        Field(
+            default=None,
+            min_length=8,
+            max_length=128,
+            title="User Password Confirm"
+        )
+    ]
+    @model_validator(mode="after")
+    def passwords_match(self):
+        if self.password != self.password_confirm:
+            raise ValueError("Passwords do not match")
+        return self
 
 class UserRead(UserBase):
     username: Annotated[str, Field(title="Username")]
