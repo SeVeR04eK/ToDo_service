@@ -26,6 +26,7 @@ This project implements a fully-featured backend service for managing tasks and 
 * **Pydantic** — data validation & serialization
 * **Pydantic Settings** — environment configuration
 * **asyncpg** — async PostgreSQL driver
+* **psycopg2** — sync PostgreSQL driver for alembic
 * **JWT (JSON Web Tokens)** — authentication
 * **Passlib / bcrypt** — password hashing
 * **python-multipart** — form/file uploads
@@ -671,7 +672,7 @@ CREATE DATABASE todo_service;   #psql
 Create `.env` file:
 
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/todo_service
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/todo_service
 SECRET_KEY=your_secret_key           
 FIRST_ADMIN_USERNAME=admin
 FIRST_ADMIN_PASSWORD=admin123

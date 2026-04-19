@@ -3,6 +3,7 @@ uvicorn
 pydantic
 sqlalchemy[asyncio]
 asyncpg
+psycopg2
 pydantic_settings
 alembic
 black
