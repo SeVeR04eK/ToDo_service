@@ -26,7 +26,7 @@ class UserService:
 
     async def update_user_service(self, user, user_update: UserUpdate) -> UserRead:
 
-        updated_user = await self.repository.update_task(user=user, user_update=user_update)
+        updated_user = await self.repository.update_user(user=user, user_update=user_update)
 
         return UserRead.model_validate(updated_user)
 

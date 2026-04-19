@@ -47,7 +47,7 @@ class UserRepository:
 
         return await self.session.scalar(request)
 
-    async def update_task(self, user: User, user_update: UserUpdate) -> User:
+    async def update_user(self, user: User, user_update: UserUpdate) -> User:
 
         update_data = user_update.model_dump(exclude_unset=True)
 

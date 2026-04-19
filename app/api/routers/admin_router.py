@@ -33,7 +33,11 @@ async def get_users(
 
     service = AdminService(session)
 
-    return await service.get_users_service(username=username, limit=limit, offset=offset)
+    return await service.get_users_service(
+        username=username,
+        limit=limit,
+        offset=offset
+    )
 
 @admin_router.get("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead)
 async def get_user(
