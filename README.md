@@ -23,7 +23,7 @@ This project implements a fully-featured backend service for managing tasks and 
 * **PostgreSQL** — relational database
 * **SQLAlchemy (ORM)** — database abstraction
 * **Alembic** — database migrations
-* **Pydantic** — data validation & serialization
+* **Pydantic v2** — data validation & serialization
 * **Pydantic Settings** — environment configuration
 * **asyncpg** — async PostgreSQL driver
 * **psycopg2** — sync PostgreSQL driver for alembic
@@ -31,6 +31,9 @@ This project implements a fully-featured backend service for managing tasks and 
 * **Passlib / bcrypt** — password hashing
 * **python-multipart** — form/file uploads
 * **Black** — code formatting
+* **Docker / Docker Compose** — containerization (DEV + PROD)
+* **Git** — version control
+* **Seed scripts** — automatic creation of roles and initial admin user
 
 ---
 
@@ -129,6 +132,12 @@ ToDo_service/
 ├── README.md                 # project documentation
 ├── .env                      # environment variables (not committed)
 ├── .gitignore                # Git ignore rules
+├── Dockerfile.dev            # Development image
+├── Dockerfile.prod           # Production image
+├── docker-compose.dev.yml    # Dev environment
+├── docker-compose.prod.yml   # Production environment
+├── docker-entrypoint.dev.sh  # Dev entrypoint
+├── .env.example              # Template of environment variables
 └── requirements.txt          # project dependencies
 
 
@@ -624,34 +633,24 @@ GET /admin/users?limit=10&offset=0
 
 ## Running the Project
 
-### 1. Clone repository
+The project supports two launch modes:
+
+**DEV** — for local development (hot‑reload, bind‑mount, auto‑migrations)
+
+**PROD** — for deployment and demonstration (clean production image)
+
+### Development Mode (DEV)
+
+#### 1. Clone repository
 
 ```
 git clone https://github.com/SeVeR04eK/ToDo_service.git
-cd todo-backend
+cd ToDo_service
 ```
 
 ---
 
-### 2. Create virtual environment
-
-```
-python -m venv venv
-source venv/bin/activate  # Linux / Mac
-venv\Scripts\activate     # Windows
-```
-
----
-
-### 3. Install dependencies
-
-```
-pip install -r requirements.txt
-```
-
----
-
-### 4. Generate secret key
+### 2. Generate secret key
 
 ```
 python app/core/secret.py
@@ -659,20 +658,12 @@ python app/core/secret.py
 
 ---
 
-### 5. Create database
+### 3. Setup environment variables
+
+Create `.env.dev` file using `.env.example` template:
 
 ```
-CREATE DATABASE todo_service;   #psql
-```
-
----
-
-### 6. Setup environment variables
-
-Create `.env` file:
-
-```
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/todo_service
+DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
 SECRET_KEY=your_secret_key           
 FIRST_ADMIN_USERNAME=admin
 FIRST_ADMIN_PASSWORD=admin123
@@ -680,32 +671,63 @@ FIRST_ADMIN_PASSWORD=admin123
 
 ---
 
-### 7. Run migrations
+### 4. Run docker compose
 
 ```
-alembic upgrade head
-```
-
----
-
-### 8. Run seeds
-
-```
-python scripts/seed_roles.py
-python scripts/seed_admin.py
+docker compose -f docker-compose.dev.yml up --build
 ```
 
 ---
 
-### 9. Start server
+### 5. Open docs
 
 ```
-uvicorn app.main:app --reload
+http://127.0.0.1:8000/docs
 ```
 
 ---
 
-### 10. Open docs
+### Production Mode (PROD)
+
+#### 1. Clone repository
+
+```
+git clone https://github.com/SeVeR04eK/ToDo_service.git
+cd ToDo_service
+```
+
+---
+
+### 2. Generate secret key
+
+```
+python app/core/secret.py
+```
+
+---
+
+### 3. Setup environment variables
+
+Create `.env.prod` file using `.env.example` template:
+
+```
+DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
+SECRET_KEY=your_secret_key           
+FIRST_ADMIN_USERNAME=admin
+FIRST_ADMIN_PASSWORD=admin123
+```
+
+---
+
+### 4. Run docker compose
+
+```
+docker compose -f docker-compose.prod.yml up --build
+```
+
+---
+
+### 5. Open docs
 
 ```
 http://127.0.0.1:8000/docs
@@ -720,6 +742,9 @@ http://127.0.0.1:8000/docs
 * RBAC instead of hardcoded checks
 * Alembic migrations instead of manual DB changes
 * Explicit error handling (401 vs 403)
+* Dockerized architecture for consistent development and production environments
+* Separate DEV and PROD Docker configurations (bind‑mount vs clean image)
+* Automatic migrations & seed scripts on container startup
 
 ---
 
@@ -732,6 +757,8 @@ This project demonstrates:
 * Database design skills
 * API design and filtering
 * Understanding of authorization models
+* Ability to containerize applications using Docker
+* Knowledge of environment variables and secrets management
 
 ## License
 
