@@ -133,9 +133,7 @@ ToDo_service/
 ├── .env                      # environment variables (not committed)
 ├── .gitignore                # Git ignore rules
 ├── Dockerfile.dev            # Development image
-├── Dockerfile.prod           # Production image
 ├── docker-compose.dev.yml    # Dev environment
-├── docker-compose.prod.yml   # Production environment
 ├── docker-entrypoint.dev.sh  # Dev entrypoint
 ├── .env.example              # Template of environment variables
 └── requirements.txt          # project dependencies
@@ -635,11 +633,11 @@ GET /admin/users?limit=10&offset=0
 
 The project supports two launch modes:
 
-**DEV** — for local development (hot‑reload, bind‑mount, auto‑migrations)
+**Docker DEV** — for local development (hot‑reload, bind‑mount, auto‑migrations)
 
-**PROD** — for deployment and demonstration (clean production image)
+**Manual** — for manual configuration without using Docker
 
-### Development Mode (DEV)
+### Docker Development Mode (DEV)
 
 #### 1. Clone repository
 
@@ -687,18 +685,36 @@ http://127.0.0.1:8000/docs
 
 ---
 
-### Production Mode (PROD)
+### Manual
 
 #### 1. Clone repository
 
 ```
 git clone https://github.com/SeVeR04eK/ToDo_service.git
-cd ToDo_service
+cd tToDo_service
 ```
 
 ---
 
-### 2. Generate secret key
+#### 2. Create virtual environment
+
+```
+python -m venv venv
+source venv/bin/activate  # Linux / Mac
+venv\Scripts\activate     # Windows
+```
+
+---
+
+#### 3. Install dependencies
+
+```
+pip install -r requirements.txt
+```
+
+---
+
+#### 4. Generate secret key
 
 ```
 python app/core/secret.py
@@ -706,12 +722,20 @@ python app/core/secret.py
 
 ---
 
-### 3. Setup environment variables
-
-Create `.env.prod` file using `.env.example` template:
+#### 5. Create database
 
 ```
-DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
+CREATE DATABASE todo_service;   #psql
+```
+
+---
+
+#### 6. Setup environment variables
+
+Create `.env.dev` file using `.env.example` template:
+
+```
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/todo_service
 SECRET_KEY=your_secret_key           
 FIRST_ADMIN_USERNAME=admin
 FIRST_ADMIN_PASSWORD=admin123
@@ -719,15 +743,32 @@ FIRST_ADMIN_PASSWORD=admin123
 
 ---
 
-### 4. Run docker compose
+#### 7. Run migrations
 
 ```
-docker compose -f docker-compose.prod.yml up --build
+alembic upgrade head
 ```
 
 ---
 
-### 5. Open docs
+#### 8. Run seeds
+
+```
+python scripts/seed_roles.py
+python scripts/seed_admin.py
+```
+
+---
+
+#### 9. Start server
+
+```
+uvicorn app.main:app --reload
+```
+
+---
+
+#### 10. Open docs
 
 ```
 http://127.0.0.1:8000/docs
@@ -742,8 +783,7 @@ http://127.0.0.1:8000/docs
 * RBAC instead of hardcoded checks
 * Alembic migrations instead of manual DB changes
 * Explicit error handling (401 vs 403)
-* Dockerized architecture for consistent development and production environments
-* Separate DEV and PROD Docker configurations (bind‑mount vs clean image)
+* Dockerized architecture for consistent development
 * Automatic migrations & seed scripts on container startup
 
 ---
