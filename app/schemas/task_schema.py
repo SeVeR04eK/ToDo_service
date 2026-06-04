@@ -2,15 +2,15 @@ from pydantic import BaseModel, Field
 from typing import Annotated, Optional
 from enum import Enum
 
-class Task(BaseModel):
-    title: str
-    content: str
-    status: TaskStatus
-
 class TaskStatus(str, Enum):
     todo = "todo"
     in_progress = "in_progress"
     done = "done"
+
+class Task(BaseModel):
+    title: str
+    content: str
+    status: TaskStatus
 
 class TaskCreate(BaseModel):
     title: Annotated[str, Field(..., min_length=1, max_length=80, title="Title")]

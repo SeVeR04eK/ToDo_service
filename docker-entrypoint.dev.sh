@@ -1,7 +1,7 @@
 #!/bin/bash
 
 alembic upgrade head
-python scripts/seed_roles.py
-python scripts/seed_admin.py
+python -m scripts.seed_roles.py
+python -m scripts.seed_admin.py
 
 exec "$@"

@@ -26,7 +26,7 @@ This project implements a fully-featured backend service for managing tasks and 
 * **Pydantic v2** — data validation & serialization
 * **Pydantic Settings** — environment configuration
 * **asyncpg** — async PostgreSQL driver
-* **psycopg2** — sync PostgreSQL driver for alembic
+* **psycopg2-binary** — sync PostgreSQL driver for alembic
 * **JWT (JSON Web Tokens)** — authentication
 * **Passlib / bcrypt** — password hashing
 * **python-multipart** — form/file uploads
@@ -660,7 +660,7 @@ python app/core/secret.py
 
 ### 3. Setup environment variables
 
-Create `.env.dev` file using `.env.example` template:
+Create `.env.dev` file using `.env.example` template (only SECRET_KEY should be changed):
 
 ```
 DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
