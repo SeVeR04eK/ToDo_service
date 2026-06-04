@@ -17,3 +17,9 @@ build/
 .idea/
 *.swp
 *.swo
+
+docs/
+README.md
+
+.git
+.gitignore

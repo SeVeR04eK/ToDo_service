@@ -631,11 +631,11 @@ GET /admin/users?limit=10&offset=0
 
 ## Running the Project
 
-The project supports two launch modes:
+The project supports two execution modes:
 
-**Docker DEV** — for local development (hot‑reload, bind‑mount, auto‑migrations)
+**Docker DEV** — the primary mode for local development (hot‑reload, bind‑mount, auto‑migrations)
 
-**Manual** — for manual configuration without using Docker
+**Manual Setup** — run the application without Docker using your own environment configuration
 
 ### Docker Development Mode (DEV)
 
