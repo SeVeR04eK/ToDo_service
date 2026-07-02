@@ -19,6 +19,18 @@ class RoleFactory:
     def create(name: str = "user") -> Role:
         """Create a Role instance."""
         return Role(name=name)
+    
+    @staticmethod
+    async def create_in_db(
+        session: AsyncSession,
+        name: str = "user"
+    ) -> Role:
+        """Create and persist a Role in the database."""
+        role = RoleFactory.create(name)
+        session.add(role)
+        await session.commit()
+        await session.refresh(role)
+        return role
 
 
 class UserFactory:

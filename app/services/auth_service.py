@@ -46,7 +46,7 @@ class AuthService:
         expires_at = db_token.expires_at
         if expires_at.tzinfo is None:
             # If db_token is naive, compare with naive UTC time
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc).replace(tzinfo=None)
         else:
             # If db_token is aware, compare with aware UTC time
             now = datetime.now(timezone.utc)

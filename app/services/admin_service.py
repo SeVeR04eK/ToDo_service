@@ -48,6 +48,9 @@ class AdminService:
         if user is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+        if user.role is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User role not found")
+
         if user_permission.role is not None:
             role = await self.admin_repository.get_role_id_by_name(user_permission.role)
 
@@ -73,7 +76,7 @@ class AdminService:
         if user is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-        if user.role.name == "admin":
+        if user.role is None or user.role.name == "admin":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
 
         await self.user_repository.delete_user(user=user)
