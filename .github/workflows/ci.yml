@@ -28,11 +28,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -f Dockerfile.dev -t myapp .
+        run: docker build -f Dockerfile.test -t myapp .
 
       - name: Run tests inside container
         run: |
           docker run -e SECRET_KEY=test_secret_key \
-                     -e DATABASE_URL=sqlite+aiosqlite:///:memory: \
-                     myapp pytest
+                     -e FIRST_ADMIN_USERNAME=admin \
+                     -e FIRST_ADMIN_PASSWORD=admin123 \
+                     myapp
                      
