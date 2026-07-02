@@ -15,6 +15,7 @@ jobs:
       - name: Lint Code Base
         uses: github/super-linter@v6
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_PYTHON: true
           VALIDATE_YAML: true
           VALIDATE_JSON: true
