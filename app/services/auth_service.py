@@ -38,7 +38,20 @@ class AuthService:
         refresh_repository = RefreshTokenRepository(session=self.session)
         db_token = await refresh_repository.get_token_expires(refresh_token)
 
-        if db_token is None or db_token.expires_at < datetime.now(timezone.utc):
+        # Handle timezone comparison - SQLite returns naive datetimes
+        if db_token is None:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
+        
+        # Make both datetimes comparable by ensuring they're both naive or both aware
+        expires_at = db_token.expires_at
+        if expires_at.tzinfo is None:
+            # If db_token is naive, compare with naive UTC time
+            now = datetime.utcnow()
+        else:
+            # If db_token is aware, compare with aware UTC time
+            now = datetime.now(timezone.utc)
+        
+        if expires_at < now:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid refresh token")
 
         payload = decode_refresh_token(refresh_token)

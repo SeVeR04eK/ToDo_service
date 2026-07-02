@@ -31,6 +31,12 @@ This project implements a fully-featured backend service for managing tasks and 
 * **Passlib / bcrypt** — password hashing
 * **python-multipart** — form/file uploads
 * **Black** — code formatting
+* **Pytest** — testing framework
+* **Pytest-asyncio** — async test support for asyncio/FastAPI
+* **Httpx** — async HTTP client for API testing
+* **Faker** — fake data generator for tests
+* **Pytest-cov** — test coverage reporting
+* **Aiosqlite** — lightweight async SQLite database for unit tests
 * **Docker / Docker Compose** — containerization (DEV + PROD)
 * **Git** — version control
 * **Seed scripts** — automatic creation of roles and initial admin user
@@ -775,6 +781,149 @@ http://127.0.0.1:8000/docs
 ```
 
 ---
+## Test Suite
+
+**tests/** directory contains the comprehensive test suite for the ToDo Service FastAPI application.
+
+### Test Structure
+
+```
+tests/
+├── conftest.py              # Pytest configuration and shared fixtures
+├── factories.py             # Test data factories
+├── repositories/           # Repository layer tests
+│   ├── test_task_repo.py
+│   └── test_user_repo.py
+├── services/                # Service layer tests
+│   └── test_task_service.py
+└── api/                     # API integration tests
+    ├── test_tasks_router.py
+    └── test_auth_router.py
+```
+---
+
+### Running Tests
+
+#### Run all tests:
+```bash
+pytest
+```
+
+#### Run with coverage:
+```bash
+pytest --cov=app --cov-report=html
+```
+
+#### Run specific test file:
+```bash
+pytest tests/repositories/test_task_repo.py
+```
+
+#### Run specific test class:
+```bash
+pytest tests/repositories/test_task_repo.py::TestTaskRepository
+```
+
+#### Run specific test:
+```bash
+pytest tests/repositories/test_task_repo.py::TestTaskRepository::test_create_task_success
+```
+
+#### Run by marker:
+```bash
+pytest -m unit          # Unit tests only
+pytest -m integration   # Integration tests only
+pytest -m tasks         # Task-related tests only
+pytest -m auth          # Authentication tests only
+```
+
+#### Run with verbose output:
+```bash
+pytest -v
+```
+---
+
+### Test Categories
+
+#### Unit Tests (`@pytest.mark.unit`)
+- Repository layer tests
+- Service layer tests
+- Test business logic in isolation
+
+#### Integration Tests (`@pytest.mark.integration`)
+- API endpoint tests
+- Test full request/response cycle
+- Test authentication and authorization
+
+#### Markers
+- `unit`: Unit tests
+- `integration`: Integration tests
+- `tasks`: Task-related tests
+- `auth`: Authentication-related tests
+- `slow`: Slow-running tests
+---
+
+### Fixtures
+
+#### Database Fixtures
+- `db_session`: In-memory SQLite database session
+- `test_engine`: Test database engine
+
+#### User Fixtures
+- `test_role`: Creates a user role
+- `test_admin_role`: Creates an admin role
+- `test_user`: Creates a test user
+- `test_admin_user`: Creates a test admin user
+
+#### Task Fixtures
+- `test_task`: Creates a single test task
+- `multiple_tasks`: Creates multiple test tasks
+- `task_create_data`: Provides valid task creation data
+- `task_update_data`: Provides valid task update data
+
+#### Authentication Fixtures
+- `auth_headers`: Provides authentication headers for regular user
+- `admin_auth_headers`: Provides authentication headers for admin
+- `authenticated_client`: Test client with user authentication
+- `authenticated_admin_client`: Test client with admin authentication
+
+#### Utility Fixtures
+- `faker`: Faker instance for generating test data
+- `client`: Async HTTP test client
+- `event_loop`: Async event loop for tests
+---
+
+### Test Database
+
+Tests use an in-memory SQLite database for fast, isolated testing. The database is:
+- Created fresh for each test
+- Dropped after each test
+- Uses the same schema as the production database
+---
+
+### Coverage Goals
+
+Target coverage: 90%+
+
+Run coverage report:
+```bash
+pytest --cov=app --cov-report=term-missing --cov-report=html
+```
+
+View HTML report:
+```bash
+open htmlcov/index.html
+```
+---
+
+### Adding New Tests
+
+1. Create test file in appropriate directory (repositories/, services/, or api/)
+2. Use appropriate markers (@pytest.mark.unit, @pytest.mark.integration, etc.)
+3. Use existing fixtures where possible
+4. Follow naming convention: test_<functionality>_<scenario>
+5. Test both success and failure cases
+---
 
 ## Key Engineering Decisions
 
@@ -785,8 +934,9 @@ http://127.0.0.1:8000/docs
 * Explicit error handling (401 vs 403)
 * Dockerized architecture for consistent development
 * Automatic migrations & seed scripts on container startup
-
----
+* Test isolation to ensure each test runs independently
+* In‑memory database usage for fast test execution
+* Fixtures and factories to reduce duplication and improve maintainability
 
 ## Why This Project Matters
 
@@ -799,6 +949,8 @@ This project demonstrates:
 * Understanding of authorization models
 * Ability to containerize applications using Docker
 * Knowledge of environment variables and secrets management
+* Clear and descriptive test structure
+* Comprehensive testing approach covering happy paths, edge cases, and failures
 
 ## License
 

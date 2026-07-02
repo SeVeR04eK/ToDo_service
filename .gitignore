@@ -17,3 +17,7 @@ build/
 .idea/
 *.swp
 *.swo
+
+.coverage
+htmlcov/
+.pytest_cache/

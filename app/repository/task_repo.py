@@ -83,7 +83,9 @@ class TaskRepository:
         update_data = task_update.model_dump(exclude_unset=True)
 
         for key, value in update_data.items():
-            setattr(task, key, value)
+            # Only set attributes that are not None to avoid NOT NULL constraint violations
+            if value is not None:
+                setattr(task, key, value)
 
         await self.session.commit()
         await self.session.refresh(task)
