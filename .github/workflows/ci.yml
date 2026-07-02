@@ -33,6 +33,7 @@ jobs:
       - name: Run tests inside container
         run: |
           docker run -e SECRET_KEY=test_secret_key \
+                     -e DATABASE_URL=sqlite+aiosqlite:///:memory: \
                      -e FIRST_ADMIN_USERNAME=admin \
                      -e FIRST_ADMIN_PASSWORD=admin123 \
                      myapp
