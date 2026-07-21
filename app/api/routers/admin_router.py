@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, status, Path, Query
 from typing import Annotated, Optional
 
 from app.models import User
-from app.schemas import UserRead, TaskRead, TaskUpdate, TaskStatus, RoleRead, UserPermission, RoleCreate
-from app.api.dependencies import db, require_role
+from app.schemas import UserRead, TaskRead, TaskUpdate, TaskStatus, RoleRead, UserPermission, RoleCreate, TasksPagination
+from app.api.dependencies import db, require_role, tasks_pagination
 from app.services import AdminService, TaskService
 from app.repositories import AdminRepository
 
@@ -98,17 +98,7 @@ async def get_tasks(
             Optional[TaskStatus],
             Query(title="Task Status")
         ] = None,
-        limit: Annotated[
-            Optional[int],
-            Query(title="Limit of tasks", ge=1, le=100)
-        ] = None,
-        offset: Annotated[
-            Optional[int],
-            Query(title="Limit of tasks", ge=1, le=100)
-        ] = None,
-        from_newest: Annotated[
-            Optional[bool],
-            Query(title="Sort from newest")] = False,
+        pagination: TasksPagination = Depends(tasks_pagination),
 ):
 
     service = TaskService(session=session)
@@ -116,9 +106,7 @@ async def get_tasks(
     return await service.get_tasks_service(
         user_id=user_id,
         task_status=task_status,
-        limit=limit,
-        from_newest=from_newest,
-        offset=offset
+        pagination=pagination
     )
 
 @admin_router.get("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)

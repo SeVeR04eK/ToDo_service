@@ -8,5 +8,6 @@ This module exports common dependencies used across API routers:
 """
 from .auth import db, get_current_user
 from .rbac import require_role
+from .pagination import tasks_pagination
 
-__all__ = ["db", "get_current_user", "require_role"]
+__all__ = ["db", "get_current_user", "require_role", "tasks_pagination"]

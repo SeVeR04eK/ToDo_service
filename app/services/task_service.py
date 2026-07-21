@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 
-from app.schemas import TaskRead, TaskCreate, TaskUpdate, TaskStatus
+from app.schemas import TaskRead, TaskCreate, TaskUpdate, TaskStatus, TasksPagination
 from app.repositories import TaskRepository
 
 class TaskService:
@@ -20,9 +20,7 @@ class TaskService:
             self,
             user_id: int,
             task_status: Optional[TaskStatus],
-            limit: Optional[int],
-            offset: Optional[int],
-            from_newest: Optional[bool] = False
+            pagination: TasksPagination
     ) -> list[TaskRead]:
         """Get tasks with optional filtering by status, pagination, and sorting."""
 
@@ -31,16 +29,12 @@ class TaskService:
             tasks = await self.repository.get_tasks_by_status(
                 user_id=user_id,
                 task_status=task_status,
-                limit=limit,
-                from_newest=from_newest,
-                offset=offset
+                pagination=pagination
             )
         else:
             tasks = await self.repository.get_tasks(
                 user_id=user_id,
-                limit=limit,
-                from_newest=from_newest,
-                offset=offset
+                pagination=pagination
             )
 
         return [TaskRead.model_validate(task) for task in tasks]

@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Sequence, Optional
 from sqlalchemy import select, delete
 
-from app.schemas import TaskCreate, TaskUpdate, TaskStatus
+from app.schemas import TaskCreate, TaskUpdate, TaskStatus, TasksPagination
 from app.models import Task
 
 
@@ -31,23 +31,21 @@ class TaskRepository:
     async def get_tasks(
             self,
             user_id: int,
-            limit: Optional[int],
-            offset: Optional[int],
-            from_newest: Optional[bool] = False) -> Sequence[Task]:
+            pagination: TasksPagination) -> Sequence[Task]:
         """Get all tasks for a user with optional pagination and sorting."""
 
         request = select(Task).where(Task.user_id == user_id)
 
-        if from_newest:
+        if pagination.from_newest:
             request = request.order_by(Task.id.desc())
         else:
             request = request.order_by(Task.id.asc())
 
-        if offset is not None:
-            request = request.offset(offset)
+        if pagination.offset is not None:
+            request = request.offset(pagination.offset)
 
-        if limit is not None:
-            request = request.limit(limit)
+        if pagination.limit is not None:
+            request = request.limit(pagination.limit)
 
         return (await self.session.scalars(request)).all()
 
@@ -55,24 +53,22 @@ class TaskRepository:
             self,
             user_id: int,
             task_status: TaskStatus,
-            limit: Optional[int],
-            offset: Optional[int],
-            from_newest: Optional[bool] = False
+            pagination: TasksPagination
     ) -> Sequence[Task]:
         """Get tasks for a user filtered by status with optional pagination and sorting."""
 
         request = select(Task).where(Task.user_id == user_id, Task.status == task_status)
 
-        if from_newest:
+        if pagination.from_newest:
             request = request.order_by(Task.id.desc())
         else:
             request = request.order_by(Task.id.asc())
 
-        if offset is not None:
-            request = request.offset(offset)
+        if pagination.offset is not None:
+            request = request.offset(pagination.offset)
 
-        if limit is not None:
-            request = request.limit(limit)
+        if pagination.limit is not None:
+            request = request.limit(pagination.limit)
 
         return (await self.session.scalars(request)).all()
 
