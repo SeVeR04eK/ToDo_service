@@ -110,7 +110,7 @@ class TestAdminRouter:
     @pytest.mark.asyncio
     async def test_delete_admin_user(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
         """Test that admin cannot delete another admin."""
-        from app.core.security import create_access_token
+        from app.security import create_access_token
         from httpx import ASGITransport
         from app.main import app
         

@@ -2,7 +2,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repository.user_repo import UserRepository
+from app.repositories.user_repo import UserRepository
 from app.schemas import UserCreate, UserUpdate
 from tests.factories import UserFactory
 

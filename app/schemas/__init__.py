@@ -1,3 +1,12 @@
+"""
+Pydantic schemas for request/response validation.
+
+This module exports all Pydantic schemas used for:
+- Request validation (Create, Update schemas)
+- Response serialization (Read schemas)
+- Authentication (Tokens, Refresh tokens)
+- Authorization (User permissions, Roles)
+"""
 from .user_schema import UserCreate, UserRead, UserUpdate
 from .tokens_schema import TokensResponse
 from .refresh_token_schema import RefreshTokenGet

@@ -6,6 +6,7 @@ from app.schemas import TaskStatus
 
 
 class Task(Base):
+    """Task model representing user tasks with status tracking."""
     __tablename__ = "tasks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -17,4 +18,5 @@ class Task(Base):
         server_default=TaskStatus.todo
     )
 
+    # CASCADE delete ensures tasks are removed when user is deleted
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)

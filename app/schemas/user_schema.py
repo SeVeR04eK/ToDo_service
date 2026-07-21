@@ -3,9 +3,11 @@ from typing import Annotated
 
 
 class UserBase(BaseModel):
+    """Base user schema with common fields."""
     username: str
 
 class UserRole(BaseModel):
+    """Nested schema for user role information in responses."""
     name: Annotated[str, Field(title="Role Name")]
 
     model_config = {
@@ -13,6 +15,7 @@ class UserRole(BaseModel):
     }
 
 class UserCreate(UserBase):
+    """Schema for user registration with password confirmation."""
     username: Annotated[
         str,
         Field(..., min_length=1, title="Username")
@@ -38,11 +41,13 @@ class UserCreate(UserBase):
 
     @model_validator(mode="after")
     def passwords_match(self):
+        """Validate that password and password confirmation match."""
         if self.password != self.password_confirm:
             raise ValueError("Passwords do not match")
         return self
 
 class UserUpdate(UserBase):
+    """Schema for updating user profile (all fields optional)."""
     username: Annotated[
         str,
         Field(default=None, min_length=1, title="Username")
@@ -67,16 +72,19 @@ class UserUpdate(UserBase):
     ]
     @model_validator(mode="after")
     def passwords_match(self):
+        """Validate that password and password confirmation match."""
         if self.password != self.password_confirm:
             raise ValueError("Passwords do not match")
         return self
 
 class UserRead(UserBase):
+    """Schema for user response (includes database-generated fields)."""
     username: Annotated[str, Field(title="Username")]
     id: Annotated[int, Field(title="User ID")]
     is_active: Annotated[bool, Field(title="User Active Status")]
     role: UserRole
 
+    # Enable ORM mode to allow serialization from SQLAlchemy models
     model_config = {
         "from_attributes": True
     }

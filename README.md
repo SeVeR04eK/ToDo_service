@@ -6,7 +6,7 @@ A production-oriented REST API for task management with authentication, authoriz
 
 ## Overview
 
-This project implements a fully-featured backend service for managing tasks and users. It follows clean architecture principles, separates concerns, and mimics real-world backend systems.
+This project implements a fully-featured backend service for managing tasks and users. It follows layer-based architecture principles, separates concerns, and mimics real-world backend systems.
 
 **Key goals:**
 
@@ -118,19 +118,22 @@ Functionality for managing personal tasks:
 ```
 ToDo_service/
 ├── app/                      # main application package
-│   ├── api/                  # API layer (routing, dependencies)
+│   ├── api/                  # API layer
+│   │   ├── dependencies/     # FastAPI dependencies (auth, authorization)
+│   │   ├── middleware/       # Custom middleware
 │   │   └── routers/          # individual FastAPI routers
-│   ├── authorization/        # Role based access control
-│   ├── core/                 # configuration, settings, security
+│   ├── core/                 # configuration, settings
 │   ├── db/                   # database connection, session, engine
 │   ├── migrations/           # Alembic migrations
 │   │   └── versions/         # generated migration files
 │   ├── models/               # SQLAlchemy ORM models
-│   ├── repository/           # data access layer (CRUD repositories)
+│   ├── repositories/         # data access layer (CRUD repositories)
 │   ├── schemas/              # Pydantic request/response schemas
+│   ├── security/             # authentication, token management
 │   ├── services/             # business logic layer
 │   ├── utils/                # helper utilities
 │   └── main.py               # FastAPI application entry point
+├── tests/                    # tests for application
 ├── scripts/                  # helper scripts (seed)
 ├── screenshots/              # screenshots for README.md
 ├── alembic.ini               # Alembic configuration

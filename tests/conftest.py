@@ -11,7 +11,7 @@ from app.models import Base
 from app.models.users_model import User
 from app.models.roles_model import Role
 from app.models.tasks_model import Task
-from app.core.security import create_access_token
+from app.security import create_access_token
 from app.utils import hash_password
 from app.schemas import TaskStatus
 

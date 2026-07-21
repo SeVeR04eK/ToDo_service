@@ -3,11 +3,11 @@ from typing import Annotated, Optional
 
 from app.models import User
 from app.schemas import TaskCreate, TaskRead, TaskUpdate, TaskStatus
-from app.api.deps import db
-from app.authorization import require_role
+from app.api.dependencies import db, require_role
 from app.services import TaskService
 
 
+# Tasks router for task management (accessible by users and admins)
 tasks_router = APIRouter(prefix = "/tasks", tags = ["tasks"])
 
 @tasks_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = TaskRead)
@@ -19,6 +19,7 @@ async def create_task(
         task: TaskCreate,
         session: db
 ):
+    """Create a new task for the authenticated user."""
 
     service = TaskService(session=session)
 
@@ -41,12 +42,13 @@ async def get_tasks(
         ] = None,
         offset: Annotated[
             Optional[int],
-            Query(title="Limit of tasks", ge=1, le=100)
+            Query(title="Offset for pagination", ge=1, le=100)
         ] = None,
         from_newest: Annotated[
             Optional[bool],
             Query(title="Sort from newest")] = False,
 ):
+    """Get all tasks for the authenticated user with optional filtering and pagination."""
 
     service = TaskService(session=session)
 
@@ -67,6 +69,7 @@ async def get_task(
         task_id: Annotated[int, Path(..., title="Task ID")],
         session: db
 ):
+    """Get a specific task by ID for the authenticated user."""
 
     service = TaskService(session=session)
 
@@ -82,6 +85,7 @@ async def update_task(
         task_update: TaskUpdate,
         session: db
 ):
+    """Update a specific task by ID for the authenticated user (partial update)."""
 
     service = TaskService(session=session)
 
@@ -96,8 +100,10 @@ async def delete_task(
         task_id: Annotated[int, Path(..., title="Task ID")],
         session: db
 ):
+    """Delete a specific task by ID for the authenticated user."""
 
     service = TaskService(session=session)
     await service.delete_task_service(task_id, user.id)
 
+    # Return True to indicate successful deletion (FastAPI handles 204 response)
     return True

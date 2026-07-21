@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 
 from app.models import User
 from app.core import settings
-from app.repository import UserRepository, RefreshTokenRepository
+from app.repositories import UserRepository, RefreshTokenRepository
 from app.utils import verify_password
 
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/authentication")
@@ -39,7 +39,8 @@ async def authenticate_user(
 
 def create_access_token(
         username: str,
-        user_id, role: str,
+        user_id: int,
+        role: str,
         delta: timedelta = settings.access_token_expire_minutes
 ) -> str:
 
@@ -47,7 +48,7 @@ def create_access_token(
     expires = datetime.now(timezone.utc) + delta
     payload.update({"exp": int(expires.timestamp())})
 
-    return jwt.encode(payload, settings.secret_key, algorithm = settings.algorithm)
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
 async def create_refresh_token(
         username: str,
@@ -60,7 +61,7 @@ async def create_refresh_token(
     expires = datetime.now(timezone.utc) + delta
     payload.update({"exp": int(expires.timestamp())})
 
-    token = jwt.encode(payload, settings.secret_key, algorithm = settings.algorithm)
+    token = jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
 
     repository = RefreshTokenRepository(session)
     await repository.create_refresh_token(user_id=user_id, token=token, expires=expires)
@@ -83,12 +84,12 @@ def decode_refresh_token(refresh_token: str) -> dict:
 def decode_access_token(access_token: str) -> dict:
 
     try:
-        payload = jwt.decode(access_token, settings.secret_key, algorithms = [settings.algorithm])
+        payload = jwt.decode(access_token, settings.secret_key, algorithms=[settings.algorithm])
 
         if payload.get("sub") is None or payload.get("id") is None:
-            raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail = "Could not validate user")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
 
         return payload
 
     except JWTError:
-        raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")

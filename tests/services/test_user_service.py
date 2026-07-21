@@ -82,7 +82,7 @@ class TestUserService:
         await service.delete_user_service(user)
         
         # Verify user is deleted
-        from app.repository import UserRepository
+        from app.repositories import UserRepository
         user_repo = UserRepository(session=db_session)
         deleted_user = await user_repo.get_user_by_id(user.id)
         assert deleted_user is None

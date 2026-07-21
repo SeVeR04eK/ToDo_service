@@ -7,11 +7,13 @@ from app.models import Task
 
 
 class TaskRepository:
+    """Repository for task-related database operations."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def create_task(self, task: TaskCreate, user_id: int) -> Task:
+        """Create a new task for a user."""
 
         task = Task(
             title=task.title,
@@ -32,6 +34,7 @@ class TaskRepository:
             limit: Optional[int],
             offset: Optional[int],
             from_newest: Optional[bool] = False) -> Sequence[Task]:
+        """Get all tasks for a user with optional pagination and sorting."""
 
         request = select(Task).where(Task.user_id == user_id)
 
@@ -56,6 +59,7 @@ class TaskRepository:
             offset: Optional[int],
             from_newest: Optional[bool] = False
     ) -> Sequence[Task]:
+        """Get tasks for a user filtered by status with optional pagination and sorting."""
 
         request = select(Task).where(Task.user_id == user_id, Task.status == task_status)
 
@@ -72,14 +76,17 @@ class TaskRepository:
 
         return (await self.session.scalars(request)).all()
 
-    async def get_task(self, task_id: int, user_id: int) -> Task:
+    async def get_task(self, task_id: int, user_id: int) -> Task | None:
+        """Get a single task by ID for a specific user."""
 
         request = select(Task).where(Task.user_id == user_id, Task.id == task_id)
 
         return await self.session.scalar(request)
 
     async def update_task(self, task: Task, task_update: TaskUpdate) -> Task:
+        """Update an existing task with partial data."""
 
+        # exclude_unset=True only includes fields that were explicitly set
         update_data = task_update.model_dump(exclude_unset=True)
 
         for key, value in update_data.items():
@@ -93,6 +100,7 @@ class TaskRepository:
         return task
 
     async def delete_task(self, task_id: int, user_id: int) -> None:
+        """Delete a task by ID for a specific user."""
 
         request = delete(Task).where(Task.user_id == user_id, Task.id == task_id)
         await self.session.execute(request)

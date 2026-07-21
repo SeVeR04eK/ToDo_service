@@ -199,7 +199,7 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        from app.core.security import create_access_token
+        from app.security import create_access_token
         from httpx import ASGITransport
         from app.main import app
         access_token = create_access_token(
@@ -265,7 +265,7 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        from app.core.security import create_access_token
+        from app.security import create_access_token
         from httpx import ASGITransport
         from app.main import app
         access_token = create_access_token(
@@ -327,7 +327,7 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        from app.core.security import create_access_token
+        from app.security import create_access_token
         from httpx import ASGITransport
         from app.main import app
         access_token = create_access_token(

@@ -141,7 +141,7 @@ class TestUserRouter:
         """Test deleting current user."""
         user = await UserFactory.create_in_db(db_session, username="to_delete")
         
-        from app.core.security import create_access_token
+        from app.security import create_access_token
         from httpx import ASGITransport
         from app.main import app
         

@@ -3,7 +3,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, create_refresh_token
+from app.security import create_access_token, create_refresh_token
 from tests.factories import UserFactory
 
 

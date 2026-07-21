@@ -2,11 +2,12 @@ from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 
-from app.api.deps import db
+from app.api.dependencies import db
 from app.schemas import TokensResponse
 from app.services import AuthService
 from app.schemas import RefreshTokenGet
 
+# Authentication router for login and token refresh
 auth_router = APIRouter(prefix = "/auth", tags = ["auth"])
 
 @auth_router.post("/authentication", status_code=status.HTTP_200_OK, response_model = TokensResponse)
@@ -17,12 +18,14 @@ async def authentication(
         ],
         session: db
 ):
+    """Authenticate user with username/password and return JWT tokens."""
 
     service = AuthService(session=session)
     return await service.authentication_service(form_data)
 
 @auth_router.post("/refresh", status_code=status.HTTP_200_OK, response_model = TokensResponse)
 async def refresh(refresh_token_data: RefreshTokenGet, session: db):
+    """Refresh access token using a valid refresh token."""
 
     service = AuthService(session=session)
 

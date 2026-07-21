@@ -3,15 +3,16 @@ from typing import Annotated, Optional
 
 from app.models import User
 from app.schemas import UserRead, TaskRead, TaskUpdate, TaskStatus, RoleRead, UserPermission, RoleCreate
-from app.authorization import require_role
-from app.api.deps import db
+from app.api.dependencies import db, require_role
 from app.services import AdminService, TaskService
-from app.repository import AdminRepository
+from app.repositories import AdminRepository
 
+# Admin router - all endpoints require admin role authentication
 admin_router = APIRouter(prefix = "/admin", tags = ["admin"])
 
 @admin_router.get("/users", status_code=status.HTTP_200_OK, response_model=list[UserRead]|UserRead)
 async def get_users(
+        # Underscore indicates we only need the dependency for authentication, not the actual user object
         _: Annotated[
             User,
             Depends(require_role("admin"))
@@ -27,12 +28,13 @@ async def get_users(
         ] = None,
         offset: Annotated[
             Optional[int],
-            Query(title="Limit of users", ge=1, le=100)
+            Query(title="Offset for pagination", ge=1, le=100)
         ] = None
 ):
 
     service = AdminService(session)
 
+    # Returns single UserRead if username is provided, otherwise returns list of UserRead
     return await service.get_users_service(
         username=username,
         limit=limit,
@@ -81,6 +83,7 @@ async def delete_user(
     service = AdminService(session=session)
     await service.delete_user_service(user_id)
 
+    # Return True to indicate successful deletion (FastAPI handles 204 response)
     return True
 
 @admin_router.get("/users/{user_id}/tasks", status_code=status.HTTP_200_OK, response_model=list[TaskRead])
@@ -163,6 +166,7 @@ async def delete_task(
     service = TaskService(session=session)
     await service.delete_task_service(task_id=task_id, user_id=user_id)
 
+    # Return True to indicate successful deletion (FastAPI handles 204 response)
     return True
 
 @admin_router.post("/roles", status_code=status.HTTP_201_CREATED, response_model=RoleRead)
@@ -187,6 +191,7 @@ async def get_roles(
         ],
         session: db):
 
+    # Direct repository call for simple read operation (no service layer needed)
     repository = AdminRepository(session=session)
     roles = await repository.get_roles()
 

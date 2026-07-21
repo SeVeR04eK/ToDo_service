@@ -8,12 +8,15 @@ from app.schemas import OnlyUserPermission, RoleCreate
 
 
 class AdminRepository:
+    """Repository for admin-specific database operations."""
 
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def get_users(self, limit: Optional[int], offset: Optional[int]) -> Sequence[User]:
+        """Get all users with optional pagination and role relationship loaded."""
 
+        # selectinload eagerly loads the role relationship to avoid N+1 queries
         request = select(User).options(selectinload(User.role))
 
         if offset is not None:
@@ -25,7 +28,9 @@ class AdminRepository:
         return (await self.session.scalars(request)).all()
 
     async def user_perm(self, user: User, user_permission: OnlyUserPermission) -> User:
+        """Update user permissions (is_active status and role ID)."""
 
+        # exclude_unset=True and exclude_none=True only include fields that were explicitly set and not None
         user_data = user_permission.model_dump(exclude_unset=True, exclude_none=True)
 
         for key, value in user_data.items():
@@ -37,6 +42,7 @@ class AdminRepository:
         return user
 
     async def create_role(self, new_role: RoleCreate) -> Role:
+        """Create a new role."""
 
         role = Role(name=new_role.name)
 
@@ -47,10 +53,12 @@ class AdminRepository:
         return role
 
     async def get_roles(self) -> Sequence[Role]:
+        """Get all roles."""
 
         return (await self.session.scalars(select(Role))).all()
 
     async def get_role_id_by_name(self, name: str) -> int:
+        """Get a role ID by its name."""
 
         request = select(Role.id).where(Role.name == name)
 
