@@ -3,7 +3,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.task_repo import TaskRepository
-from app.schemas import TaskCreate, TaskUpdate, TaskStatus
+from app.schemas import TaskCreate, TaskUpdate, TaskStatus, TasksPagination
 from tests.factories import TaskFactory, UserFactory
 
 
@@ -45,7 +45,8 @@ class TestTaskRepository:
         repo = TaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
-        tasks = await repo.get_tasks(test_user.id, limit=None, offset=None)
+        pagination = TasksPagination()
+        tasks = await repo.get_tasks(test_user.id, pagination)
         
         assert len(tasks) == 5
     
@@ -55,7 +56,8 @@ class TestTaskRepository:
         repo = TaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
-        tasks = await repo.get_tasks(test_user.id, limit=3, offset=None)
+        pagination = TasksPagination(limit=3)
+        tasks = await repo.get_tasks(test_user.id, pagination)
         
         assert len(tasks) == 3
     
@@ -65,7 +67,8 @@ class TestTaskRepository:
         repo = TaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
-        tasks = await repo.get_tasks(test_user.id, limit=None, offset=5)
+        pagination = TasksPagination(offset=5)
+        tasks = await repo.get_tasks(test_user.id, pagination)
         
         assert len(tasks) == 5
     
@@ -75,7 +78,8 @@ class TestTaskRepository:
         repo = TaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
-        tasks = await repo.get_tasks(test_user.id, limit=3, offset=2)
+        pagination = TasksPagination(limit=3, offset=2)
+        tasks = await repo.get_tasks(test_user.id, pagination)
         
         assert len(tasks) == 3
     
@@ -85,7 +89,8 @@ class TestTaskRepository:
         repo = TaskRepository(db_session)
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
-        retrieved_tasks = await repo.get_tasks(test_user.id, limit=None, offset=None, from_newest=False)
+        pagination = TasksPagination(from_newest=False)
+        retrieved_tasks = await repo.get_tasks(test_user.id, pagination)
         
         assert retrieved_tasks[0].id == tasks[0].id
         assert retrieved_tasks[-1].id == tasks[-1].id
@@ -96,7 +101,8 @@ class TestTaskRepository:
         repo = TaskRepository(db_session)
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
-        retrieved_tasks = await repo.get_tasks(test_user.id, limit=None, offset=None, from_newest=True)
+        pagination = TasksPagination(from_newest=True)
+        retrieved_tasks = await repo.get_tasks(test_user.id, pagination)
         
         assert retrieved_tasks[0].id == tasks[-1].id
         assert retrieved_tasks[-1].id == tasks[0].id
@@ -112,8 +118,9 @@ class TestTaskRepository:
         await TaskFactory.create_many_in_db(db_session, count=3, user_id=user1.id)
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=user2.id)
         
-        user1_tasks = await repo.get_tasks(user1.id, limit=None, offset=None)
-        user2_tasks = await repo.get_tasks(user2.id, limit=None, offset=None)
+        pagination = TasksPagination()
+        user1_tasks = await repo.get_tasks(user1.id, pagination)
+        user2_tasks = await repo.get_tasks(user2.id, pagination)
         
         assert len(user1_tasks) == 3
         assert len(user2_tasks) == 5
@@ -130,9 +137,10 @@ class TestTaskRepository:
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.done)
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
         
-        todo_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.todo, limit=None, offset=None)
-        in_progress_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.in_progress, limit=None, offset=None)
-        done_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.done, limit=None, offset=None)
+        pagination = TasksPagination()
+        todo_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.todo, pagination)
+        in_progress_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.in_progress, pagination)
+        done_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.done, pagination)
         
         assert len(todo_tasks) == 2
         assert len(in_progress_tasks) == 1
@@ -149,7 +157,8 @@ class TestTaskRepository:
         for _ in range(5):
             await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
         
-        tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.todo, limit=2, offset=1)
+        pagination = TasksPagination(limit=2, offset=1)
+        tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.todo, pagination)
         
         assert len(tasks) == 2
     

@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.task_service import TaskService
-from app.schemas import TaskStatus
+from app.schemas import TaskStatus, TasksPagination
 from tests.factories import TaskFactory, UserFactory
 
 
@@ -33,11 +33,11 @@ class TestTaskService:
         service = TaskService(db_session)
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
+        pagination = TasksPagination()
         tasks = await service.get_tasks_service(
             user_id=test_user.id,
             task_status=None,
-            limit=None,
-            offset=None
+            pagination=pagination
         )
         
         assert len(tasks) == 5
@@ -51,11 +51,11 @@ class TestTaskService:
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.in_progress)
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.done)
         
+        pagination = TasksPagination()
         todo_tasks = await service.get_tasks_service(
             user_id=test_user.id,
             task_status=TaskStatus.todo,
-            limit=None,
-            offset=None
+            pagination=pagination
         )
         
         assert len(todo_tasks) == 1
@@ -67,11 +67,11 @@ class TestTaskService:
         service = TaskService(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
+        pagination = TasksPagination(limit=3)
         tasks = await service.get_tasks_service(
             user_id=test_user.id,
             task_status=None,
-            limit=3,
-            offset=None
+            pagination=pagination
         )
         
         assert len(tasks) == 3
@@ -82,11 +82,11 @@ class TestTaskService:
         service = TaskService(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
+        pagination = TasksPagination(offset=5)
         tasks = await service.get_tasks_service(
             user_id=test_user.id,
             task_status=None,
-            limit=None,
-            offset=5
+            pagination=pagination
         )
         
         assert len(tasks) == 5
@@ -97,12 +97,11 @@ class TestTaskService:
         service = TaskService(db_session)
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
+        pagination = TasksPagination(from_newest=True)
         newest_tasks = await service.get_tasks_service(
             user_id=test_user.id,
             task_status=None,
-            limit=None,
-            offset=None,
-            from_newest=True
+            pagination=pagination
         )
         
         assert newest_tasks[0].id == tasks[-1].id
@@ -113,11 +112,11 @@ class TestTaskService:
         """Test getting tasks when user has no tasks."""
         service = TaskService(db_session)
         
+        pagination = TasksPagination()
         tasks = await service.get_tasks_service(
             user_id=test_user.id,
             task_status=None,
-            limit=None,
-            offset=None
+            pagination=pagination
         )
         
         assert tasks == []
@@ -275,11 +274,11 @@ class TestTaskService:
         for _ in range(5):
             await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.in_progress)
         
+        pagination = TasksPagination(limit=2, offset=1)
         tasks = await service.get_tasks_service(
             user_id=test_user.id,
             task_status=TaskStatus.in_progress,
-            limit=2,
-            offset=1
+            pagination=pagination
         )
         
         assert len(tasks) == 2
