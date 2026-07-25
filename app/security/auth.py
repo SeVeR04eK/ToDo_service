@@ -48,7 +48,7 @@ def create_access_token(
     expires = datetime.now(timezone.utc) + delta
     payload.update({"exp": int(expires.timestamp())})
 
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    return jwt.encode(payload, settings.secret_key.get_secret_value(), algorithm=settings.algorithm)
 
 async def create_refresh_token(
         username: str,
@@ -61,7 +61,7 @@ async def create_refresh_token(
     expires = datetime.now(timezone.utc) + delta
     payload.update({"exp": int(expires.timestamp())})
 
-    token = jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+    token = jwt.encode(payload, settings.secret_key.get_secret_value(), algorithm=settings.algorithm)
 
     repository = RefreshTokenRepository(session)
     await repository.create_refresh_token(user_id=user_id, token=token, expires=expires)
@@ -71,7 +71,7 @@ async def create_refresh_token(
 def decode_refresh_token(refresh_token: str) -> dict:
 
     try:
-        payload = jwt.decode(refresh_token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(refresh_token, settings.secret_key.get_secret_value(), algorithms=[settings.algorithm])
 
         if payload.get("sub") is None or payload.get("id") is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
@@ -84,7 +84,7 @@ def decode_refresh_token(refresh_token: str) -> dict:
 def decode_access_token(access_token: str) -> dict:
 
     try:
-        payload = jwt.decode(access_token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(access_token, settings.secret_key.get_secret_value(), algorithms=[settings.algorithm])
 
         if payload.get("sub") is None or payload.get("id") is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate user")

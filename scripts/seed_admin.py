@@ -3,7 +3,7 @@ from sqlalchemy import select
 from app.db.database import SessionLocal
 from app.models import User, Role
 from app.utils import hash_password
-from app.core.config import settings
+from app.core import settings
 
 
 async def seed_admin() -> None:
@@ -25,7 +25,7 @@ async def seed_admin() -> None:
 
         admin = User(
             username=settings.first_admin_username,
-            hashed_password=hash_password(settings.first_admin_password),
+            hashed_password=hash_password(settings.first_admin_password.get_secret_value()),
             role_id=admin_role.id,
             is_active=True,
         )

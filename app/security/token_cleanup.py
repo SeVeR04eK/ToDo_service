@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from app.repositories import RefreshTokenRepository
-from app.db import get_session
+from app.db.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ async def clean_tokens_task():
     """Background task to clean expired refresh tokens."""
     while True:
         try:
-            async with get_session() as session:
+            async with SessionLocal() as session:
                 repository = RefreshTokenRepository(session)
                 await repository.delete_expired_tokens()
                 logger.info("Expired tokens cleaned successfully")

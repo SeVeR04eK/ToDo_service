@@ -1,6 +1,6 @@
 # ToDo Service Backend API (FastAPI + PostgreSQL)
 
-A production-oriented REST API for task management with authentication, authorization (RBAC), and scalable architecture.
+**⚠️ DEVELOPMENT VERSION** - This is a development-focused implementation intended for learning and local development purposes. The containerization and configuration management are optimized for development workflows and are **NOT suitable for production use** without significant security hardening and infrastructure changes.
 
 ---
 
@@ -8,10 +8,36 @@ A production-oriented REST API for task management with authentication, authoriz
 
 This project implements a fully-featured backend service for managing tasks and users. It follows layer-based architecture principles, separates concerns, and mimics real-world backend systems.
 
+**What is this project?**
+
+The ToDo Service is a comprehensive REST API backend that provides task management functionality with robust user authentication and authorization. It serves as a practical example of modern backend development practices, demonstrating how to build scalable, maintainable, and secure web services using Python and FastAPI.
+
+**Core Functionality:**
+
+- **User Management**: Complete user lifecycle including registration, authentication, profile management, and account deletion
+- **Task Management**: Create, read, update, and delete personal tasks with status tracking (todo, in_progress, done)
+- **Admin Operations**: Administrative interface for user management, role assignment, and oversight of all user tasks
+- **Authentication**: JWT-based authentication with access tokens and refresh token rotation for enhanced security
+- **Authorization**: Role-based access control (RBAC) system that distinguishes between regular users and administrators
+- **Data Filtering**: Advanced filtering capabilities for tasks (by status, recency) and users (by username, ID) with pagination support
+
+**Architecture Highlights:**
+
+The project implements a clean three-layer architecture:
+
+- **API Layer** (`app/api/`): FastAPI routers handling HTTP requests and responses
+- **Service Layer** (`app/services/`): Business logic and orchestration between repositories
+- **Repository Layer** (`app/repositories/`): Data access operations using SQLAlchemy ORM
+
+This separation ensures each layer has a single responsibility, making the codebase testable, maintainable, and scalable.
+
 **Key goals:**
 
-* Build a secure and scalable API
-* Demonstrate backend engineering best practices
+* Build a secure and scalable API following industry best practices
+* Demonstrate proper backend engineering patterns and architecture
+* Provide a learning resource for modern Python web development
+* Implement robust authentication and authorization mechanisms
+* Showcase database design and migration management with Alembic
 
 ---
 
@@ -639,6 +665,23 @@ GET /admin/users?limit=10&offset=0
 ---
 
 ## Running the Project
+
+**⚠️ Development Environment Notice**
+
+This project is configured for development purposes only. The following aspects are NOT production-ready:
+
+- **Configuration Management**: Settings are loaded from `.env` files without proper secrets management
+- **Containerization**: Docker setup uses development configurations with hot-reload and debug features
+- **Security**: Secret keys and passwords are stored in environment files without encryption
+- **Database**: Uses development database settings without proper backup/replication
+
+For production deployment, you would need:
+- Proper secrets management (e.g., HashiCorp Vault, AWS Secrets Manager)
+- Production-grade container orchestration (Kubernetes with proper security contexts)
+- Environment-specific configurations (staging, production)
+- Proper SSL/TLS termination
+- Database clustering and automated backups
+- Security scanning and vulnerability management
 
 The project supports two execution modes:
 
