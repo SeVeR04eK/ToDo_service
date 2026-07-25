@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     @classmethod
     def validate_database_url(cls, v: str) -> str:
         """Validate that database URL is properly formatted."""
-        if not v.startswith(("postgresql://", "postgresql+asyncpg://", "sqlite://")):
-            raise ValueError("DATABASE_URL must start with postgresql://, postgresql+asyncpg://, or sqlite://")
+        if not v.startswith(("postgresql://", "postgresql+asyncpg://", "sqlite://", "sqlite+aiosqlite://")):
+            raise ValueError("DATABASE_URL must start with postgresql://, postgresql+asyncpg://, or sqlite://, sqlite+aiosqlite://")
         return v
 
     # Load settings from .env file in project root
