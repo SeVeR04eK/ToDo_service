@@ -1,16 +1,17 @@
-from fastapi import APIRouter, status, Depends, Path, Query
+from fastapi import APIRouter, status, Depends, Path, Query, HTTPException
 from typing import Annotated, Optional
 
 from app.models import User
 from app.schemas import TaskCreate, TaskRead, TaskUpdate, TaskStatus, TasksPagination
 from app.api.dependencies import db, require_role, tasks_pagination
 from app.services import TaskService
+from app.core.exceptions import TaskNotFoundError
 
 
 # Tasks router for task management (accessible by users and admins)
 tasks_router = APIRouter(prefix = "/tasks", tags = ["tasks"])
 
-@tasks_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = TaskRead)
+@tasks_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = TaskRead, summary="Create a new task")
 async def create_task(
         user: Annotated[
             User,
@@ -18,14 +19,14 @@ async def create_task(
         ],
         task: TaskCreate,
         session: db
-):
-    """Create a new task for the authenticated user."""
+) -> TaskRead:
+    """Create a new task for the **authenticated** user."""
 
     service = TaskService(session=session)
 
-    return await service.create_task_service(task, user.id)
+    return TaskRead.model_validate(await service.create_task_service(task, user.id))
 
-@tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=list[TaskRead])
+@tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=list[TaskRead], summary="Get all user's tasks")
 async def get_tasks(
         user: Annotated[
                     User,
@@ -37,18 +38,23 @@ async def get_tasks(
             Query(title="Task Status")
         ] = None,
         pagination: TasksPagination = Depends(tasks_pagination)
-    ):
-    """Get all tasks for the authenticated user with optional filtering and pagination."""
+    ) -> list[TaskRead]:
+    """Get all tasks for the **authenticated** user with optional _filtering_ and _pagination_:
+    - **task_status**: Optional task status filter
+    - **limit**: Number of tasks to return
+    - **offset**: Number of tasks to skip
+    - **from_newest**: Boolean to sort tasks from the newest first
+    """
 
     service = TaskService(session=session)
 
-    return await service.get_tasks_service(
+    return [TaskRead.model_validate(task) for task in await service.get_tasks_service(
         user_id=user.id,
         task_status=task_status,
         pagination=pagination
-    )
+    )]
 
-@tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
+@tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Get specific task")
 async def get_task(
         user: Annotated[
                     User,
@@ -56,14 +62,16 @@ async def get_task(
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
         session: db
-):
-    """Get a specific task by ID for the authenticated user."""
+) -> TaskRead:
+    """Get a specific task by ID for the **authenticated** user."""
 
-    service = TaskService(session=session)
+    try:
+        service = TaskService(session=session)
+        return TaskRead.model_validate(await service.get_task_service(task_id=task_id, user_id=user.id))
+    except TaskNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
-    return await service.get_task_service(task_id, user.id)
-
-@tasks_router.patch("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead)
+@tasks_router.patch("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Update task")
 async def update_task(
         user: Annotated[
                     User,
@@ -72,14 +80,16 @@ async def update_task(
         task_id: Annotated[int, Path(..., title="Task ID")],
         task_update: TaskUpdate,
         session: db
-):
-    """Update a specific task by ID for the authenticated user (partial update)."""
+) -> TaskRead:
+    """Update a specific task by ID for the **authenticated** user (_partial update_)."""
 
-    service = TaskService(session=session)
+    try:
+        service = TaskService(session=session)
+        return TaskRead.model_validate(await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_update))
+    except TaskNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
-    return await service.update_task_service(task_id, task_update, user.id)
-
-@tasks_router.delete("/me/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+@tasks_router.delete("/me/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete task")
 async def delete_task(
         user: Annotated[
                     User,
@@ -87,11 +97,11 @@ async def delete_task(
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
         session: db
-):
-    """Delete a specific task by ID for the authenticated user."""
+) -> None:
+    """Delete a specific task by ID for the **authenticated** user."""
 
-    service = TaskService(session=session)
-    await service.delete_task_service(task_id, user.id)
-
-    # Return True to indicate successful deletion (FastAPI handles 204 response)
-    return True
+    try:
+        service = TaskService(session=session)
+        await service.delete_task_service(task_id=task_id, user_id=user.id)
+    except TaskNotFoundError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")

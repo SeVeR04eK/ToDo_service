@@ -17,3 +17,4 @@ httpx
 faker
 pytest-cov
 aiosqlite
+email-validator

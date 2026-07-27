@@ -63,6 +63,7 @@ This separation ensures each layer has a single responsibility, making the codeb
 * **Faker** — fake data generator for tests
 * **Pytest-cov** — test coverage reporting
 * **Aiosqlite** — lightweight async SQLite database for unit tests
+* **Email Validator** — email validation
 * **Docker / Docker Compose** — containerization (DEV + PROD)
 * **Git** — version control
 * **Seed scripts** — automatic creation of roles and initial admin user

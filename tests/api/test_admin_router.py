@@ -211,3 +211,103 @@ class TestAdminRouter:
         response = await authenticated_client.get("/admin/users")
         
         assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_update_user_permission_role_not_found(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
+        """Test updating user with non-existent role."""
+        response = await authenticated_admin_client.patch(
+            f"/admin/users/{test_user.id}",
+            json={"is_active": True, "role": "nonexistent"}
+        )
+        
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_update_user_permission_permission_denied(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
+        """Test updating admin permissions is denied."""
+        response = await authenticated_admin_client.patch(
+            f"/admin/users/{test_admin_user.id}",
+            json={"is_active": False, "role": "user"}
+        )
+        
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_delete_user_permission_denied(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
+        """Test deleting admin user is denied."""
+        response = await authenticated_admin_client.delete(f"/admin/users/{test_admin_user.id}")
+        
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_get_user_tasks_user_not_found(self, authenticated_admin_client: AsyncClient):
+        """Test getting tasks for non-existent user."""
+        response = await authenticated_admin_client.get("/admin/users/99999/tasks")
+        
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_get_user_tasks_permission_denied(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
+        """Test getting tasks for admin user is denied."""
+        response = await authenticated_admin_client.get(f"/admin/users/{test_admin_user.id}/tasks")
+        
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_get_user_task_user_not_found(self, authenticated_admin_client: AsyncClient):
+        """Test getting task for non-existent user."""
+        response = await authenticated_admin_client.get("/admin/users/99999/tasks/1")
+        
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_get_user_task_permission_denied(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
+        """Test getting task for admin user is denied."""
+        response = await authenticated_admin_client.get(f"/admin/users/{test_admin_user.id}/tasks/1")
+        
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_update_user_task_user_not_found(self, authenticated_admin_client: AsyncClient):
+        """Test updating task for non-existent user."""
+        response = await authenticated_admin_client.patch(
+            "/admin/users/99999/tasks/1",
+            json={"title": "Updated"}
+        )
+        
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_update_user_task_permission_denied(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
+        """Test updating task for admin user is denied."""
+        response = await authenticated_admin_client.patch(
+            f"/admin/users/{test_admin_user.id}/tasks/1",
+            json={"title": "Updated"}
+        )
+        
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_delete_user_task_user_not_found(self, authenticated_admin_client: AsyncClient):
+        """Test deleting task for non-existent user."""
+        response = await authenticated_admin_client.delete("/admin/users/99999/tasks/1")
+        
+        assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_user_task_permission_denied(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
+        """Test deleting task for admin user is denied."""
+        response = await authenticated_admin_client.delete(f"/admin/users/{test_admin_user.id}/tasks/1")
+        
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_get_roles_success(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession):
+        """Test getting all roles."""
+        await RoleFactory.create_in_db(db_session, name="moderator")
+        
+        response = await authenticated_admin_client.get("/admin/roles")
+        
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 2

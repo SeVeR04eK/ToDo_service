@@ -13,7 +13,7 @@ class TestUserService:
     @pytest.mark.asyncio
     async def test_create_user_service_success(self, db_session: AsyncSession):
         """Test creating a new user."""
-        user_role = await RoleFactory.create_in_db(db_session, name="user")
+        _user_role = await RoleFactory.create_in_db(db_session, name="user")
         
         service = UserService(session=db_session)
         user_data = UserCreate(
@@ -24,17 +24,18 @@ class TestUserService:
         
         user = await service.create_user_service(user_data)
         
-        assert user.username == "newuser"
-        assert user.id is not None
-        assert user.role.name == "user"
+        assert user["username"] == "newuser"
+        assert user["id"] is not None
+        assert user["role"]["name"] == "user"
 
     @pytest.mark.asyncio
-    async def test_get_user_service_success(self, test_user):
+    async def test_get_user_service_success(self, db_session: AsyncSession, test_user):
         """Test getting user info."""
-        user = await UserService.get_user_service(test_user)
+        service = UserService(session=db_session)
+        user = await service.get_user_service(test_user.id)
         
-        assert user.id == test_user.id
-        assert user.username == test_user.username
+        assert user["id"] == test_user.id
+        assert user["username"] == test_user.username
 
     @pytest.mark.asyncio
     async def test_update_user_service_username(self, db_session: AsyncSession, test_user):
@@ -42,9 +43,9 @@ class TestUserService:
         service = UserService(session=db_session)
         user_update = UserUpdate(username="updated_user")
         
-        updated_user = await service.update_user_service(test_user, user_update)
+        updated_user = await service.update_user_service(test_user.id, user_update)
         
-        assert updated_user.username == "updated_user"
+        assert updated_user["username"] == "updated_user"
 
     @pytest.mark.asyncio
     async def test_update_user_service_password(self, db_session: AsyncSession, test_user):
@@ -55,9 +56,9 @@ class TestUserService:
             password_confirm="newpassword123"
         )
         
-        updated_user = await service.update_user_service(test_user, user_update)
+        updated_user = await service.update_user_service(test_user.id, user_update)
         
-        assert updated_user.id == test_user.id
+        assert updated_user["id"] == test_user.id
 
     @pytest.mark.asyncio
     async def test_update_user_service_both_fields(self, db_session: AsyncSession, test_user):
@@ -69,9 +70,9 @@ class TestUserService:
             password_confirm="newpassword123"
         )
         
-        updated_user = await service.update_user_service(test_user, user_update)
+        updated_user = await service.update_user_service(test_user.id, user_update)
         
-        assert updated_user.username == "updated_user"
+        assert updated_user["username"] == "updated_user"
 
     @pytest.mark.asyncio
     async def test_delete_user_service_success(self, db_session: AsyncSession):
@@ -79,10 +80,50 @@ class TestUserService:
         user = await UserFactory.create_in_db(db_session, username="to_delete")
         
         service = UserService(session=db_session)
-        await service.delete_user_service(user)
+        await service.delete_user_service(user.id)
         
         # Verify user is deleted
         from app.repositories import UserRepository
         user_repo = UserRepository(session=db_session)
         deleted_user = await user_repo.get_user_by_id(user.id)
         assert deleted_user is None
+
+    @pytest.mark.asyncio
+    async def test_create_user_service_username_exists(self, db_session: AsyncSession):
+        """Test creating user with existing username raises UsernameAlreadyExistsError."""
+        from app.core.exceptions import UsernameAlreadyExistsError
+        from app.schemas import UserCreate
+        
+        await UserFactory.create_in_db(db_session, username="existing")
+        
+        service = UserService(session=db_session)
+        user_data = UserCreate(
+            username="existing",
+            password="password123",
+            password_confirm="password123"
+        )
+        
+        with pytest.raises(UsernameAlreadyExistsError):
+            await service.create_user_service(user_data)
+
+    @pytest.mark.asyncio
+    async def test_update_user_service_not_found(self, db_session: AsyncSession):
+        """Test updating non-existent user raises UserNotFoundError."""
+        from app.core.exceptions import UserNotFoundError
+        from app.schemas import UserUpdate
+        
+        service = UserService(session=db_session)
+        user_update = UserUpdate(username="updated")
+        
+        with pytest.raises(UserNotFoundError):
+            await service.update_user_service(99999, user_update)
+
+    @pytest.mark.asyncio
+    async def test_delete_user_service_not_found(self, db_session: AsyncSession):
+        """Test deleting non-existent user raises UserNotFoundError."""
+        from app.core.exceptions import UserNotFoundError
+        
+        service = UserService(session=db_session)
+        
+        with pytest.raises(UserNotFoundError):
+            await service.delete_user_service(99999)
