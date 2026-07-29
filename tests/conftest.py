@@ -61,11 +61,39 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 async def client(db_session: AsyncSession) -> AsyncGenerator:
     """Create a test client with database session override."""
     from app.db import get_session
+    from app.api.dependencies.repositories_dep import (
+        get_user_repository,
+        get_task_repository,
+        get_refresh_token_repository,
+        get_admin_repository,
+    )
+    from app.repositories import (
+        SQLAlchemyUserRepository,
+        SQLAlchemyTaskRepository,
+        SQLAlchemyRefreshTokenRepository,
+        SQLAlchemyAdminRepository,
+    )
 
     async def override_get_session():
         yield db_session
 
+    async def override_get_user_repository():
+        yield SQLAlchemyUserRepository(db_session)
+
+    async def override_get_task_repository():
+        yield SQLAlchemyTaskRepository(db_session)
+
+    async def override_get_refresh_token_repository():
+        yield SQLAlchemyRefreshTokenRepository(db_session)
+
+    async def override_get_admin_repository():
+        yield SQLAlchemyAdminRepository(db_session)
+
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_user_repository] = override_get_user_repository
+    app.dependency_overrides[get_task_repository] = override_get_task_repository
+    app.dependency_overrides[get_refresh_token_repository] = override_get_refresh_token_repository
+    app.dependency_overrides[get_admin_repository] = override_get_admin_repository
 
     async with AsyncClient(
             transport=ASGITransport(app=app),

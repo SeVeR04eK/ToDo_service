@@ -4,10 +4,11 @@ from typing import Annotated, Optional, Union, List
 from app.domain.entities import User
 from app.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination
 from app.domain.enums import TaskStatus
-from app.api.dependencies import db, require_role, tasks_pagination
+from app.api.dependencies import require_role, tasks_pagination
 from app.services import AdminService
 from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, TaskNotFoundError, RoleAlreadyExistsError
 from app.schemas.user_schema import UserRole
+from app.api.dependencies.services_dep import get_admin_service
 
 # Admin router - all endpoints require admin role authentication
 admin_router = APIRouter(prefix = "/admin", tags = ["admin"])
@@ -19,7 +20,7 @@ async def get_users(
             User,
             Depends(require_role("admin"))
         ],
-        session: db,
+        service: AdminService = Depends(get_admin_service),
         username: Annotated[
             Optional[str],
             Query(title="Username")
@@ -40,8 +41,6 @@ async def get_users(
     - **limit**: Limit the number of users returned
     - **offset**: Offset for pagination
     """
-
-    service = AdminService(session)
 
     # Returns single UserRead if username is provided, otherwise returns list of UserRead
     result = await service.get_users_service(
@@ -74,12 +73,11 @@ async def get_user(
                     Depends(require_role("admin"))
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> UserRead:
     """Get a specific user by ID."""
 
     try:
-        service = AdminService(session=session)
         user = await service.get_user_service(user_id)
         return UserRead(
             id=user.id,
@@ -131,12 +129,11 @@ async def user_permission(
                 }
             )
         ],
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> UserRead:
     """Update user permissions (_Partial update_)."""
 
     try:
-        service = AdminService(session=session)
         user = await service.permission_user_service(user_id=user_id, role_name=user_perm.role, is_active=user_perm.is_active)
         return UserRead(
             id=user.id,
@@ -158,12 +155,11 @@ async def delete_user(
                     Depends(require_role("admin"))
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> None:
     """Delete a specific user by ID."""
 
     try:
-        service = AdminService(session=session)
         await service.delete_user_service(user_id)
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -177,7 +173,7 @@ async def get_tasks(
                     Depends(require_role("admin"))
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
-        session: db,
+        service: AdminService = Depends(get_admin_service),
         task_status: Annotated[
             Optional[TaskStatus],
             Query(title="Task Status")
@@ -192,7 +188,6 @@ async def get_tasks(
     """
 
     try:
-        service = AdminService(session=session)
         tasks = await service.get_tasks_service(
             user_id=user_id,
             task_status=task_status,
@@ -223,12 +218,11 @@ async def get_task(
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
         task_id: Annotated[int, Path(..., title="Task ID")],
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> TaskRead:
     """Get a specific task for a user by ID."""
 
     try:
-        service = AdminService(session=session)
         task = await service.get_task_service(task_id=task_id, user_id=user_id)
         return TaskRead(
             id=task.id,
@@ -302,12 +296,11 @@ async def update_task(
                 }
             )
         ],
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> TaskRead:
     """Update a specific task for a user by ID (_Partial update_")."""
 
     try:
-        service = AdminService(session=session)
         task = await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_update)
         return TaskRead(
             id=task.id,
@@ -331,12 +324,11 @@ async def delete_task(
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
         user_id: Annotated[int, Path(..., title="User ID")],
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> None:
     """Delete a specific task for a user by ID."""
 
     try:
-        service = AdminService(session=session)
         await service.delete_task_service(task_id=task_id, user_id=user_id)
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -352,12 +344,11 @@ async def create_role(
                     Depends(require_role("admin"))
                 ],
         new_role: RoleCreate,
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> RoleRead:
     """Create a new role."""
 
     try:
-        service = AdminService(session=session)
         role = await service.create_role_service(new_role=new_role)
         return RoleRead(
             id=role.id,
@@ -372,10 +363,8 @@ async def get_roles(
             User,
             Depends(require_role("admin"))
         ],
-        session: db
+        service: AdminService = Depends(get_admin_service)
 ) -> List[RoleRead]:
-
-    service = AdminService(session=session)
     roles = await service.get_roles_service()
     return [
         RoleRead(

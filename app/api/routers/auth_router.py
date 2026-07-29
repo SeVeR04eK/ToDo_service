@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 
-from app.api.dependencies import db
 from app.schemas import TokensResponse, RefreshTokenGet
 from app.services import AuthService
 from app.core.exceptions import InvalidTokenError, UserNotFoundError, AuthenticationError
+from app.api.dependencies.services_dep import get_auth_service
 
 # Authentication router for login and token refresh
 auth_router = APIRouter(prefix = "/auth", tags = ["auth"])
@@ -16,12 +16,11 @@ async def authentication(
             OAuth2PasswordRequestForm,
             Depends()
         ],
-        session: db
+        service: AuthService = Depends(get_auth_service)
 ) -> TokensResponse:
     """**Authenticate** user with username/password and return JWT tokens."""
 
     try:
-        service = AuthService(session=session)
         tokens = await service.authentication_service(form_data.username, form_data.password)
         return TokensResponse(
             refresh_token=tokens.refresh_token,
@@ -32,11 +31,10 @@ async def authentication(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 @auth_router.post("/refresh", status_code=status.HTTP_200_OK, response_model = TokensResponse, summary="Access token refresh", response_description="Returns new access and refresh tokens (refresh token rotation enabled)")
-async def refresh(refresh_token_data: RefreshTokenGet, session: db) -> TokensResponse:
+async def refresh(refresh_token_data: RefreshTokenGet, service: AuthService = Depends(get_auth_service)) -> TokensResponse:
     """Refresh access token using a valid refresh token (_Refresh token rotation is enabled._)."""
 
     try:
-        service = AuthService(session=session)
         tokens = await service.refresh_service(refresh_token_data.refresh_token)
         return TokensResponse(
             refresh_token=tokens.refresh_token,

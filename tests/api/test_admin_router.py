@@ -1,9 +1,11 @@
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.factories import UserFactory, TaskFactory, RoleFactory
 from app.domain.enums import TaskStatus
+from app.security import create_access_token
+from app.main import app
 
 
 @pytest.mark.integration
@@ -109,10 +111,6 @@ class TestAdminRouter:
     @pytest.mark.asyncio
     async def test_delete_admin_user(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_admin_user):
         """Test that admin cannot delete another admin."""
-        from app.security import create_access_token
-        from httpx import ASGITransport
-        from app.main import app
-        
         admin2_role = await RoleFactory.create_in_db(db_session, name="admin2")
         admin2 = await UserFactory.create_in_db(db_session, username="admin2", role_id=admin2_role.id)
         

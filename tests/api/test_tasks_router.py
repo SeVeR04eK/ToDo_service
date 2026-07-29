@@ -1,10 +1,12 @@
 """Tests for Tasks Router API endpoints."""
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.factories import TaskFactory, UserFactory
 from app.domain.enums import TaskStatus
+from app.security import create_access_token
+from app.main import app
 
 
 @pytest.mark.integration
@@ -199,9 +201,6 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        from app.security import create_access_token
-        from httpx import ASGITransport
-        from app.main import app
         access_token = create_access_token(
             username=user2.username,
             user_id=user2.id,
@@ -265,9 +264,6 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        from app.security import create_access_token
-        from httpx import ASGITransport
-        from app.main import app
         access_token = create_access_token(
             username=user2.username,
             user_id=user2.id,
@@ -327,9 +323,6 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        from app.security import create_access_token
-        from httpx import ASGITransport
-        from app.main import app
         access_token = create_access_token(
             username=user2.username,
             user_id=user2.id,

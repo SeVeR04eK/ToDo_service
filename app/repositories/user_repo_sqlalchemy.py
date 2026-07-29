@@ -7,9 +7,10 @@ from app.domain.entities import User
 from app.domain.mappers import user_from_orm
 from app.schemas import UserCreate, UserUpdate
 from app.utils import hash_password
+from app.domain.interfaces import UserRepository
 
 
-class UserRepository:
+class SQLAlchemyUserRepository(UserRepository):
     """Repository for user-related database operations."""
 
     def __init__(self, session: AsyncSession):

@@ -3,9 +3,10 @@ from typing import Annotated
 
 from app.domain.entities import User
 from app.schemas import UserRead, UserCreate, UserUpdate, UserRole
-from app.api.dependencies import db, require_role
+from app.api.dependencies import require_role
 from app.services import UserService
 from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
+from app.api.dependencies.services_dep import get_user_service
 
 # User router for user profile management
 user_router = APIRouter(prefix = "/user", tags = ["user"])
@@ -13,12 +14,11 @@ user_router = APIRouter(prefix = "/user", tags = ["user"])
 @user_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = UserRead, summary="User registration")
 async def create_user(
         user: UserCreate,
-        session: db
+        service: UserService = Depends(get_user_service)
 ) -> UserRead:
     """Register a new user (_public endpoint, no authentication required_)."""
 
     try:
-        service = UserService(session=session)
         user = await service.create_user_service(user)
         return UserRead(
             id=user.id,
@@ -35,12 +35,11 @@ async def get_user(
             User,
             Depends(require_role("user", "admin"))
         ],
-        session: db
+        service: UserService = Depends(get_user_service)
 ) -> UserRead:
     """Get the **authenticated** user's profile."""
 
     try:
-        service = UserService(session=session)
         user = await service.get_user_service(user.id)
         return UserRead(
             id=user.id,
@@ -93,12 +92,11 @@ async def update_user(
                 }
             )
         ],
-    session: db
+    service: UserService = Depends(get_user_service)
 ) -> UserRead:
     """Update the **authenticated** user's profile (_partial update_)."""
 
     try:
-        service = UserService(session=session)
         user = await service.update_user_service(user_id=user.id, user_update=user_update)
         return UserRead(
             id=user.id,
@@ -117,12 +115,11 @@ async def delete_user(
                     User,
                     Depends(require_role("user", "admin"))
                 ],
-        session: db
+        service: UserService = Depends(get_user_service)
 ) -> None:
     """Delete the **authenticated** user's account."""
 
     try:
-        service = UserService(session=session)
         await service.delete_user_service(user.id)
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")

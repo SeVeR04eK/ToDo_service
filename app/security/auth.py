@@ -1,4 +1,3 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.security import OAuth2PasswordBearer
 from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError
@@ -6,7 +5,7 @@ from fastapi import HTTPException, status
 
 from app.domain.entities import User
 from app.core import settings
-from app.repositories import UserRepository, RefreshTokenRepository
+from app.domain.interfaces import UserRepository, RefreshTokenRepository
 from app.utils import verify_password
 
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/authentication")
@@ -15,10 +14,9 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl="/auth/authentication")
 async def authenticate_user(
         username: str,
         password: str,
-        session: AsyncSession
+        repository: UserRepository
 ) -> User:
 
-    repository = UserRepository(session)
     user = await repository.get_user_by_username(username)
 
     if user is None:
@@ -53,7 +51,7 @@ def create_access_token(
 async def create_refresh_token(
         username: str,
         user_id: int,
-        session: AsyncSession,
+        refresh_token_repository: RefreshTokenRepository,
         delta: timedelta = settings.refresh_token_expire_days
 ) -> str:
 
@@ -63,8 +61,7 @@ async def create_refresh_token(
 
     token = jwt.encode(payload, settings.secret_key.get_secret_value(), algorithm=settings.algorithm)
 
-    repository = RefreshTokenRepository(session)
-    await repository.create_refresh_token(user_id=user_id, token=token, expires=expires)
+    await refresh_token_repository.create_refresh_token(user_id=user_id, token=token, expires=expires)
 
     return token
 

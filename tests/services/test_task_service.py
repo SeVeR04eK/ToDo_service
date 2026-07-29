@@ -1,12 +1,13 @@
 """Tests for TaskService."""
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import AsyncMock
 
 from app.services.task_service import TaskService
-from app.schemas import TasksPagination
+from app.domain.interfaces import TaskRepository
+from app.domain.entities import Task
+from app.schemas import TasksPagination, TaskCreate, TaskUpdate
 from app.domain.enums import TaskStatus
 from app.core.exceptions import TaskNotFoundError
-from tests.factories import TaskFactory, UserFactory
 
 
 @pytest.mark.unit
@@ -15,255 +16,311 @@ class TestTaskService:
     """Test suite for TaskService."""
     
     @pytest.mark.asyncio
-    async def test_create_task_service_success(self, db_session: AsyncSession, test_user):
+    async def test_create_task_service_success(self):
         """Test successful task creation through service."""
-        service = TaskService(session=db_session)
-        task_data = TaskFactory.create_schema()
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_task = Task(id=1, title="Test Task", content="Test Content", status=TaskStatus.todo, user_id=1)
+        mock_repo.create_task.return_value = mock_task
         
-        task_read = await service.create_task_service(task_data, test_user.id)
+        service = TaskService(repository=mock_repo)
+        task_data = TaskCreate(title="Test Task", content="Test Content", status=TaskStatus.todo)
+        
+        task_read = await service.create_task_service(task_data, 1)
         
         assert task_read.id is not None
         assert task_read.title == task_data.title
         assert task_read.content == task_data.content
         assert task_read.status == task_data.status
-        assert task_read.user_id == test_user.id
+        assert task_read.user_id == 1
+        mock_repo.create_task.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_tasks_service_no_filters(self, db_session: AsyncSession, test_user):
+    async def test_get_tasks_service_no_filters(self):
         """Test getting all tasks through service without filters."""
-        service = TaskService(session=db_session)
-        await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_tasks = [
+            Task(id=i, title=f"Task {i}", content=f"Content {i}", status=TaskStatus.todo, user_id=1)
+            for i in range(5)
+        ]
+        mock_repo.get_tasks.return_value = mock_tasks
         
+        service = TaskService(repository=mock_repo)
         pagination = TasksPagination()
         tasks = await service.get_tasks_service(
-            user_id=test_user.id,
+            user_id=1,
             task_status=None,
             pagination=pagination
         )
         
         assert len(tasks) == 5
+        mock_repo.get_tasks.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_tasks_service_with_status_filter(self, db_session: AsyncSession, test_user):
+    async def test_get_tasks_service_with_status_filter(self):
         """Test getting tasks filtered by status through service."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_tasks = [Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)]
+        mock_repo.get_tasks_by_status.return_value = mock_tasks
         
-        await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
-        await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.in_progress)
-        await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.done)
-        
+        service = TaskService(repository=mock_repo)
         pagination = TasksPagination()
         todo_tasks = await service.get_tasks_service(
-            user_id=test_user.id,
+            user_id=1,
             task_status=TaskStatus.todo,
             pagination=pagination
         )
         
         assert len(todo_tasks) == 1
         assert todo_tasks[0].status == TaskStatus.todo
+        mock_repo.get_tasks_by_status.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_tasks_service_with_limit(self, db_session: AsyncSession, test_user):
+    async def test_get_tasks_service_with_limit(self):
         """Test getting tasks with limit through service."""
-        service = TaskService(session=db_session)
-        await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_tasks = [
+            Task(id=i, title=f"Task {i}", content=f"Content {i}", status=TaskStatus.todo, user_id=1)
+            for i in range(3)
+        ]
+        mock_repo.get_tasks.return_value = mock_tasks
         
+        service = TaskService(repository=mock_repo)
         pagination = TasksPagination(limit=3)
         tasks = await service.get_tasks_service(
-            user_id=test_user.id,
+            user_id=1,
             task_status=None,
             pagination=pagination
         )
         
         assert len(tasks) == 3
+        mock_repo.get_tasks.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_tasks_service_with_offset(self, db_session: AsyncSession, test_user):
+    async def test_get_tasks_service_with_offset(self):
         """Test getting tasks with offset through service."""
-        service = TaskService(session=db_session)
-        await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_tasks = [
+            Task(id=i, title=f"Task {i}", content=f"Content {i}", status=TaskStatus.todo, user_id=1)
+            for i in range(5)
+        ]
+        mock_repo.get_tasks.return_value = mock_tasks
         
+        service = TaskService(repository=mock_repo)
         pagination = TasksPagination(offset=5)
         tasks = await service.get_tasks_service(
-            user_id=test_user.id,
+            user_id=1,
             task_status=None,
             pagination=pagination
         )
         
         assert len(tasks) == 5
+        mock_repo.get_tasks.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_tasks_service_with_from_newest(self, db_session: AsyncSession, test_user):
+    async def test_get_tasks_service_with_from_newest(self):
         """Test getting tasks sorted by newest first through service."""
-        service = TaskService(session=db_session)
-        tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        # Mock returns tasks in reverse order (newest first)
+        mock_tasks = [
+            Task(id=4, title="Task 4", content="Content 4", status=TaskStatus.todo, user_id=1),
+            Task(id=3, title="Task 3", content="Content 3", status=TaskStatus.todo, user_id=1),
+            Task(id=2, title="Task 2", content="Content 2", status=TaskStatus.todo, user_id=1),
+            Task(id=1, title="Task 1", content="Content 1", status=TaskStatus.todo, user_id=1),
+            Task(id=0, title="Task 0", content="Content 0", status=TaskStatus.todo, user_id=1),
+        ]
+        mock_repo.get_tasks.return_value = mock_tasks
         
+        service = TaskService(repository=mock_repo)
         pagination = TasksPagination(from_newest=True)
         newest_tasks = await service.get_tasks_service(
-            user_id=test_user.id,
+            user_id=1,
             task_status=None,
             pagination=pagination
         )
         
-        assert newest_tasks[0].id == tasks[-1].id
-        assert newest_tasks[-1].id == tasks[0].id
+        assert newest_tasks[0].id == 4
+        assert newest_tasks[-1].id == 0
+        mock_repo.get_tasks.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_tasks_service_empty_result(self, db_session: AsyncSession, test_user):
+    async def test_get_tasks_service_empty_result(self):
         """Test getting tasks when user has no tasks."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_repo.get_tasks.return_value = []
         
+        service = TaskService(repository=mock_repo)
         pagination = TasksPagination()
         tasks = await service.get_tasks_service(
-            user_id=test_user.id,
+            user_id=1,
             task_status=None,
             pagination=pagination
         )
         
         assert tasks == []
+        mock_repo.get_tasks.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_get_task_service_success(self, db_session: AsyncSession, test_user):
+    async def test_get_task_service_success(self):
         """Test getting a specific task through service."""
-        service = TaskService(session=db_session)
-        created_task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_task = Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)
+        mock_repo.get_task.return_value = mock_task
         
-        task_read = await service.get_task_service(created_task.id, test_user.id)
+        service = TaskService(repository=mock_repo)
+        task_read = await service.get_task_service(1, 1)
         
-        assert task_read.id == created_task.id
-        assert task_read.title == created_task.title
-        assert task_read.content == created_task.content
+        assert task_read.id == 1
+        assert task_read.title == mock_task.title
+        assert task_read.content == mock_task.content
+        mock_repo.get_task.assert_called_once_with(task_id=1, user_id=1)
     
     @pytest.mark.asyncio
-    async def test_get_task_service_not_found(self, db_session: AsyncSession, test_user):
+    async def test_get_task_service_not_found(self):
         """Test getting a non-existent task raises TaskNotFoundError."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_repo.get_task.return_value = None
+        
+        service = TaskService(repository=mock_repo)
         
         with pytest.raises(TaskNotFoundError):
-            await service.get_task_service(99999, test_user.id)
+            await service.get_task_service(99999, 1)
     
     @pytest.mark.asyncio
-    async def test_get_task_service_user_isolation(self, db_session: AsyncSession):
+    async def test_get_task_service_user_isolation(self):
         """Test that users cannot access other users' tasks through service."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_repo.get_task.return_value = None
         
-        user1 = await UserFactory.create_in_db(db_session, username="user1")
-        user2 = await UserFactory.create_in_db(db_session, username="user2")
-        
-        task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
+        service = TaskService(repository=mock_repo)
         
         with pytest.raises(TaskNotFoundError):
-            await service.get_task_service(task.id, user2.id)
+            await service.get_task_service(1, 2)
     
     @pytest.mark.asyncio
-    async def test_update_task_service_success(self, db_session: AsyncSession, test_user):
+    async def test_update_task_service_success(self):
         """Test updating a task through service."""
-        service = TaskService(session=db_session)
-        task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_task = Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)
+        mock_repo.get_task.return_value = mock_task
         
-        update_data = TaskFactory.create_update_schema(
+        updated_task = Task(id=1, title="Updated Title", content="Updated Content", status=TaskStatus.done, user_id=1)
+        mock_repo.update_task.return_value = updated_task
+        
+        service = TaskService(repository=mock_repo)
+        update_data = TaskUpdate(
             title="Updated Title",
             content="Updated Content",
             status=TaskStatus.done
         )
         
-        updated_task = await service.update_task_service(task.id, test_user.id, update_data)
+        result = await service.update_task_service(1, 1, update_data)
         
-        assert updated_task.id == task.id
-        assert updated_task.title == "Updated Title"
-        assert updated_task.content == "Updated Content"
-        assert updated_task.status == TaskStatus.done
+        assert result.id == 1
+        assert result.title == "Updated Title"
+        assert result.content == "Updated Content"
+        assert result.status == TaskStatus.done
+        mock_repo.get_task.assert_called_once()
+        mock_repo.update_task.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_update_task_service_partial_update(self, db_session: AsyncSession, test_user):
+    async def test_update_task_service_partial_update(self):
         """Test partial task update through service."""
-        service = TaskService(session=db_session)
-        original_task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_task = Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)
+        mock_repo.get_task.return_value = mock_task
         
-        update_data = TaskFactory.create_update_schema(title="Updated Title Only")
+        updated_task = Task(id=1, title="Updated Title Only", content="Content", status=TaskStatus.todo, user_id=1)
+        mock_repo.update_task.return_value = updated_task
         
-        updated_task = await service.update_task_service(task_id=original_task.id, user_id=test_user.id, task_update=update_data)
+        service = TaskService(repository=mock_repo)
+        update_data = TaskUpdate(title="Updated Title Only")
         
-        assert updated_task.title == "Updated Title Only"
-        assert updated_task.content == original_task.content
-        assert updated_task.status == original_task.status
+        result = await service.update_task_service(task_id=1, user_id=1, task_update=update_data)
+        
+        assert result.title == "Updated Title Only"
+        assert result.content == mock_task.content
+        assert result.status == mock_task.status
+        mock_repo.get_task.assert_called_once()
+        mock_repo.update_task.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_update_task_service_not_found(self, db_session: AsyncSession, test_user):
+    async def test_update_task_service_not_found(self):
         """Test updating a non-existent task raises TaskNotFoundError."""
-        service = TaskService(session=db_session)
-        update_data = TaskFactory.create_update_schema()
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_repo.get_task.return_value = None
+        
+        service = TaskService(repository=mock_repo)
+        update_data = TaskUpdate(title="Updated")
         
         with pytest.raises(TaskNotFoundError):
-            await service.update_task_service(99999, test_user.id, update_data)
+            await service.update_task_service(99999, 1, update_data)
     
     @pytest.mark.asyncio
-    async def test_update_task_service_user_isolation(self, db_session: AsyncSession):
+    async def test_update_task_service_user_isolation(self):
         """Test that users cannot update other users' tasks through service."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_repo.get_task.return_value = None
         
-        user1 = await UserFactory.create_in_db(db_session, username="user1")
-        user2 = await UserFactory.create_in_db(db_session, username="user2")
-        
-        task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
-        update_data = TaskFactory.create_update_schema(title="Hacked Title")
+        service = TaskService(repository=mock_repo)
+        update_data = TaskUpdate(title="Hacked Title")
         
         with pytest.raises(TaskNotFoundError):
-            await service.update_task_service(task.id, user2.id, update_data)
+            await service.update_task_service(1, 2, update_data)
     
     @pytest.mark.asyncio
-    async def test_delete_task_service_success(self, db_session: AsyncSession, test_user):
+    async def test_delete_task_service_success(self):
         """Test deleting a task through service."""
-        service = TaskService(session=db_session)
-        task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_task = Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)
+        mock_repo.get_task.return_value = mock_task
+        mock_repo.delete_task.return_value = None
         
-        await service.delete_task_service(task.id, test_user.id)
+        service = TaskService(repository=mock_repo)
+        await service.delete_task_service(1, 1)
         
-        # Verify task is deleted
-        with pytest.raises(TaskNotFoundError):
-            await service.get_task_service(task.id, test_user.id)
+        mock_repo.get_task.assert_called_once()
+        mock_repo.delete_task.assert_called_once()
     
     @pytest.mark.asyncio
-    async def test_delete_task_service_not_found(self, db_session: AsyncSession, test_user):
+    async def test_delete_task_service_not_found(self):
         """Test deleting a non-existent task raises TaskNotFoundError."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_repo.get_task.return_value = None
+        
+        service = TaskService(repository=mock_repo)
         
         with pytest.raises(TaskNotFoundError):
-            await service.delete_task_service(99999, test_user.id)
+            await service.delete_task_service(99999, 1)
     
     @pytest.mark.asyncio
-    async def test_delete_task_service_user_isolation(self, db_session: AsyncSession):
+    async def test_delete_task_service_user_isolation(self):
         """Test that users cannot delete other users' tasks through service."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_repo.get_task.return_value = None
         
-        user1 = await UserFactory.create_in_db(db_session, username="user1")
-        user2 = await UserFactory.create_in_db(db_session, username="user2")
-        
-        task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
+        service = TaskService(repository=mock_repo)
         
         with pytest.raises(TaskNotFoundError):
-            await service.delete_task_service(task.id, user2.id)
-        
-        # Verify task still exists for user1
-        retrieved_task = await service.get_task_service(task.id, user1.id)
-        assert retrieved_task.id == task.id
+            await service.delete_task_service(1, 2)
     
     @pytest.mark.asyncio
-    async def test_get_tasks_service_with_status_and_pagination(self, db_session: AsyncSession, test_user):
+    async def test_get_tasks_service_with_status_and_pagination(self):
         """Test getting tasks with status filter and pagination."""
-        service = TaskService(session=db_session)
+        mock_repo = AsyncMock(spec=TaskRepository)
+        mock_tasks = [
+            Task(id=i, title=f"Task {i}", content=f"Content {i}", status=TaskStatus.in_progress, user_id=1)
+            for i in range(2)
+        ]
+        mock_repo.get_tasks_by_status.return_value = mock_tasks
         
-        for _ in range(3):
-            await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
-        for _ in range(5):
-            await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.in_progress)
-        
+        service = TaskService(repository=mock_repo)
         pagination = TasksPagination(limit=2, offset=1)
         tasks = await service.get_tasks_service(
-            user_id=test_user.id,
+            user_id=1,
             task_status=TaskStatus.in_progress,
             pagination=pagination
         )
         
         assert len(tasks) == 2
         assert all(task.status == TaskStatus.in_progress for task in tasks)
+        mock_repo.get_tasks_by_status.assert_called_once()

@@ -1,8 +1,8 @@
-"""Tests for TaskRepository."""
+"""Tests for SQLAlchemyTaskRepository."""
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.task_repo import TaskRepository
+from app.repositories import SQLAlchemyTaskRepository
 from app.schemas import TaskCreate, TaskUpdate, TasksPagination
 from app.domain.enums import TaskStatus
 from tests.factories import TaskFactory, UserFactory
@@ -11,12 +11,12 @@ from tests.factories import TaskFactory, UserFactory
 @pytest.mark.unit
 @pytest.mark.tasks
 class TestTaskRepository:
-    """Test suite for TaskRepository."""
+    """Test suite for SQLAlchemyTaskRepository."""
     
     @pytest.mark.asyncio
     async def test_create_task_success(self, db_session: AsyncSession, test_user):
         """Test successful task creation."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         task_data = TaskFactory.create_schema()
         
         task = await repo.create_task(task_data, test_user.id)
@@ -30,7 +30,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_create_task_with_default_status(self, db_session: AsyncSession, test_user):
         """Test task creation with default status."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         task_data = TaskCreate(
             title="Test Task",
             content="Test content"
@@ -43,7 +43,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_no_filters(self, db_session: AsyncSession, test_user):
         """Test getting all tasks without filters."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
         pagination = TasksPagination()
@@ -54,7 +54,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_with_limit(self, db_session: AsyncSession, test_user):
         """Test getting tasks with limit."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
         pagination = TasksPagination(limit=3)
@@ -65,7 +65,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_with_offset(self, db_session: AsyncSession, test_user):
         """Test getting tasks with offset."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
         pagination = TasksPagination(offset=5)
@@ -76,7 +76,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_with_limit_and_offset(self, db_session: AsyncSession, test_user):
         """Test getting tasks with both limit and offset."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
         pagination = TasksPagination(limit=3, offset=2)
@@ -87,7 +87,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_ascending_order(self, db_session: AsyncSession, test_user):
         """Test getting tasks in ascending order (default)."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
         pagination = TasksPagination(from_newest=False)
@@ -99,7 +99,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_descending_order(self, db_session: AsyncSession, test_user):
         """Test getting tasks in descending order (newest first)."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
         pagination = TasksPagination(from_newest=True)
@@ -111,7 +111,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_user_isolation(self, db_session: AsyncSession):
         """Test that users can only see their own tasks."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         
         user1 = await UserFactory.create_in_db(db_session, username="user1")
         user2 = await UserFactory.create_in_db(db_session, username="user2")
@@ -131,7 +131,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_by_status(self, db_session: AsyncSession, test_user):
         """Test getting tasks filtered by status."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.in_progress)
@@ -153,7 +153,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_tasks_by_status_with_pagination(self, db_session: AsyncSession, test_user):
         """Test getting tasks by status with pagination."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         
         for _ in range(5):
             await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
@@ -166,7 +166,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_task_by_id_success(self, db_session: AsyncSession, test_user):
         """Test getting a specific task by ID."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         created_task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
         retrieved_task = await repo.get_task(created_task.id, test_user.id)
@@ -178,7 +178,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_task_by_id_not_found(self, db_session: AsyncSession, test_user):
         """Test getting a non-existent task returns None."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         
         task = await repo.get_task(99999, test_user.id)
         
@@ -187,7 +187,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_get_task_user_isolation(self, db_session: AsyncSession):
         """Test that users cannot access other users' tasks."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         
         user1 = await UserFactory.create_in_db(db_session, username="user1")
         user2 = await UserFactory.create_in_db(db_session, username="user2")
@@ -202,7 +202,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_update_task_all_fields(self, db_session: AsyncSession, test_user):
         """Test updating all task fields."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
         update_data = TaskUpdate(
@@ -220,7 +220,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_update_task_partial_fields(self, db_session: AsyncSession, test_user):
         """Test updating only some task fields."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         original_task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
         update_data = TaskUpdate(title="Updated Title Only")
@@ -234,7 +234,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_update_task_no_changes(self, db_session: AsyncSession, test_user):
         """Test updating task with no changes."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
         update_data = TaskUpdate()
@@ -248,7 +248,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_delete_task_success(self, db_session: AsyncSession, test_user):
         """Test successful task deletion."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
         await repo.delete_task(task.id, test_user.id)
@@ -259,7 +259,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_delete_task_user_isolation(self, db_session: AsyncSession):
         """Test that users cannot delete other users' tasks."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         
         user1 = await UserFactory.create_in_db(db_session, username="user1")
         user2 = await UserFactory.create_in_db(db_session, username="user2")
@@ -276,7 +276,7 @@ class TestTaskRepository:
     @pytest.mark.asyncio
     async def test_delete_nonexistent_task(self, db_session: AsyncSession, test_user):
         """Test deleting a non-existent task (should not raise error)."""
-        repo = TaskRepository(db_session)
+        repo = SQLAlchemyTaskRepository(db_session)
         
         # Should not raise an error
         await repo.delete_task(99999, test_user.id)

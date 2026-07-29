@@ -1,17 +1,16 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 
 from app.schemas import TaskCreate, TaskUpdate, TasksPagination
 from app.domain.enums import TaskStatus
-from app.repositories import TaskRepository
 from app.core.exceptions import TaskNotFoundError
 from app.domain.entities import Task
+from app.domain.interfaces import TaskRepository
 
 class TaskService:
     """Service layer for task-related business logic."""
 
-    def __init__(self, session: AsyncSession):
-        self.repository = TaskRepository(session)
+    def __init__(self, repository: TaskRepository):
+        self.repository = repository
 
     async def create_task_service(self, task: TaskCreate, user_id: int) -> Task:
         return await self.repository.create_task(task=task, user_id=user_id)

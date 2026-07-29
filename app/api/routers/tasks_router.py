@@ -4,9 +4,10 @@ from typing import Annotated, Optional, List
 from app.domain.entities import User
 from app.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination
 from app.domain.enums import TaskStatus
-from app.api.dependencies import db, require_role, tasks_pagination
+from app.api.dependencies import require_role, tasks_pagination
 from app.services import TaskService
 from app.core.exceptions import TaskNotFoundError
+from app.api.dependencies.services_dep import get_task_service
 
 
 # Tasks router for task management (accessible by users and admins)
@@ -19,11 +20,10 @@ async def create_task(
             Depends(require_role("user", "admin"))
         ],
         task: TaskCreate,
-        session: db
+        service: TaskService = Depends(get_task_service)
 ) -> TaskRead:
     """Create a new task for the **authenticated** user."""
 
-    service = TaskService(session=session)
     task = await service.create_task_service(task, user.id)
     return TaskRead(
         id=task.id,
@@ -39,7 +39,7 @@ async def get_tasks(
                     User,
                     Depends(require_role("user", "admin"))
                 ],
-        session: db,
+        service: TaskService = Depends(get_task_service),
         task_status: Annotated[
             Optional[TaskStatus],
             Query(title="Task Status")
@@ -53,7 +53,6 @@ async def get_tasks(
     - **from_newest**: Boolean to sort tasks from the newest first
     """
 
-    service = TaskService(session=session)
     tasks = await service.get_tasks_service(
         user_id=user.id,
         task_status=task_status,
@@ -77,12 +76,11 @@ async def get_task(
                     Depends(require_role("user", "admin"))
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
-        session: db
+        service: TaskService = Depends(get_task_service)
 ) -> TaskRead:
     """Get a specific task by ID for the **authenticated** user."""
 
     try:
-        service = TaskService(session=session)
         task = await service.get_task_service(task_id=task_id, user_id=user.id)
         return TaskRead(
             id=task.id,
@@ -151,12 +149,11 @@ async def update_task(
                 }
             )
         ],
-        session: db
+        service: TaskService = Depends(get_task_service)
 ) -> TaskRead:
     """Update a specific task by ID for the **authenticated** user (_partial update_)."""
 
     try:
-        service = TaskService(session=session)
         task = await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_update)
         return TaskRead(
             id=task.id,
@@ -175,12 +172,11 @@ async def delete_task(
                     Depends(require_role("user", "admin"))
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
-        session: db
+        service: TaskService = Depends(get_task_service)
 ) -> None:
     """Delete a specific task by ID for the **authenticated** user."""
 
     try:
-        service = TaskService(session=session)
         await service.delete_task_service(task_id=task_id, user_id=user.id)
     except TaskNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")

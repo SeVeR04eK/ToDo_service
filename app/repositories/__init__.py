@@ -1,6 +1,7 @@
-from .user_repo import UserRepository
-from .refresh_token_repo import RefreshTokenRepository
-from .task_repo import TaskRepository
-from .admin_repo import AdminRepository
+from .user_repo_sqlalchemy import SQLAlchemyUserRepository
+from .refresh_token_repo_sqlalchemy import SQLAlchemyRefreshTokenRepository
+from .task_repo_sqlalchemy import SQLAlchemyTaskRepository
+from .admin_repo_sqlalchemy import SQLAlchemyAdminRepository
 
-__all__ = ["UserRepository", "RefreshTokenRepository", "TaskRepository", "AdminRepository"]
+__all__ = ["SQLAlchemyUserRepository", "SQLAlchemyRefreshTokenRepository", "SQLAlchemyTaskRepository",
+           "SQLAlchemyAdminRepository"]

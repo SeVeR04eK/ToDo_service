@@ -1,15 +1,13 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.schemas import UserCreate, UserUpdate
-from app.repositories import UserRepository
+from app.domain.interfaces import UserRepository
 from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 from app.domain.entities import User
 
 
 class UserService:
 
-    def __init__(self, session: AsyncSession):
-        self.repository = UserRepository(session)
+    def __init__(self, repository: UserRepository):
+        self.repository = repository
 
     async def create_user_service(self, user: UserCreate) -> User:
 

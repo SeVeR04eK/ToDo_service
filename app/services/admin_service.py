@@ -1,22 +1,19 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional, Union
 
-from app.repositories import AdminRepository, UserRepository
 from app.schemas import RoleCreate, OnlyUserPermission, TaskUpdate, TasksPagination
 from app.domain.enums import TaskStatus
-from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError
-from app.services import TaskService
+from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
 from app.domain.entities import User, Role, Task
+from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
 
 
 class AdminService:
     """Service layer for admin-specific business logic."""
 
-    def __init__(self, session: AsyncSession):
-        self.admin_repository = AdminRepository(session)
-        self.user_repository = UserRepository(session)
-        self.session = session
-        self.task_service = TaskService(session)
+    def __init__(self, user_repository: UserRepository, admin_repository: AdminRepository, task_repository: TaskRepository):
+        self.user_repository = user_repository
+        self.admin_repository = admin_repository
+        self.task_repository = task_repository
 
     async def get_users_service(
             self,
@@ -114,7 +111,18 @@ class AdminService:
         if target_user.role and target_user.role.name == "admin":
             raise PermissionDeniedError("Not enough permissions")
 
-        return await self.task_service.get_tasks_service(user_id=user_id, task_status=task_status, pagination=pagination)
+        # Route to appropriate repository method based on whether status filter is provided
+        if task_status is not None:
+            return await self.task_repository.get_tasks_by_status(
+                user_id=user_id,
+                task_status=task_status,
+                pagination=pagination
+            )
+        else:
+            return await self.task_repository.get_tasks(
+                user_id=user_id,
+                pagination=pagination
+            )
 
     async def get_task_service(self, task_id: int, user_id: int) -> Task:
         """Get a single task for a user with admin protection."""
@@ -128,7 +136,11 @@ class AdminService:
         if target_user.role and target_user.role.name == "admin":
             raise PermissionDeniedError("Not enough permissions")
 
-        return await self.task_service.get_task_service(task_id=task_id, user_id=user_id)
+        task = await self.task_repository.get_task(task_id=task_id, user_id=user_id)
+        if task is None:
+            raise TaskNotFoundError("Task not found")
+
+        return task
 
     async def update_task_service(self, task_id: int, user_id: int, task_update: TaskUpdate) -> Task:
         """Update a task for a user with admin protection."""
@@ -142,7 +154,11 @@ class AdminService:
         if target_user.role and target_user.role.name == "admin":
             raise PermissionDeniedError("Not enough permissions")
 
-        return await self.task_service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_update)
+        task = await self.task_repository.get_task(task_id=task_id, user_id=user_id)
+        if task is None:
+            raise TaskNotFoundError("Task not found")
+
+        return await self.task_repository.update_task(task=task, task_update=task_update)
 
     async def delete_task_service(self, task_id: int, user_id: int) -> None:
         """Delete a task for a user with admin protection."""
@@ -156,5 +172,9 @@ class AdminService:
         if target_user.role and target_user.role.name == "admin":
             raise PermissionDeniedError("Not enough permissions")
 
-        await self.task_service.delete_task_service(task_id=task_id, user_id=user_id)
+        task = await self.task_repository.get_task(task_id=task_id, user_id=user_id)
+        if task is None:
+            raise TaskNotFoundError("Task not found")
+
+        await self.task_repository.delete_task(task_id=task_id, user_id=user_id)
 

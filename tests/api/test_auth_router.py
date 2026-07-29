@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.security import create_access_token, create_refresh_token
 from tests.factories import UserFactory
+from app.domain.interfaces import RefreshTokenRepository
+from app.repositories import SQLAlchemyRefreshTokenRepository
 
 
 @pytest.mark.integration
@@ -83,10 +85,12 @@ class TestAuthRouter:
     @pytest.mark.asyncio
     async def test_refresh_token_success(self, client: AsyncClient, db_session: AsyncSession, test_user):
         """Test successful token refresh."""
+        
+        refresh_token_repo: RefreshTokenRepository = SQLAlchemyRefreshTokenRepository(db_session)
         refresh_token = await create_refresh_token(
             username=test_user.username,
             user_id=test_user.id,
-            session=db_session
+            refresh_token_repository=refresh_token_repo
         )
         
         response = await client.post(

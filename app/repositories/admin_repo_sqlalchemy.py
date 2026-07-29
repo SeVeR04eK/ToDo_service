@@ -7,9 +7,10 @@ from app.models import User as UserORM, Role as RoleORM
 from app.domain.entities import User, Role
 from app.domain.mappers import user_from_orm, role_from_orm
 from app.schemas import OnlyUserPermission, RoleCreate
+from app.domain.interfaces import AdminRepository
 
 
-class AdminRepository:
+class SQLAlchemyAdminRepository(AdminRepository):
     """Repository for admin-specific database operations."""
 
     def __init__(self, session: AsyncSession):

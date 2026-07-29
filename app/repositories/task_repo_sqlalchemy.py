@@ -7,9 +7,10 @@ from app.domain.enums import TaskStatus
 from app.models import Task as TaskORM
 from app.domain.entities import Task
 from app.domain.mappers import task_from_orm
+from app.domain.interfaces import TaskRepository
 
 
-class TaskRepository:
+class SQLAlchemyTaskRepository(TaskRepository):
     """Repository for task-related database operations."""
 
     def __init__(self, session: AsyncSession):
