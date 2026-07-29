@@ -3,7 +3,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.task_service import TaskService
-from app.schemas import TaskStatus, TasksPagination
+from app.schemas import TasksPagination
+from app.domain.enums import TaskStatus
 from app.core.exceptions import TaskNotFoundError
 from tests.factories import TaskFactory, UserFactory
 
@@ -21,11 +22,11 @@ class TestTaskService:
         
         task_read = await service.create_task_service(task_data, test_user.id)
         
-        assert task_read["id"] is not None
-        assert task_read["title"] == task_data.title
-        assert task_read["content"] == task_data.content
-        assert task_read["status"] == task_data.status
-        assert task_read["user_id"] == test_user.id
+        assert task_read.id is not None
+        assert task_read.title == task_data.title
+        assert task_read.content == task_data.content
+        assert task_read.status == task_data.status
+        assert task_read.user_id == test_user.id
     
     @pytest.mark.asyncio
     async def test_get_tasks_service_no_filters(self, db_session: AsyncSession, test_user):
@@ -59,7 +60,7 @@ class TestTaskService:
         )
         
         assert len(todo_tasks) == 1
-        assert todo_tasks[0]["status"] == TaskStatus.todo
+        assert todo_tasks[0].status == TaskStatus.todo
     
     @pytest.mark.asyncio
     async def test_get_tasks_service_with_limit(self, db_session: AsyncSession, test_user):
@@ -104,8 +105,8 @@ class TestTaskService:
             pagination=pagination
         )
         
-        assert newest_tasks[0]["id"] == tasks[-1].id
-        assert newest_tasks[-1]["id"] == tasks[0].id
+        assert newest_tasks[0].id == tasks[-1].id
+        assert newest_tasks[-1].id == tasks[0].id
     
     @pytest.mark.asyncio
     async def test_get_tasks_service_empty_result(self, db_session: AsyncSession, test_user):
@@ -129,9 +130,9 @@ class TestTaskService:
         
         task_read = await service.get_task_service(created_task.id, test_user.id)
         
-        assert task_read["id"] == created_task.id
-        assert task_read["title"] == created_task.title
-        assert task_read["content"] == created_task.content
+        assert task_read.id == created_task.id
+        assert task_read.title == created_task.title
+        assert task_read.content == created_task.content
     
     @pytest.mark.asyncio
     async def test_get_task_service_not_found(self, db_session: AsyncSession, test_user):
@@ -168,10 +169,10 @@ class TestTaskService:
         
         updated_task = await service.update_task_service(task.id, test_user.id, update_data)
         
-        assert updated_task["id"] == task.id
-        assert updated_task["title"] == "Updated Title"
-        assert updated_task["content"] == "Updated Content"
-        assert updated_task["status"] == TaskStatus.done
+        assert updated_task.id == task.id
+        assert updated_task.title == "Updated Title"
+        assert updated_task.content == "Updated Content"
+        assert updated_task.status == TaskStatus.done
     
     @pytest.mark.asyncio
     async def test_update_task_service_partial_update(self, db_session: AsyncSession, test_user):
@@ -183,9 +184,9 @@ class TestTaskService:
         
         updated_task = await service.update_task_service(task_id=original_task.id, user_id=test_user.id, task_update=update_data)
         
-        assert updated_task["title"] == "Updated Title Only"
-        assert updated_task["content"] == original_task.content
-        assert updated_task["status"] == original_task.status
+        assert updated_task.title == "Updated Title Only"
+        assert updated_task.content == original_task.content
+        assert updated_task.status == original_task.status
     
     @pytest.mark.asyncio
     async def test_update_task_service_not_found(self, db_session: AsyncSession, test_user):
@@ -245,7 +246,7 @@ class TestTaskService:
         
         # Verify task still exists for user1
         retrieved_task = await service.get_task_service(task.id, user1.id)
-        assert retrieved_task["id"] == task.id
+        assert retrieved_task.id == task.id
     
     @pytest.mark.asyncio
     async def test_get_tasks_service_with_status_and_pagination(self, db_session: AsyncSession, test_user):
@@ -265,4 +266,4 @@ class TestTaskService:
         )
         
         assert len(tasks) == 2
-        assert all(task["status"] == TaskStatus.in_progress for task in tasks)
+        assert all(task.status == TaskStatus.in_progress for task in tasks)

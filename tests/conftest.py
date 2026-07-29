@@ -5,15 +5,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.pool import StaticPool
 from httpx import AsyncClient, ASGITransport
 from faker import Faker
+from sqlalchemy import select
 
 from app.main import app
 from app.models import Base
-from app.models.users_model import User
-from app.models.roles_model import Role
-from app.models.tasks_model import Task
+from app.models.users_model import User as UserORM
+from app.models.roles_model import Role as RoleORM
+from app.models.tasks_model import Task as TaskORM
 from app.security import create_access_token
 from app.utils import hash_password
-from app.schemas import TaskStatus
+from app.domain.enums import TaskStatus
 
 # Test database URL (SQLite for testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -67,8 +68,8 @@ async def client(db_session: AsyncSession) -> AsyncGenerator:
     app.dependency_overrides[get_session] = override_get_session
 
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test"
+            transport=ASGITransport(app=app),
+            base_url="http://test"
     ) as ac:
         yield ac
 
@@ -82,9 +83,9 @@ def faker() -> Faker:
 
 
 @pytest.fixture
-async def test_role(db_session: AsyncSession) -> Role:
+async def test_role(db_session: AsyncSession) -> RoleORM:
     """Create a test role."""
-    role = Role(name="user")
+    role = RoleORM(name="user")
     db_session.add(role)
     await db_session.commit()
     await db_session.refresh(role)
@@ -92,9 +93,9 @@ async def test_role(db_session: AsyncSession) -> Role:
 
 
 @pytest.fixture
-async def test_admin_role(db_session: AsyncSession) -> Role:
+async def test_admin_role(db_session: AsyncSession) -> RoleORM:
     """Create a test admin role."""
-    role = Role(name="admin")
+    role = RoleORM(name="admin")
     db_session.add(role)
     await db_session.commit()
     await db_session.refresh(role)
@@ -102,9 +103,9 @@ async def test_admin_role(db_session: AsyncSession) -> Role:
 
 
 @pytest.fixture
-async def test_user(db_session: AsyncSession, test_role: Role) -> User:
+async def test_user(db_session: AsyncSession, test_role: RoleORM) -> UserORM:
     """Create a test user."""
-    user = User(
+    user = UserORM(
         username=fake.user_name(),
         hashed_password=hash_password("TestPassword123!"),
         is_active=True,
@@ -112,14 +113,14 @@ async def test_user(db_session: AsyncSession, test_role: Role) -> User:
     )
     db_session.add(user)
     await db_session.commit()
-    await db_session.refresh(user)
+    await db_session.refresh(user, ["role"])
     return user
 
 
 @pytest.fixture
-async def test_admin_user(db_session: AsyncSession, test_admin_role: Role) -> User:
+async def test_admin_user(db_session: AsyncSession, test_admin_role: RoleORM) -> UserORM:
     """Create a test admin user."""
-    user = User(
+    user = UserORM(
         username=fake.user_name(),
         hashed_password=hash_password("AdminPassword123!"),
         is_active=True,
@@ -127,14 +128,14 @@ async def test_admin_user(db_session: AsyncSession, test_admin_role: Role) -> Us
     )
     db_session.add(user)
     await db_session.commit()
-    await db_session.refresh(user)
+    await db_session.refresh(user, ["role"])
     return user
 
 
 @pytest.fixture
-async def test_task(db_session: AsyncSession, test_user: User) -> Task:
+async def test_task(db_session: AsyncSession, test_user: UserORM) -> TaskORM:
     """Create a test task."""
-    task = Task(
+    task = TaskORM(
         title=fake.sentence(nb_words=5),
         content=fake.paragraph(nb_sentences=3),
         status=TaskStatus.todo,
@@ -147,13 +148,13 @@ async def test_task(db_session: AsyncSession, test_user: User) -> Task:
 
 
 @pytest.fixture
-async def multiple_tasks(db_session: AsyncSession, test_user: User) -> list[Task]:
+async def multiple_tasks(db_session: AsyncSession, test_user: UserORM) -> list[TaskORM]:
     """Create multiple test tasks."""
     tasks = []
     statuses = [TaskStatus.todo, TaskStatus.in_progress, TaskStatus.done]
-    
+
     for i in range(10):
-        task = Task(
+        task = TaskORM(
             title=fake.sentence(nb_words=5),
             content=fake.paragraph(nb_sentences=3),
             status=statuses[i % 3],
@@ -161,11 +162,11 @@ async def multiple_tasks(db_session: AsyncSession, test_user: User) -> list[Task
         )
         db_session.add(task)
         tasks.append(task)
-    
+
     await db_session.commit()
     for task in tasks:
         await db_session.refresh(task)
-    
+
     return tasks
 
 
@@ -190,23 +191,33 @@ def task_update_data(faker: Faker) -> dict:
 
 
 @pytest.fixture
-def auth_headers(test_user: User) -> dict:
+async def auth_headers(test_user: UserORM, db_session: AsyncSession) -> dict:
     """Provide authentication headers for a test user."""
+
+    # Get role name from database
+    result = await db_session.execute(select(RoleORM.name).where(RoleORM.id == test_user.role_id))
+    role_name = result.scalar_one_or_none() or "user"
+
     access_token = create_access_token(
         username=test_user.username,
         user_id=test_user.id,
-        role=test_user.role.name
+        role=role_name
     )
     return {"Authorization": f"Bearer {access_token}"}
 
 
 @pytest.fixture
-def admin_auth_headers(test_admin_user: User) -> dict:
+async def admin_auth_headers(test_admin_user: UserORM, db_session: AsyncSession) -> dict:
     """Provide authentication headers for a test admin user."""
+
+    # Get role name from database
+    result = await db_session.execute(select(RoleORM.name).where(RoleORM.id == test_admin_user.role_id))
+    role_name = result.scalar_one_or_none() or "admin"
+
     access_token = create_access_token(
         username=test_admin_user.username,
         user_id=test_admin_user.id,
-        role=test_admin_user.role.name
+        role=role_name
     )
     return {"Authorization": f"Bearer {access_token}"}
 

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, status, Depends, Path, Query, HTTPException
-from typing import Annotated, Optional
+from fastapi import APIRouter, status, Depends, Path, Query, HTTPException, Body
+from typing import Annotated, Optional, List
 
-from app.models import User
-from app.schemas import TaskCreate, TaskRead, TaskUpdate, TaskStatus, TasksPagination
+from app.domain.entities import User
+from app.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination
+from app.domain.enums import TaskStatus
 from app.api.dependencies import db, require_role, tasks_pagination
 from app.services import TaskService
 from app.core.exceptions import TaskNotFoundError
@@ -23,10 +24,16 @@ async def create_task(
     """Create a new task for the **authenticated** user."""
 
     service = TaskService(session=session)
+    task = await service.create_task_service(task, user.id)
+    return TaskRead(
+        id=task.id,
+        title=task.title,
+        content=task.content,
+        status=task.status,
+        user_id=task.user_id
+    )
 
-    return TaskRead.model_validate(await service.create_task_service(task, user.id))
-
-@tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=list[TaskRead], summary="Get all user's tasks")
+@tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=List[TaskRead], summary="Get all user's tasks")
 async def get_tasks(
         user: Annotated[
                     User,
@@ -38,7 +45,7 @@ async def get_tasks(
             Query(title="Task Status")
         ] = None,
         pagination: TasksPagination = Depends(tasks_pagination)
-    ) -> list[TaskRead]:
+    ) -> List[TaskRead]:
     """Get all tasks for the **authenticated** user with optional _filtering_ and _pagination_:
     - **task_status**: Optional task status filter
     - **limit**: Number of tasks to return
@@ -47,12 +54,21 @@ async def get_tasks(
     """
 
     service = TaskService(session=session)
-
-    return [TaskRead.model_validate(task) for task in await service.get_tasks_service(
+    tasks = await service.get_tasks_service(
         user_id=user.id,
         task_status=task_status,
         pagination=pagination
-    )]
+    )
+    return [
+        TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
+        for task in tasks
+    ]
 
 @tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Get specific task")
 async def get_task(
@@ -67,7 +83,14 @@ async def get_task(
 
     try:
         service = TaskService(session=session)
-        return TaskRead.model_validate(await service.get_task_service(task_id=task_id, user_id=user.id))
+        task = await service.get_task_service(task_id=task_id, user_id=user.id)
+        return TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     except TaskNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
@@ -78,14 +101,70 @@ async def update_task(
                     Depends(require_role("user", "admin"))
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
-        task_update: TaskUpdate,
+        task_update: Annotated[
+            TaskUpdate,
+            Body(
+                openapi_examples={
+                    "full": {
+                        "summary": "Update user task with all fields.",
+                        "description": "Update user task with all fields: title, content, status",
+                        "value": {
+                            "title": "example new title",
+                            "content": "example new content ",
+                            "status": "done"
+                        }
+                    },
+                    "partial_title": {
+                        "summary": "Update user task with only the provided title.",
+                        "description": "Update user task with only the provided field: title",
+                        "value": {
+                            "title": "example new title"
+                        }
+                    },
+                    "partial_сontent": {
+                        "summary": "Update user task with only the provided content.",
+                        "description": "Update user task with only the provided field: content",
+                        "value": {
+                            "content": "example new content "
+                        }
+                    },
+                    "partial_status": {
+                        "summary": "Update user task with only the provided status.",
+                        "description": "Update user task with only the provided field: status",
+                        "value": {
+                            "status": "done"
+                        }
+                    },
+                    "partial_two_fields": {
+                        "summary": "Update user task with only provided two fields.",
+                        "description": "Update user task with only the provided field: title, status",
+                        "value": {
+                            "title": "example new title",
+                            "status": "done"
+                        }
+                    },
+                    "no_changes": {
+                        "summary": "No fields provided",
+                        "description": "PATCH request with no fields. Nothing will be updated.",
+                        "value": {}
+                    }
+                }
+            )
+        ],
         session: db
 ) -> TaskRead:
     """Update a specific task by ID for the **authenticated** user (_partial update_)."""
 
     try:
         service = TaskService(session=session)
-        return TaskRead.model_validate(await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_update))
+        task = await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_update)
+        return TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     except TaskNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 

@@ -3,8 +3,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas import TaskStatus
 from tests.factories import TaskFactory, UserFactory
+from app.domain.enums import TaskStatus
 
 
 @pytest.mark.integration

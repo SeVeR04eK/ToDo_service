@@ -10,4 +10,15 @@ class TokensBase(BaseModel):
 
 class TokensResponse(TokensBase):
     """Schema for token response after authentication or refresh."""
-    pass
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "refresh_token": "example.refresh.token",
+                    "access_token": "example.access.token",
+                    "token_type": "bearer"
+                }
+            ]
+        }
+    }

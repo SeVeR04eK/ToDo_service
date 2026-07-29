@@ -1,8 +1,8 @@
-from fastapi import APIRouter, status, Depends, HTTPException
+from fastapi import APIRouter, status, Depends, HTTPException, Body
 from typing import Annotated
 
-from app.models import User
-from app.schemas import UserRead, UserCreate, UserUpdate
+from app.domain.entities import User
+from app.schemas import UserRead, UserCreate, UserUpdate, UserRole
 from app.api.dependencies import db, require_role
 from app.services import UserService
 from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
@@ -19,7 +19,13 @@ async def create_user(
 
     try:
         service = UserService(session=session)
-        return UserRead.model_validate(await service.create_user_service(user))
+        user = await service.create_user_service(user)
+        return UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=UserRole(name=user.role.name) if user.role else None
+        )
     except UsernameAlreadyExistsError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
 
@@ -35,7 +41,13 @@ async def get_user(
 
     try:
         service = UserService(session=session)
-        return UserRead.model_validate(await service.get_user_service(user.id))
+        user = await service.get_user_service(user.id)
+        return UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=UserRole(name=user.role.name) if user.role else None
+        )
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -45,16 +57,59 @@ async def update_user(
             User,
             Depends(require_role("user", "admin"))
         ],
-        user_update: UserUpdate,
-        session: db
+        user_update: Annotated[
+            UserUpdate,
+            Body(
+                openapi_examples={
+                    "full": {
+                        "summary": "Update user profile with all fields.",
+                        "description": "Update user profile with all fields: username, password, password_confirm",
+                        "value": {
+                            "username": "user",
+                            "password": "user12345",
+                            "password_confirm": "user12345"
+                        }
+                    },
+                    "partial_username": {
+                        "summary": "Update user profile with only the provided username.",
+                        "description": "Update user profile with only the provided field: username",
+                        "value": {
+                            "username": "user"
+                        }
+                    },
+                    "partial_password": {
+                        "summary": "Update user profile with only the provided password.",
+                        "description": "Update user profile with only the provided fields: password and password_confirm",
+                        "value": {
+                            "password": "user12345",
+                            "password_confirm": "user12345"
+                        }
+                    },
+                    "no_changes": {
+                        "summary": "No fields provided",
+                        "description": "PATCH request with no fields. Nothing will be updated.",
+                        "value": {}
+                    }
+                }
+            )
+        ],
+    session: db
 ) -> UserRead:
     """Update the **authenticated** user's profile (_partial update_)."""
 
     try:
         service = UserService(session=session)
-        return UserRead.model_validate(await service.update_user_service(user_id=user.id, user_update=user_update))
+        user = await service.update_user_service(user_id=user.id, user_update=user_update)
+        return UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=UserRole(name=user.role.name) if user.role else None
+        )
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    except UsernameAlreadyExistsError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
 
 @user_router.delete("/me", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user account")
 async def delete_user(

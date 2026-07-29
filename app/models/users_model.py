@@ -15,4 +15,4 @@ class User(Base):
 
     # Foreign key to roles table with default value of 1 (typically 'user' role)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False, server_default="1")
-    role: Mapped["Role"] = relationship(back_populates="users")
+    role: Mapped["Role"] = relationship(back_populates="users", lazy="raise")

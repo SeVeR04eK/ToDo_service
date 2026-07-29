@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.users_model import User
 from app.models.roles_model import Role
 from app.models.tasks_model import Task
-from app.schemas import TaskCreate, TaskUpdate, TaskStatus
+from app.schemas import TaskCreate, TaskUpdate
+from app.domain.enums import TaskStatus
 from app.utils import hash_password
 
 
@@ -63,7 +64,7 @@ class UserFactory:
         user = UserFactory.create(username, password, is_active, role_id)
         session.add(user)
         await session.commit()
-        await session.refresh(user)
+        await session.refresh(user, ["role"])
         return user
 
 

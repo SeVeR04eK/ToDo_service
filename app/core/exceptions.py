@@ -35,6 +35,11 @@ class RoleNotFoundError(DomainException):
     pass
 
 
+class RoleAlreadyExistsError(DomainException):
+    """Raised when trying to create a role which is already exists."""
+    pass
+
+
 class PermissionDeniedError(DomainException):
     """Raised when a user lacks permission to perform an action."""
     pass

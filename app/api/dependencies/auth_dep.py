@@ -5,14 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_session
 from app.security.auth import oauth2_bearer, decode_access_token
 from app.repositories import UserRepository
-
+from app.domain.entities import User
 
 db = Annotated[AsyncSession, Depends(get_session)]
 
 async def get_current_user(
     access_token: str = Depends(oauth2_bearer),
     session: AsyncSession = Depends(get_session)
-):
+) -> User:
     """Dependency to get the current authenticated user."""
     payload = decode_access_token(access_token)
     user_id = payload["id"]

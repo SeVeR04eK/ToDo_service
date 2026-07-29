@@ -7,4 +7,13 @@ class RefreshTokenBase(BaseModel):
 
 class RefreshTokenGet(RefreshTokenBase):
     """Schema for refresh token response."""
-    pass
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "refresh_token": "example.refresh.token"
+                }
+            ]
+        }
+    }

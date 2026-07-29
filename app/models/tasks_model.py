@@ -2,8 +2,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, ForeignKey, Enum
 
 from app.models import Base
-from app.schemas import TaskStatus
-
+from app.domain.enums import TaskStatus
 
 class Task(Base):
     """Task model representing user tasks with status tracking."""

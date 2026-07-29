@@ -3,7 +3,8 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.task_repo import TaskRepository
-from app.schemas import TaskCreate, TaskUpdate, TaskStatus, TasksPagination
+from app.schemas import TaskCreate, TaskUpdate, TasksPagination
+from app.domain.enums import TaskStatus
 from tests.factories import TaskFactory, UserFactory
 
 

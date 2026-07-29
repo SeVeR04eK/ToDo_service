@@ -1,9 +1,12 @@
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Role, User
 from tests.factories import UserFactory
+
+from app.security import create_access_token
+from app.main import app
 
 
 @pytest.mark.integration
@@ -141,10 +144,6 @@ class TestUserRouter:
         """Test deleting current user."""
         user = await UserFactory.create_in_db(db_session, username="to_delete")
         
-        from app.security import create_access_token
-        from httpx import ASGITransport
-        from app.main import app
-        
         access_token = create_access_token(
             username=user.username,
             user_id=user.id,
@@ -171,9 +170,16 @@ class TestUserRouter:
     @pytest.mark.asyncio
     async def test_update_user_username_already_exists(self, authenticated_client: AsyncClient, db_session: AsyncSession, test_user):
         """Test updating username to one that already exists."""
-        # Skip this test as the service layer doesn't check for duplicate usernames on update
-        # The repository would throw a database integrity error which is not caught
-        pytest.skip("Service layer doesn't check for duplicate usernames on update")
+        # Create another user with a different username
+        existing_user = await UserFactory.create_in_db(db_session, username="existing_user")
+        
+        # Try to update test_user's username to the existing username
+        response = await authenticated_client.patch(
+            "/user/me",
+            json={"username": "existing_user"}
+        )
+        
+        assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_get_user_not_found(self, authenticated_client: AsyncClient):

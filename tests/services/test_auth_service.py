@@ -2,11 +2,9 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from unittest.mock import AsyncMock, patch
 
 from app.services.auth_service import AuthService
 from app.core.exceptions import InvalidTokenError, UserNotFoundError
-from tests.factories import UserFactory
 
 
 @pytest.mark.unit
@@ -23,9 +21,9 @@ class TestAuthService:
             password="TestPassword123!"
         )
         
-        assert "access_token" in tokens
-        assert "refresh_token" in tokens
-        assert tokens["token_type"] == "bearer"
+        assert tokens.access_token is not None
+        assert tokens.refresh_token is not None
+        assert tokens.token_type == "bearer"
 
     @pytest.mark.asyncio
     async def test_refresh_service_success(self, db_session: AsyncSession, test_user):
@@ -42,9 +40,9 @@ class TestAuthService:
         service = AuthService(session=db_session)
         tokens = await service.refresh_service(refresh_token)
         
-        assert "access_token" in tokens
-        assert "refresh_token" in tokens
-        assert tokens["token_type"] == "bearer"
+        assert tokens.access_token is not None
+        assert tokens.refresh_token is not None
+        assert tokens.token_type == "bearer"
 
     @pytest.mark.asyncio
     async def test_refresh_service_invalid_token(self, db_session: AsyncSession):

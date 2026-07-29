@@ -1,10 +1,9 @@
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User
-from app.schemas import TaskStatus
 from tests.factories import UserFactory, TaskFactory, RoleFactory
+from app.domain.enums import TaskStatus
 
 
 @pytest.mark.integration

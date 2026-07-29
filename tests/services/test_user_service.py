@@ -24,9 +24,9 @@ class TestUserService:
         
         user = await service.create_user_service(user_data)
         
-        assert user["username"] == "newuser"
-        assert user["id"] is not None
-        assert user["role"]["name"] == "user"
+        assert user.username == "newuser"
+        assert user.id is not None
+        assert user.role.name == "user"
 
     @pytest.mark.asyncio
     async def test_get_user_service_success(self, db_session: AsyncSession, test_user):
@@ -34,8 +34,8 @@ class TestUserService:
         service = UserService(session=db_session)
         user = await service.get_user_service(test_user.id)
         
-        assert user["id"] == test_user.id
-        assert user["username"] == test_user.username
+        assert user.id == test_user.id
+        assert user.username == test_user.username
 
     @pytest.mark.asyncio
     async def test_update_user_service_username(self, db_session: AsyncSession, test_user):
@@ -45,7 +45,7 @@ class TestUserService:
         
         updated_user = await service.update_user_service(test_user.id, user_update)
         
-        assert updated_user["username"] == "updated_user"
+        assert updated_user.username == "updated_user"
 
     @pytest.mark.asyncio
     async def test_update_user_service_password(self, db_session: AsyncSession, test_user):
@@ -58,7 +58,7 @@ class TestUserService:
         
         updated_user = await service.update_user_service(test_user.id, user_update)
         
-        assert updated_user["id"] == test_user.id
+        assert updated_user.id == test_user.id
 
     @pytest.mark.asyncio
     async def test_update_user_service_both_fields(self, db_session: AsyncSession, test_user):
@@ -72,7 +72,7 @@ class TestUserService:
         
         updated_user = await service.update_user_service(test_user.id, user_update)
         
-        assert updated_user["username"] == "updated_user"
+        assert updated_user.username == "updated_user"
 
     @pytest.mark.asyncio
     async def test_delete_user_service_success(self, db_session: AsyncSession):

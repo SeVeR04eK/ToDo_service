@@ -1,10 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict
 from datetime import datetime, timezone
 
 from app.repositories import RefreshTokenRepository, UserRepository
 from app.security import authenticate_user, create_access_token, create_refresh_token, decode_refresh_token
 from app.core.exceptions import InvalidTokenError, UserNotFoundError
+from app.dto import Tokens
 
 
 class AuthService:
@@ -13,7 +13,7 @@ class AuthService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def authentication_service(self, username: str, password: str) -> Dict[str, str]:
+    async def authentication_service(self, username: str, password: str) -> Tokens:
         """Authenticate user and return access/refresh tokens."""
 
         user = await authenticate_user(username, password, self.session)
@@ -25,7 +25,7 @@ class AuthService:
         access_token = create_access_token(
             username = user.username,
             user_id = user.id,
-            role = user.role.name if user.role else None  # type: ignore
+            role = user.role.name if user.role else None
         )
         refresh_token = await create_refresh_token(
             username = user.username,
@@ -33,13 +33,13 @@ class AuthService:
             session = self.session
         )
 
-        return {
-            "refresh_token": refresh_token,
-            "access_token": access_token,
-            "token_type": "bearer"
-        }
+        return Tokens(
+            refresh_token=refresh_token,
+            access_token=access_token,
+            token_type="bearer"
+        )
 
-    async def refresh_service(self, refresh_token: str) -> Dict[str, str]:
+    async def refresh_service(self, refresh_token: str) -> Tokens:
         """Refresh access token using a valid refresh token."""
 
         refresh_repository = RefreshTokenRepository(session=self.session)
@@ -92,8 +92,8 @@ class AuthService:
             role=user_role
         )
 
-        return {
-            "refresh_token": new_refresh,
-            "access_token": new_access,
-            "token_type": "bearer"
-        }
+        return Tokens(
+            refresh_token=new_refresh,
+            access_token=new_access,
+            token_type="bearer"
+        )

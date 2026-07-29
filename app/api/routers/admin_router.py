@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends, status, Path, Query, HTTPException
-from typing import Annotated, Optional
+from fastapi import APIRouter, Depends, status, Path, Query, HTTPException, Body
+from typing import Annotated, Optional, Union, List
 
-from app.models import User
-from app.schemas import UserRead, TaskRead, TaskUpdate, TaskStatus, RoleRead, UserPermission, RoleCreate, TasksPagination
+from app.domain.entities import User
+from app.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination
+from app.domain.enums import TaskStatus
 from app.api.dependencies import db, require_role, tasks_pagination
 from app.services import AdminService
-from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, TaskNotFoundError
+from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, TaskNotFoundError, RoleAlreadyExistsError
+from app.schemas.user_schema import UserRole
 
 # Admin router - all endpoints require admin role authentication
 admin_router = APIRouter(prefix = "/admin", tags = ["admin"])
 
-@admin_router.get("/users", status_code=status.HTTP_200_OK, response_model=list[UserRead]|UserRead, summary="Get all users", response_description="Returns a single user if username filter is provided, otherwise returns a list of users")
+@admin_router.get("/users", status_code=status.HTTP_200_OK, response_model=Union[List[UserRead], UserRead], summary="Get all users", response_description="Returns a single user if username filter is provided, otherwise returns a list of users")
 async def get_users(
         # Underscore indicates we only need the dependency for authentication, not the actual user object
         _: Annotated[
@@ -30,7 +32,7 @@ async def get_users(
             Optional[int],
             Query(title="Offset for pagination", ge=1, le=100)
         ] = None
-) -> list[UserRead] | UserRead:
+) -> Union[list[UserRead], UserRead]:
     """
     Get all users with optional filtering by username and _pagination_:
 
@@ -49,8 +51,21 @@ async def get_users(
     )
     
     if isinstance(result, list):
-        return [UserRead.model_validate(user) for user in result]
-    return UserRead.model_validate(result)
+        return [
+            UserRead(
+                id=user.id,
+                username=user.username,
+                is_active=user.is_active,
+                role=UserRole(name=user.role.name) if user.role else None
+            )
+            for user in result
+        ]
+    return UserRead(
+        id=result.id,
+        username=result.username,
+        is_active=result.is_active,
+        role=UserRole(name=result.role.name) if result.role else None
+    )
 
 @admin_router.get("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead, summary="Get specific user")
 async def get_user(
@@ -65,7 +80,13 @@ async def get_user(
 
     try:
         service = AdminService(session=session)
-        return UserRead.model_validate(await service.get_user_service(user_id))
+        user = await service.get_user_service(user_id)
+        return UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=UserRole(name=user.role.name) if user.role else None
+        )
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -76,14 +97,53 @@ async def user_permission(
                     Depends(require_role("admin"))
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
-        user_perm: UserPermission,
+        user_perm: Annotated[
+            UserPermission,
+            Body(
+                openapi_examples={
+                    "full": {
+                        "summary": "Update user permissions with all fields.",
+                        "description": "Update user profile with all fields: is_active, role",
+                        "value": {
+                            "is_active": False,
+                            "role": "admin"
+                        }
+                    },
+                    "partial_is_active": {
+                        "summary": "Update user profile with only the provided is_active field.",
+                        "description": "Update user profile with only the provided field: is_active",
+                        "value": {
+                            "is_active": False
+                        }
+                    },
+                    "partial_role": {
+                        "summary": "Update user profile with only the provided role.",
+                        "description": "Update user profile with only the provided field: role",
+                        "value": {
+                            "role": "admin"
+                        }
+                    },
+                        "no_changes": {
+                        "summary": "No fields provided",
+                        "description": "PATCH request with no fields. Nothing will be updated.",
+                        "value": {}
+                    }
+                }
+            )
+        ],
         session: db
 ) -> UserRead:
     """Update user permissions (_Partial update_)."""
 
     try:
         service = AdminService(session=session)
-        return UserRead.model_validate(await service.permission_user_service(user_id=user_id, role_name=user_perm.role, is_active=user_perm.is_active))
+        user = await service.permission_user_service(user_id=user_id, role_name=user_perm.role, is_active=user_perm.is_active)
+        return UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=UserRole(name=user.role.name) if user.role else None
+        )
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     except RoleNotFoundError:
@@ -110,7 +170,7 @@ async def delete_user(
     except PermissionDeniedError:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
 
-@admin_router.get("/users/{user_id}/tasks", status_code=status.HTTP_200_OK, response_model=list[TaskRead], summary="Get user tasks")
+@admin_router.get("/users/{user_id}/tasks", status_code=status.HTTP_200_OK, response_model=List[TaskRead], summary="Get user tasks")
 async def get_tasks(
         _: Annotated[
                     User,
@@ -123,7 +183,7 @@ async def get_tasks(
             Query(title="Task Status")
         ] = None,
         pagination: TasksPagination = Depends(tasks_pagination),
-) -> list[TaskRead]:
+) -> List[TaskRead]:
     """Get tasks for a specific user by ID with optional _filtering_ and _pagination_:
     - **task_status**: Filter tasks by status
     - **limit**: Limit the number of tasks returned
@@ -133,11 +193,21 @@ async def get_tasks(
 
     try:
         service = AdminService(session=session)
-        return [TaskRead.model_validate(task) for task in await service.get_tasks_service(
+        tasks = await service.get_tasks_service(
             user_id=user_id,
             task_status=task_status,
             pagination=pagination
-        )]
+        )
+        return [
+            TaskRead(
+                id=task.id,
+                title=task.title,
+                content=task.content,
+                status=task.status,
+                user_id=task.user_id
+            )
+            for task in tasks
+        ]
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     except TaskNotFoundError:
@@ -159,7 +229,14 @@ async def get_task(
 
     try:
         service = AdminService(session=session)
-        return TaskRead.model_validate(await service.get_task_service(task_id=task_id, user_id=user_id))
+        task = await service.get_task_service(task_id=task_id, user_id=user_id)
+        return TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     except TaskNotFoundError:
@@ -175,14 +252,70 @@ async def update_task(
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
         user_id: Annotated[int, Path(..., title="User ID")],
-        task_update: TaskUpdate,
+        task_update: Annotated[
+            TaskUpdate,
+            Body(
+                openapi_examples={
+                    "full": {
+                        "summary": "Update user task with all fields.",
+                        "description": "Update user task with all fields: title, content, status",
+                        "value": {
+                            "title": "example new title",
+                            "content": "example new content ",
+                            "status": "done"
+                        }
+                    },
+                    "partial_title": {
+                        "summary": "Update user task with only the provided title.",
+                        "description": "Update user task with only the provided field: title",
+                        "value": {
+                            "title": "example new title"
+                        }
+                    },
+                    "partial_сontent": {
+                        "summary": "Update user task with only the provided content.",
+                        "description": "Update user task with only the provided field: content",
+                        "value": {
+                            "content": "example new content "
+                        }
+                    },
+                    "partial_status": {
+                        "summary": "Update user task with only the provided status.",
+                        "description": "Update user task with only the provided field: status",
+                        "value": {
+                            "status": "done"
+                        }
+                    },
+                    "partial_two_fields": {
+                        "summary": "Update user task with only provided two fields.",
+                        "description": "Update user task with only the provided field: title, status",
+                        "value": {
+                            "title": "example new title",
+                            "status": "done"
+                        }
+                    },
+                    "no_changes": {
+                        "summary": "No fields provided",
+                        "description": "PATCH request with no fields. Nothing will be updated.",
+                        "value": {}
+                    }
+                }
+            )
+        ],
         session: db
 ) -> TaskRead:
     """Update a specific task for a user by ID (_Partial update_")."""
 
     try:
         service = AdminService(session=session)
-        return TaskRead.model_validate(await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_update))
+        task = await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_update)
+        return TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     except UserNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     except TaskNotFoundError:
@@ -225,20 +358,31 @@ async def create_role(
 
     try:
         service = AdminService(session=session)
-        return RoleRead.model_validate(await service.create_role_service(new_role=new_role))
-    except RoleNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+        role = await service.create_role_service(new_role=new_role)
+        return RoleRead(
+            id=role.id,
+            name=role.name
+        )
+    except RoleAlreadyExistsError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role already exists")
 
-@admin_router.get("/roles", status_code=status.HTTP_200_OK, response_model=list[RoleRead])
+@admin_router.get("/roles", status_code=status.HTTP_200_OK, response_model=List[RoleRead])
 async def get_roles(
         _: Annotated[
             User,
             Depends(require_role("admin"))
         ],
         session: db
-) -> list[RoleRead]:
+) -> List[RoleRead]:
 
     service = AdminService(session=session)
-    return [RoleRead.model_validate(role) for role in await service.get_roles_service()]
+    roles = await service.get_roles_service()
+    return [
+        RoleRead(
+            id=role.id,
+            name=role.name
+        )
+        for role in roles
+    ]
 
 

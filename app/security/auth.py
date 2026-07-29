@@ -4,7 +4,7 @@ from datetime import timedelta, datetime, timezone
 from jose import jwt, JWTError
 from fastapi import HTTPException, status
 
-from app.models import User
+from app.domain.entities import User
 from app.core import settings
 from app.repositories import UserRepository, RefreshTokenRepository
 from app.utils import verify_password

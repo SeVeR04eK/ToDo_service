@@ -1,6 +1,8 @@
 # ToDo Service Backend API (FastAPI + PostgreSQL)
 
-**⚠️ DEVELOPMENT VERSION** - This is a development-focused implementation intended for learning and local development purposes. The containerization and configuration management are optimized for development workflows and are **NOT suitable for production use** without significant security hardening and infrastructure changes.
+**API Version:** 0.0.1
+
+**Status:** Development Build (not production-ready)
 
 ---
 

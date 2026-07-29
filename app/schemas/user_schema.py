@@ -39,6 +39,18 @@ class UserCreate(UserBase):
         )
     ]
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "username": "user",
+                    "password": "user12345",
+                    "password_confirm": "user12345"
+                }
+            ]
+        }
+    }
+
     @model_validator(mode="after")
     def passwords_match(self):
         """Validate that password and password confirmation match."""
@@ -86,7 +98,19 @@ class UserRead(UserBase):
 
     # Enable ORM mode to allow serialization from SQLAlchemy models
     model_config = {
-        "from_attributes": True
+        "from_attributes": True,
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "username": "user",
+                    "id": 1,
+                    "is_active": True,
+                    "role": {
+                        "name": "user"
+                    }
+                }
+            ]
+        }
     }
 
 

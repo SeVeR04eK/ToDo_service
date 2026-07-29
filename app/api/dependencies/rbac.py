@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status
 from typing import Callable
 
-from app.api.dependencies.auth import get_current_user
+from app.api.dependencies.auth_dep import get_current_user
 
 
 def require_role(*allowed_roles: str) -> Callable:

@@ -25,8 +25,8 @@ class TestAdminService:
         service = AdminService(session=db_session)
         user = await service.get_user_service(test_user.id)
         
-        assert user["id"] == test_user.id
-        assert user["username"] == test_user.username
+        assert user.id == test_user.id
+        assert user.username == test_user.username
 
     @pytest.mark.asyncio
     async def test_get_user_service_not_found(self, db_session: AsyncSession):
@@ -44,7 +44,7 @@ class TestAdminService:
         service = AdminService(session=db_session)
         updated_user = await service.permission_user_service(user_id=test_user.id, role_name="admin", is_active=None)
         
-        assert updated_user["role"]["name"] == "admin"
+        assert updated_user.role.name == "admin"
 
     @pytest.mark.asyncio
     async def test_permission_user_service_update_is_active(self, db_session: AsyncSession, test_user):
@@ -52,7 +52,7 @@ class TestAdminService:
         service = AdminService(session=db_session)
         updated_user = await service.permission_user_service(user_id=test_user.id, role_name=None, is_active=False)
         
-        assert updated_user["is_active"] is False
+        assert updated_user.is_active is False
 
     @pytest.mark.asyncio
     async def test_permission_user_service_role_not_found(self, db_session: AsyncSession, test_user):
@@ -93,7 +93,7 @@ class TestAdminService:
         new_role = RoleCreate(name="moderator")
         role = await service.create_role_service(new_role)
         
-        assert role["name"] == "moderator"
+        assert role.name == "moderator"
 
     @pytest.mark.asyncio
     async def test_create_role_service_duplicate(self, db_session: AsyncSession):

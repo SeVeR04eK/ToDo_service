@@ -7,16 +7,16 @@ This module exports all Pydantic schemas used for:
 - Authentication (Tokens, Refresh tokens)
 - Authorization (User permissions, Roles)
 """
-from .user_schema import UserCreate, UserRead, UserUpdate
+from .user_schema import UserCreate, UserRead, UserUpdate, UserRole
 from .tokens_schema import TokensResponse
 from .refresh_token_schema import RefreshTokenGet
-from .task_schema import TaskRead, TaskCreate, TaskStatus, TaskUpdate
+from .task_schema import TaskRead, TaskCreate, TaskUpdate
 from .admin_schema import UserPermission, OnlyUserPermission
 from .role_schema import RoleRead, RoleCreate
 from .pagin_schema import TasksPagination
 
 __all__ = ["UserCreate", "UserRead", "TokensResponse",
            "RefreshTokenGet", "TaskCreate", "TaskRead",
-           "TaskStatus", "TaskUpdate", "UserUpdate",
-           "UserPermission", "RoleRead", "RoleCreate",
-           "OnlyUserPermission", "TasksPagination"]
+           "TaskUpdate", "UserUpdate", "UserPermission",
+           "RoleRead", "RoleCreate", "OnlyUserPermission",
+           "TasksPagination", "UserRole"]

@@ -22,7 +22,12 @@ async def authentication(
 
     try:
         service = AuthService(session=session)
-        return TokensResponse.model_validate(await service.authentication_service(form_data.username, form_data.password))
+        tokens = await service.authentication_service(form_data.username, form_data.password)
+        return TokensResponse(
+            refresh_token=tokens.refresh_token,
+            access_token=tokens.access_token,
+            token_type=tokens.token_type
+        )
     except AuthenticationError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
@@ -32,7 +37,12 @@ async def refresh(refresh_token_data: RefreshTokenGet, session: db) -> TokensRes
 
     try:
         service = AuthService(session=session)
-        return TokensResponse.model_validate(await service.refresh_service(refresh_token_data.refresh_token))
+        tokens = await service.refresh_service(refresh_token_data.refresh_token)
+        return TokensResponse(
+            refresh_token=tokens.refresh_token,
+            access_token=tokens.access_token,
+            token_type=tokens.token_type
+        )
     except InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
     except UserNotFoundError:
