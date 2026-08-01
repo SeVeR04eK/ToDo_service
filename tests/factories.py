@@ -2,15 +2,16 @@
 from faker import Faker
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.users_model import User
-from app.models.roles_model import Role
-from app.models.tasks_model import Task
-from app.schemas import TaskCreate, TaskUpdate
+from app.infrastructure.models import User
+from app.infrastructure.models.roles_model import Role
+from app.infrastructure.models import Task
+from app.presentation.api.schemas import TaskCreate, TaskUpdate
 from app.domain.enums import TaskStatus
-from app.utils import hash_password
+from app.infrastructure.security.bcrypt_password_hasher import BcryptPasswordHasher
 
 
 fake = Faker()
+password_hasher = BcryptPasswordHasher()
 
 
 class RoleFactory:
@@ -47,7 +48,7 @@ class UserFactory:
         """Create a User instance."""
         return User(
             username=username or fake.user_name(),
-            hashed_password=hash_password(password),
+            hashed_password=password_hasher.hash(password),
             is_active=is_active,
             role_id=role_id
         )

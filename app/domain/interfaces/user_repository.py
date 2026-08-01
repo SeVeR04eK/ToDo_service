@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from app.domain.entities import User
-from app.schemas import UserCreate, UserUpdate
+from app.presentation.api.schemas import UserCreate, UserUpdate
 
 
 class UserRepository(ABC):

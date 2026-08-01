@@ -2,7 +2,7 @@
 import pytest
 import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock
-from app.security.token_cleanup import clean_tokens_task
+from app.infrastructure.background_tasks import clean_tokens_task
 
 
 @pytest.mark.unit
@@ -19,8 +19,8 @@ class TestTokenCleanup:
         mock_repo = AsyncMock()
         mock_repo.delete_expired_tokens = AsyncMock()
         
-        with patch('app.security.token_cleanup.SessionLocal', return_value=mock_session):
-            with patch('app.security.token_cleanup.SQLAlchemyRefreshTokenRepository', return_value=mock_repo):
+        with patch('app.infrastructure.background_tasks.token_cleanup.SessionLocal', return_value=mock_session):
+            with patch('app.infrastructure.background_tasks.token_cleanup.get_refresh_token_repository_raw', return_value=mock_repo):
                 # Run one iteration and cancel
                 task = asyncio.create_task(clean_tokens_task())
                 await asyncio.sleep(0.1)  # Let it run one iteration
@@ -43,8 +43,8 @@ class TestTokenCleanup:
         mock_repo = AsyncMock()
         mock_repo.delete_expired_tokens = AsyncMock(side_effect=Exception("Database error"))
         
-        with patch('app.security.token_cleanup.SessionLocal', return_value=mock_session):
-            with patch('app.security.token_cleanup.SQLAlchemyRefreshTokenRepository', return_value=mock_repo):
+        with patch('app.infrastructure.background_tasks.token_cleanup.SessionLocal', return_value=mock_session):
+            with patch('app.infrastructure.background_tasks.token_cleanup.get_refresh_token_repository_raw', return_value=mock_repo):
                 # Run one iteration and cancel
                 task = asyncio.create_task(clean_tokens_task())
                 await asyncio.sleep(0.1)  # Let it run one iteration

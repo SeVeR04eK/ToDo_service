@@ -1,8 +1,9 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories import SQLAlchemyAdminRepository
-from app.schemas import OnlyUserPermission, RoleCreate
+from app.infrastructure.repositories import SQLAlchemyAdminRepository
+from app.presentation.api.schemas import OnlyUserPermission, RoleCreate
+
 from tests.factories import UserFactory, RoleFactory
 
 

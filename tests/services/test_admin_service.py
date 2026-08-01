@@ -1,13 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock
-from typing import List
 
-from app.services import AdminService
+from app.application.services import AdminService
 from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
-from app.domain.entities import User, Role, Task
-from app.schemas import RoleCreate, OnlyUserPermission, TaskUpdate, TasksPagination
-from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
-from app.domain.enums import TaskStatus
+from app.domain.entities import User, Role
+from app.presentation.api.schemas import RoleCreate, TaskUpdate, TasksPagination
+from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError
 
 
 @pytest.mark.unit

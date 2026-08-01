@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.factories import UserFactory, TaskFactory, RoleFactory
 from app.domain.enums import TaskStatus
-from app.security import create_access_token
+from app.infrastructure.services.jwt_service import JWTService
 from app.main import app
 
 
@@ -114,7 +114,8 @@ class TestAdminRouter:
         admin2_role = await RoleFactory.create_in_db(db_session, name="admin2")
         admin2 = await UserFactory.create_in_db(db_session, username="admin2", role_id=admin2_role.id)
         
-        access_token = create_access_token(
+        token_service = JWTService()
+        access_token = token_service.create_access_token(
             username=admin2.username,
             user_id=admin2.id,
             role=admin2_role.name

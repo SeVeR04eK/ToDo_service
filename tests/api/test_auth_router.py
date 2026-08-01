@@ -3,10 +3,11 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.security import create_access_token, create_refresh_token
-from tests.factories import UserFactory
+from app.infrastructure.services.jwt_service import JWTService
 from app.domain.interfaces import RefreshTokenRepository
-from app.repositories import SQLAlchemyRefreshTokenRepository
+from app.infrastructure.repositories import SQLAlchemyRefreshTokenRepository
+
+from tests.factories import UserFactory
 
 
 @pytest.mark.integration
@@ -87,10 +88,15 @@ class TestAuthRouter:
         """Test successful token refresh."""
         
         refresh_token_repo: RefreshTokenRepository = SQLAlchemyRefreshTokenRepository(db_session)
-        refresh_token = await create_refresh_token(
+        token_service = JWTService()
+        refresh_token, expires = await token_service.create_refresh_token(
             username=test_user.username,
+            user_id=test_user.id
+        )
+        await refresh_token_repo.create_refresh_token(
             user_id=test_user.id,
-            refresh_token_repository=refresh_token_repo
+            token=refresh_token,
+            expires=expires
         )
         
         response = await client.post(
@@ -124,7 +130,8 @@ class TestAuthRouter:
     @pytest.mark.asyncio
     async def test_access_token_can_be_used(self, client: AsyncClient, db_session: AsyncSession, test_user):
         """Test that access token works for authenticated requests."""
-        access_token = create_access_token(
+        token_service = JWTService()
+        access_token = token_service.create_access_token(
             username=test_user.username,
             user_id=test_user.id,
             role=test_user.role.name

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from app.domain.entities import Task
 from app.domain.enums import TaskStatus
-from app.schemas import TaskCreate, TaskUpdate, TasksPagination
+from app.presentation.api.schemas import TaskCreate, TaskUpdate, TasksPagination
 
 
 class TaskRepository(ABC):

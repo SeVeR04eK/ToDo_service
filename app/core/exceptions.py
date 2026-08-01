@@ -10,12 +10,17 @@ class DomainException(Exception):
     pass
 
 
-class AuthenticationError(DomainException):
+class InvalidCredentialsError(DomainException):
     """Raised when authentication fails."""
     pass
 
 
-class InvalidTokenError(DomainException):
+class InvalidAccessTokenError(DomainException):
+    """Raised when a token is invalid or expired."""
+    pass
+
+
+class InvalidRefreshTokenError(DomainException):
     """Raised when a token is invalid or expired."""
     pass
 

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from app.domain.entities import User, Role
-from app.schemas import OnlyUserPermission, RoleCreate
+from app.presentation.api.schemas import OnlyUserPermission, RoleCreate
 
 
 class AdminRepository(ABC):

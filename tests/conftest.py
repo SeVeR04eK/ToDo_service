@@ -8,13 +8,26 @@ from faker import Faker
 from sqlalchemy import select
 
 from app.main import app
-from app.models import Base
-from app.models.users_model import User as UserORM
-from app.models.roles_model import Role as RoleORM
-from app.models.tasks_model import Task as TaskORM
-from app.security import create_access_token
-from app.utils import hash_password
+from app.infrastructure.models import Base
+from app.infrastructure.models import User as UserORM
+from app.infrastructure.models.roles_model import Role as RoleORM
+from app.infrastructure.models import Task as TaskORM
+from app.infrastructure.services.jwt_service import JWTService
+from app.infrastructure.security.bcrypt_password_hasher import BcryptPasswordHasher
 from app.domain.enums import TaskStatus
+from app.infrastructure.database import get_session
+from app.presentation.api.dependencies.repositories_dep import (
+    get_user_repository,
+    get_task_repository,
+    get_refresh_token_repository,
+    get_admin_repository,
+)
+from app.infrastructure.repositories import (
+    SQLAlchemyUserRepository,
+    SQLAlchemyTaskRepository,
+    SQLAlchemyRefreshTokenRepository,
+    SQLAlchemyAdminRepository,
+)
 
 # Test database URL (SQLite for testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -34,6 +47,7 @@ TestSessionLocal = async_sessionmaker(
 )
 
 fake = Faker()
+password_hasher = BcryptPasswordHasher()
 
 
 @pytest.fixture(scope="session")
@@ -60,25 +74,13 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator:
     """Create a test client with database session override."""
-    from app.db import get_session
-    from app.api.dependencies.repositories_dep import (
-        get_user_repository,
-        get_task_repository,
-        get_refresh_token_repository,
-        get_admin_repository,
-    )
-    from app.repositories import (
-        SQLAlchemyUserRepository,
-        SQLAlchemyTaskRepository,
-        SQLAlchemyRefreshTokenRepository,
-        SQLAlchemyAdminRepository,
-    )
+
 
     async def override_get_session():
         yield db_session
 
     async def override_get_user_repository():
-        yield SQLAlchemyUserRepository(db_session)
+        yield SQLAlchemyUserRepository(db_session, password_hasher)
 
     async def override_get_task_repository():
         yield SQLAlchemyTaskRepository(db_session)
@@ -135,7 +137,7 @@ async def test_user(db_session: AsyncSession, test_role: RoleORM) -> UserORM:
     """Create a test user."""
     user = UserORM(
         username=fake.user_name(),
-        hashed_password=hash_password("TestPassword123!"),
+        hashed_password=password_hasher.hash("TestPassword123!"),
         is_active=True,
         role_id=test_role.id
     )
@@ -150,7 +152,7 @@ async def test_admin_user(db_session: AsyncSession, test_admin_role: RoleORM) ->
     """Create a test admin user."""
     user = UserORM(
         username=fake.user_name(),
-        hashed_password=hash_password("AdminPassword123!"),
+        hashed_password=password_hasher.hash("AdminPassword123!"),
         is_active=True,
         role_id=test_admin_role.id
     )
@@ -226,7 +228,8 @@ async def auth_headers(test_user: UserORM, db_session: AsyncSession) -> dict:
     result = await db_session.execute(select(RoleORM.name).where(RoleORM.id == test_user.role_id))
     role_name = result.scalar_one_or_none() or "user"
 
-    access_token = create_access_token(
+    token_service = JWTService()
+    access_token = token_service.create_access_token(
         username=test_user.username,
         user_id=test_user.id,
         role=role_name
@@ -242,7 +245,8 @@ async def admin_auth_headers(test_admin_user: UserORM, db_session: AsyncSession)
     result = await db_session.execute(select(RoleORM.name).where(RoleORM.id == test_admin_user.role_id))
     role_name = result.scalar_one_or_none() or "admin"
 
-    access_token = create_access_token(
+    token_service = JWTService()
+    access_token = token_service.create_access_token(
         username=test_admin_user.username,
         user_id=test_admin_user.id,
         role=role_name

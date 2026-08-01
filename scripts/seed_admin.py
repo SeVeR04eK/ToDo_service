@@ -1,8 +1,9 @@
 import asyncio
 from sqlalchemy import select
-from app.db.database import SessionLocal
-from app.models import User, Role
-from app.utils import hash_password
+
+from app.infrastructure.database import SessionLocal
+from app.infrastructure.models import User, Role
+from app.infrastructure.security.bcrypt_password_hasher import BcryptPasswordHasher
 from app.core import settings
 
 
@@ -23,9 +24,11 @@ async def seed_admin() -> None:
         if existing_admin is not None:
             return
 
+        password_hasher = BcryptPasswordHasher()
+
         admin = User(
             username=settings.first_admin_username,
-            hashed_password=hash_password(settings.first_admin_password.get_secret_value()),
+            hashed_password=password_hasher.hash(settings.first_admin_password.get_secret_value()),
             role_id=admin_role.id,
             is_active=True,
         )

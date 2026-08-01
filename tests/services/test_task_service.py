@@ -2,10 +2,10 @@
 import pytest
 from unittest.mock import AsyncMock
 
-from app.services.task_service import TaskService
+from app.application.services import TaskService
 from app.domain.interfaces import TaskRepository
 from app.domain.entities import Task
-from app.schemas import TasksPagination, TaskCreate, TaskUpdate
+from app.presentation.api.schemas import TasksPagination, TaskCreate, TaskUpdate
 from app.domain.enums import TaskStatus
 from app.core.exceptions import TaskNotFoundError
 

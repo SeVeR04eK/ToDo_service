@@ -1,10 +1,10 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
-from app.services import UserService
+from app.application.services import UserService
 from app.domain.interfaces import UserRepository
 from app.domain.entities import User, Role
-from app.schemas import UserCreate, UserUpdate
+from app.presentation.api.schemas import UserCreate, UserUpdate
 from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 
 

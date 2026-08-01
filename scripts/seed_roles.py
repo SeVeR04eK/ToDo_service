@@ -1,7 +1,7 @@
 import asyncio
 from sqlalchemy import select
-from app.db.database import SessionLocal
-from app.models import Role
+from app.infrastructure.database import SessionLocal
+from app.infrastructure.models import Role
 
 
 async def seed_roles() -> None:
@@ -17,6 +17,7 @@ async def seed_roles() -> None:
                 session.add(Role(name=role_name))
 
         await session.commit()
+
 
 if __name__ == "__main__":
     asyncio.run(seed_roles())

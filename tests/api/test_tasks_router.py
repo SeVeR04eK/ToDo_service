@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.factories import TaskFactory, UserFactory
 from app.domain.enums import TaskStatus
-from app.security import create_access_token
+from app.infrastructure.services.jwt_service import JWTService
 from app.main import app
 
 
@@ -201,7 +201,8 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        access_token = create_access_token(
+        token_service = JWTService()
+        access_token = token_service.create_access_token(
             username=user2.username,
             user_id=user2.id,
             role=user2.role.name
@@ -264,7 +265,8 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        access_token = create_access_token(
+        token_service = JWTService()
+        access_token = token_service.create_access_token(
             username=user2.username,
             user_id=user2.id,
             role=user2.role.name
@@ -323,7 +325,8 @@ class TestTasksRouter:
         task = await TaskFactory.create_in_db(db_session, user_id=user1.id)
         
         # Create auth headers for user2
-        access_token = create_access_token(
+        token_service = JWTService()
+        access_token = token_service.create_access_token(
             username=user2.username,
             user_id=user2.id,
             role=user2.role.name

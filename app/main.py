@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import asyncio
 
-from app.api import api_router
-from app.security import clean_tokens_task
+from app.presentation.api import api_router
+from app.infrastructure.background_tasks import clean_tokens_task
 
 
 @asynccontextmanager
@@ -17,10 +17,17 @@ async def lifespan(_app: FastAPI):
     # Start background task for cleaning expired tokens
     task = asyncio.create_task(clean_tokens_task())
 
-    yield
+    # Properly handle the lifespan
+    try:
+        yield
+    finally:
+        # Cancel background task on shutdown
+        task.cancel()
 
-    # Cancel background task on shutdown
-    task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 tags_metadata = [

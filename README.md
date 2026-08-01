@@ -772,7 +772,7 @@ pip install -r requirements.txt
 #### 4. Generate secret key
 
 ```
-python app/core/secret.py
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
 ---
