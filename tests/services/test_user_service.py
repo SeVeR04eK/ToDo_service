@@ -2,9 +2,9 @@ import pytest
 from unittest.mock import AsyncMock
 
 from app.application.services import UserService
+from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.domain.interfaces import UserRepository
 from app.domain.entities import User, Role
-from app.presentation.api.schemas import UserCreate, UserUpdate
 from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 
 
@@ -23,7 +23,7 @@ class TestUserService:
         mock_repo.create_user.return_value = mock_user
         
         service = UserService(repository=mock_repo)
-        user_data = UserCreate(
+        user_data = CreateUserDTO(
             username="newuser",
             password="password123",
             password_confirm="password123"
@@ -65,7 +65,7 @@ class TestUserService:
         mock_repo.update_user.return_value = updated_user
         
         service = UserService(repository=mock_repo)
-        user_update = UserUpdate(username="updated_user")
+        user_update = UpdateUserDTO(username="updated_user")
         
         result = await service.update_user_service(1, user_update)
         
@@ -86,7 +86,7 @@ class TestUserService:
         mock_repo.update_user.return_value = updated_user
         
         service = UserService(repository=mock_repo)
-        user_update = UserUpdate(
+        user_update = UpdateUserDTO(
             password="newpassword123",
             password_confirm="newpassword123"
         )
@@ -110,7 +110,7 @@ class TestUserService:
         mock_repo.update_user.return_value = updated_user
         
         service = UserService(repository=mock_repo)
-        user_update = UserUpdate(
+        user_update = UpdateUserDTO(
             username="updated_user",
             password="newpassword123",
             password_confirm="newpassword123"
@@ -147,7 +147,7 @@ class TestUserService:
         mock_repo.get_user_by_username.return_value = mock_user
         
         service = UserService(repository=mock_repo)
-        user_data = UserCreate(
+        user_data = CreateUserDTO(
             username="existing",
             password="password123",
             password_confirm="password123"
@@ -163,7 +163,7 @@ class TestUserService:
         mock_repo.get_user_by_id.return_value = None
         
         service = UserService(repository=mock_repo)
-        user_update = UserUpdate(username="updated")
+        user_update = UpdateUserDTO(username="updated")
         
         with pytest.raises(UserNotFoundError):
             await service.update_user_service(99999, user_update)

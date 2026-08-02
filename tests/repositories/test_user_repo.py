@@ -3,7 +3,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.repositories import SQLAlchemyUserRepository
-from app.presentation.api.schemas import UserCreate, UserUpdate
+from app.domain.value_objects import UserUpdateData
 from app.infrastructure.security.bcrypt_password_hasher import BcryptPasswordHasher
 
 password_hasher = BcryptPasswordHasher()
@@ -18,13 +18,11 @@ class TestSQLAlchemyUserRepository:
     async def test_create_user_success(self, db_session: AsyncSession, test_role):
         """Test successful user creation."""
         repo = SQLAlchemyUserRepository(db_session, password_hasher)
-        user_data = UserCreate(
-            username="testuser",
-            password="TestPassword123!",
-            password_confirm="TestPassword123!"
-        )
         
-        user = await repo.create_user(user_data)
+        user = await repo.create_user(
+            username="testuser",
+            password="TestPassword123!"
+        )
         
         assert user.id is not None
         assert user.username == "testuser"
@@ -87,7 +85,7 @@ class TestSQLAlchemyUserRepository:
     async def test_update_user_username(self, db_session: AsyncSession, test_user):
         """Test updating user username."""
         repo = SQLAlchemyUserRepository(db_session, password_hasher)
-        update_data = UserUpdate(username="updated_username")
+        update_data = UserUpdateData(username="updated_username")
         
         updated_user = await repo.update_user(test_user, update_data)
         
@@ -99,7 +97,7 @@ class TestSQLAlchemyUserRepository:
         """Test updating user password."""
         repo = SQLAlchemyUserRepository(db_session, password_hasher)
         old_password = test_user.hashed_password
-        update_data = UserUpdate(
+        update_data = UserUpdateData(
             password="NewPassword123!",
             password_confirm="NewPassword123!"
         )
@@ -114,7 +112,7 @@ class TestSQLAlchemyUserRepository:
         """Test updating both username and password."""
         repo = SQLAlchemyUserRepository(db_session, password_hasher)
         old_password = test_user.hashed_password
-        update_data = UserUpdate(
+        update_data = UserUpdateData(
             username="new_username",
             password="NewPassword123!",
             password_confirm="NewPassword123!"
@@ -130,7 +128,7 @@ class TestSQLAlchemyUserRepository:
     async def test_update_user_no_changes(self, db_session: AsyncSession, test_user):
         """Test updating user with no changes."""
         repo = SQLAlchemyUserRepository(db_session, password_hasher)
-        update_data = UserUpdate()
+        update_data = UserUpdateData()
         
         updated_user = await repo.update_user(test_user, update_data)
         
@@ -153,14 +151,15 @@ class TestSQLAlchemyUserRepository:
     async def test_username_uniqueness(self, db_session: AsyncSession, test_role):
         """Test that usernames must be unique."""
         repo = SQLAlchemyUserRepository(db_session, password_hasher)
-        user_data = UserCreate(
-            username="duplicate_user",
-            password="TestPassword123!",
-            password_confirm="TestPassword123!"
-        )
         
-        await repo.create_user(user_data)
+        await repo.create_user(
+            username="duplicate_user",
+            password="TestPassword123!"
+        )
         
         # Attempt to create another user with same username
         with pytest.raises(Exception):  # Should raise integrity error
-            await repo.create_user(user_data)
+            await repo.create_user(
+                username="duplicate_user",
+                password="TestPassword123!"
+            )

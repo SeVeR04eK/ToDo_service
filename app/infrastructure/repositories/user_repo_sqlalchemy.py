@@ -4,9 +4,9 @@ from sqlalchemy.orm import selectinload
 
 from app.infrastructure.models import User as UserORM, Role as RoleORM
 from app.domain.entities import User
-from app.domain.mappers import user_from_orm
-from app.presentation.api.schemas import UserCreate, UserUpdate
+from app.infrastructure.mappers import user_from_orm
 from app.domain.interfaces import UserRepository, PasswordHasher
+from app.domain.value_objects import UserUpdateData
 
 
 class SQLAlchemyUserRepository(UserRepository):
@@ -16,12 +16,12 @@ class SQLAlchemyUserRepository(UserRepository):
         self.session = session
         self.password_hasher = password_hasher
 
-    async def create_user(self, user: UserCreate) -> User:
+    async def create_user(self, username: str, password: str) -> User:
         """Create a new user with hashed password."""
 
         orm_user = UserORM(
-            username=user.username,
-            hashed_password=self.password_hasher.hash(user.password)
+            username=username,
+            hashed_password=self.password_hasher.hash(password)
         )
 
         self.session.add(orm_user)
@@ -63,7 +63,7 @@ class SQLAlchemyUserRepository(UserRepository):
 
         return await self.session.scalar(request)
 
-    async def update_user(self, user: User, user_update: UserUpdate) -> User:
+    async def update_user(self, user: User, user_update: UserUpdateData) -> User:
         """Update an existing user with partial data."""
 
         # Get the ORM user from the domain user with role relationship loaded
@@ -73,7 +73,11 @@ class SQLAlchemyUserRepository(UserRepository):
         if orm_user is None:
             return user
 
-        update_data = user_update.model_dump(exclude_unset=True)
+        update_data = {
+            key: value
+            for key, value in vars(user_update).items()
+            if value is not None
+        }
 
         for key, value in update_data.items():
             # Hash password if it's being updated

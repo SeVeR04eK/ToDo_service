@@ -4,6 +4,7 @@ from typing import Annotated, Optional, List
 from app.domain.entities import User
 from app.presentation.api.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination
 from app.domain.enums import TaskStatus
+from app.application.dto import TaskPaginationDTO, CreateTaskDTO, UpdateTaskDTO
 from app.presentation.api.dependencies import require_role, tasks_pagination
 from app.application.services import TaskService
 from app.core.exceptions import TaskNotFoundError
@@ -24,7 +25,14 @@ async def create_task(
 ) -> TaskRead:
     """Create a new task for the **authenticated** user."""
 
-    task = await service.create_task_service(task, user.id)
+    task_dto = CreateTaskDTO(
+        title=task.title,
+        content=task.content,
+        status=task.status
+    )
+
+    task = await service.create_task_service(task_dto, user.id)
+
     return TaskRead(
         id=task.id,
         title=task.title,
@@ -53,10 +61,16 @@ async def get_tasks(
     - **from_newest**: Boolean to sort tasks from the newest first
     """
 
+    pagination_dto = TaskPaginationDTO(
+        limit=pagination.limit,
+        offset=pagination.offset,
+        from_newest=pagination.from_newest
+    )
+
     tasks = await service.get_tasks_service(
         user_id=user.id,
         task_status=task_status,
-        pagination=pagination
+        pagination=pagination_dto
     )
     return [
         TaskRead(
@@ -119,7 +133,7 @@ async def update_task(
                             "title": "example new title"
                         }
                     },
-                    "partial_сontent": {
+                    "partial_content": {
                         "summary": "Update user task with only the provided content.",
                         "description": "Update user task with only the provided field: content",
                         "value": {
@@ -154,7 +168,13 @@ async def update_task(
     """Update a specific task by ID for the **authenticated** user (_partial update_)."""
 
     try:
-        task = await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_update)
+        task_dto = UpdateTaskDTO(
+            title=task_update.title,
+            content=task_update.content,
+            status=task_update.status
+        )
+
+        task = await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_dto)
         return TaskRead(
             id=task.id,
             title=task.title,

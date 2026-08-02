@@ -2,27 +2,25 @@ from abc import ABC, abstractmethod
 
 from app.domain.entities import Task
 from app.domain.enums import TaskStatus
-from app.presentation.api.schemas import TaskCreate, TaskUpdate, TasksPagination
-
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData
 
 class TaskRepository(ABC):
 
     @abstractmethod
-    async def create_task(self, task: TaskCreate, user_id: int) -> Task: ...
+    async def create_task(
+            self,
+            title: str,
+            content: str,
+            status: TaskStatus,
+            user_id: int
+    ) -> Task: ...
 
     @abstractmethod
     async def get_tasks(
         self,
         user_id: int,
-        pagination: TasksPagination,
-    ) -> list[Task]: ...
-
-    @abstractmethod
-    async def get_tasks_by_status(
-        self,
-        user_id: int,
-        task_status: TaskStatus,
-        pagination: TasksPagination,
+        pagination: TaskPaginationData,
+        task_status: TaskStatus
     ) -> list[Task]: ...
 
     @abstractmethod
@@ -36,7 +34,7 @@ class TaskRepository(ABC):
     async def update_task(
         self,
         task: Task,
-        task_update: TaskUpdate,
+        task_update: UpdateTaskData,
     ) -> Task: ...
 
     @abstractmethod

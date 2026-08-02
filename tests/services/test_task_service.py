@@ -3,9 +3,9 @@ import pytest
 from unittest.mock import AsyncMock
 
 from app.application.services import TaskService
+from app.application.dto import CreateTaskDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.interfaces import TaskRepository
 from app.domain.entities import Task
-from app.presentation.api.schemas import TasksPagination, TaskCreate, TaskUpdate
 from app.domain.enums import TaskStatus
 from app.core.exceptions import TaskNotFoundError
 
@@ -23,7 +23,7 @@ class TestTaskService:
         mock_repo.create_task.return_value = mock_task
         
         service = TaskService(repository=mock_repo)
-        task_data = TaskCreate(title="Test Task", content="Test Content", status=TaskStatus.todo)
+        task_data = CreateTaskDTO(title="Test Task", content="Test Content", status=TaskStatus.todo)
         
         task_read = await service.create_task_service(task_data, 1)
         
@@ -45,7 +45,7 @@ class TestTaskService:
         mock_repo.get_tasks.return_value = mock_tasks
         
         service = TaskService(repository=mock_repo)
-        pagination = TasksPagination()
+        pagination = TaskPaginationDTO()
         tasks = await service.get_tasks_service(
             user_id=1,
             task_status=None,
@@ -60,10 +60,10 @@ class TestTaskService:
         """Test getting tasks filtered by status through service."""
         mock_repo = AsyncMock(spec=TaskRepository)
         mock_tasks = [Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)]
-        mock_repo.get_tasks_by_status.return_value = mock_tasks
+        mock_repo.get_tasks.return_value = mock_tasks
         
         service = TaskService(repository=mock_repo)
-        pagination = TasksPagination()
+        pagination = TaskPaginationDTO()
         todo_tasks = await service.get_tasks_service(
             user_id=1,
             task_status=TaskStatus.todo,
@@ -72,7 +72,7 @@ class TestTaskService:
         
         assert len(todo_tasks) == 1
         assert todo_tasks[0].status == TaskStatus.todo
-        mock_repo.get_tasks_by_status.assert_called_once()
+        mock_repo.get_tasks.assert_called_once()
     
     @pytest.mark.asyncio
     async def test_get_tasks_service_with_limit(self):
@@ -85,7 +85,7 @@ class TestTaskService:
         mock_repo.get_tasks.return_value = mock_tasks
         
         service = TaskService(repository=mock_repo)
-        pagination = TasksPagination(limit=3)
+        pagination = TaskPaginationDTO(limit=3)
         tasks = await service.get_tasks_service(
             user_id=1,
             task_status=None,
@@ -106,7 +106,7 @@ class TestTaskService:
         mock_repo.get_tasks.return_value = mock_tasks
         
         service = TaskService(repository=mock_repo)
-        pagination = TasksPagination(offset=5)
+        pagination = TaskPaginationDTO(offset=5)
         tasks = await service.get_tasks_service(
             user_id=1,
             task_status=None,
@@ -131,7 +131,7 @@ class TestTaskService:
         mock_repo.get_tasks.return_value = mock_tasks
         
         service = TaskService(repository=mock_repo)
-        pagination = TasksPagination(from_newest=True)
+        pagination = TaskPaginationDTO(from_newest=True)
         newest_tasks = await service.get_tasks_service(
             user_id=1,
             task_status=None,
@@ -149,7 +149,7 @@ class TestTaskService:
         mock_repo.get_tasks.return_value = []
         
         service = TaskService(repository=mock_repo)
-        pagination = TasksPagination()
+        pagination = TaskPaginationDTO()
         tasks = await service.get_tasks_service(
             user_id=1,
             task_status=None,
@@ -207,7 +207,7 @@ class TestTaskService:
         mock_repo.update_task.return_value = updated_task
         
         service = TaskService(repository=mock_repo)
-        update_data = TaskUpdate(
+        update_data = UpdateTaskDTO(
             title="Updated Title",
             content="Updated Content",
             status=TaskStatus.done
@@ -233,7 +233,7 @@ class TestTaskService:
         mock_repo.update_task.return_value = updated_task
         
         service = TaskService(repository=mock_repo)
-        update_data = TaskUpdate(title="Updated Title Only")
+        update_data = UpdateTaskDTO(title="Updated Title Only")
         
         result = await service.update_task_service(task_id=1, user_id=1, task_update=update_data)
         
@@ -250,7 +250,7 @@ class TestTaskService:
         mock_repo.get_task.return_value = None
         
         service = TaskService(repository=mock_repo)
-        update_data = TaskUpdate(title="Updated")
+        update_data = UpdateTaskDTO(title="Updated")
         
         with pytest.raises(TaskNotFoundError):
             await service.update_task_service(99999, 1, update_data)
@@ -262,7 +262,7 @@ class TestTaskService:
         mock_repo.get_task.return_value = None
         
         service = TaskService(repository=mock_repo)
-        update_data = TaskUpdate(title="Hacked Title")
+        update_data = UpdateTaskDTO(title="Hacked Title")
         
         with pytest.raises(TaskNotFoundError):
             await service.update_task_service(1, 2, update_data)
@@ -311,10 +311,10 @@ class TestTaskService:
             Task(id=i, title=f"Task {i}", content=f"Content {i}", status=TaskStatus.in_progress, user_id=1)
             for i in range(2)
         ]
-        mock_repo.get_tasks_by_status.return_value = mock_tasks
+        mock_repo.get_tasks.return_value = mock_tasks
         
         service = TaskService(repository=mock_repo)
-        pagination = TasksPagination(limit=2, offset=1)
+        pagination = TaskPaginationDTO(limit=2, offset=1)
         tasks = await service.get_tasks_service(
             user_id=1,
             task_status=TaskStatus.in_progress,
@@ -323,4 +323,4 @@ class TestTaskService:
         
         assert len(tasks) == 2
         assert all(task.status == TaskStatus.in_progress for task in tasks)
-        mock_repo.get_tasks_by_status.assert_called_once()
+        mock_repo.get_tasks.assert_called_once()

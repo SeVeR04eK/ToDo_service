@@ -2,6 +2,7 @@ from fastapi import APIRouter, status, Depends, HTTPException, Body
 from typing import Annotated
 
 from app.domain.entities import User
+from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.presentation.api.schemas import UserRead, UserCreate, UserUpdate, UserRole
 from app.presentation.api.dependencies import require_role
 from app.application.services import UserService
@@ -19,7 +20,14 @@ async def create_user(
     """Register a new user (_public endpoint, no authentication required_)."""
 
     try:
-        user = await service.create_user_service(user)
+        user_dto = CreateUserDTO(
+            username=user.username,
+            password=user.password,
+            password_confirm=user.password_confirm
+        )
+
+        user = await service.create_user_service(user_dto)
+
         return UserRead(
             id=user.id,
             username=user.username,
@@ -97,7 +105,14 @@ async def update_user(
     """Update the **authenticated** user's profile (_partial update_)."""
 
     try:
-        user = await service.update_user_service(user_id=user.id, user_update=user_update)
+        user_dto = UpdateUserDTO(
+            username=user_update.username,
+            password=user_update.password,
+            password_confirm=user_update.password_confirm
+        )
+
+        user = await service.update_user_service(user_id=user.id, user_update=user_dto)
+
         return UserRead(
             id=user.id,
             username=user.username,

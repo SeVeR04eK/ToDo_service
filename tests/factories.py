@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.models import User
 from app.infrastructure.models.roles_model import Role
 from app.infrastructure.models import Task
-from app.presentation.api.schemas import TaskCreate, TaskUpdate
+from app.application.dto import CreateTaskDTO, UpdateTaskDTO
 from app.domain.enums import TaskStatus
 from app.infrastructure.security.bcrypt_password_hasher import BcryptPasswordHasher
 
@@ -88,26 +88,26 @@ class TaskFactory:
         )
     
     @staticmethod
-    def create_schema(
+    def create_dto(
         title: str | None = None,
         content: str | None = None,
         status: TaskStatus = TaskStatus.todo
-    ) -> TaskCreate:
-        """Create a TaskCreate schema instance."""
-        return TaskCreate(
+    ) -> CreateTaskDTO:
+        """Create a CreateTaskDTO instance."""
+        return CreateTaskDTO(
             title=title or fake.sentence(nb_words=5),
             content=content or fake.paragraph(nb_sentences=3),
             status=status
         )
     
     @staticmethod
-    def create_update_schema(
+    def create_update_dto(
         title: str | None = None,
         content: str | None = None,
         status: TaskStatus | None = None
-    ) -> TaskUpdate:
-        """Create a TaskUpdate schema instance."""
-        return TaskUpdate(
+    ) -> UpdateTaskDTO:
+        """Create an UpdateTaskDTO instance."""
+        return UpdateTaskDTO(
             title=title,
             content=content,
             status=status

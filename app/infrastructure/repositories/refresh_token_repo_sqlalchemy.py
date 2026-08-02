@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from app.infrastructure.models import RefreshToken as RefreshTokenORM
 from app.domain.entities import RefreshToken
-from app.domain.mappers import refresh_token_from_orm
+from app.infrastructure.mappers import refresh_token_from_orm
 from app.domain.interfaces import RefreshTokenRepository
 
 

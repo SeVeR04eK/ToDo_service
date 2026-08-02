@@ -1,10 +1,11 @@
 from typing import List, Optional
 
-from app.presentation.api.schemas import TaskCreate, TaskUpdate, TasksPagination
 from app.domain.enums import TaskStatus
+from app.application.dto import CreateTaskDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.core.exceptions import TaskNotFoundError
 from app.domain.entities import Task
 from app.domain.interfaces import TaskRepository
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData
 
 class TaskService:
     """Service layer for task-related business logic."""
@@ -12,29 +13,35 @@ class TaskService:
     def __init__(self, repository: TaskRepository):
         self.repository = repository
 
-    async def create_task_service(self, task: TaskCreate, user_id: int) -> Task:
-        return await self.repository.create_task(task=task, user_id=user_id)
+    async def create_task_service(self, task: CreateTaskDTO, user_id: int) -> Task:
+
+        return await self.repository.create_task(
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=user_id
+        )
 
     async def get_tasks_service(
             self,
             user_id: int,
             task_status: Optional[TaskStatus],
-            pagination: TasksPagination
+            pagination: TaskPaginationDTO
     ) -> List[Task]:
         """Get tasks with optional filtering by status, pagination, and sorting."""
 
-        # Route to appropriate repository method based on whether status filter is provided
-        if task_status is not None:
-            return await self.repository.get_tasks_by_status(
-                user_id=user_id,
-                task_status=task_status,
-                pagination=pagination
-            )
-        else:
-            return await self.repository.get_tasks(
-                user_id=user_id,
-                pagination=pagination
-            )
+
+        pagination_data = TaskPaginationData(
+            limit=pagination.limit,
+            offset=pagination.offset,
+            from_newest=pagination.from_newest
+        )
+
+        return await self.repository.get_tasks(
+            user_id=user_id,
+            pagination=pagination_data,
+            task_status=task_status
+        )
 
     async def get_task_service(self, task_id: int, user_id: int) -> Task:
         """Get a single task by ID."""
@@ -45,14 +52,25 @@ class TaskService:
 
         return task
 
-    async def update_task_service(self, task_id: int, user_id: int, task_update: TaskUpdate) -> Task:
+    async def update_task_service(
+            self,
+            task_id: int,
+            user_id: int,
+            task_update: UpdateTaskDTO
+    ) -> Task:
         """Update a task."""
 
         task = await self.repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
             raise TaskNotFoundError("Task not found")
 
-        return await self.repository.update_task(task=task, task_update=task_update)
+        task_update_data = UpdateTaskData(
+            title=task_update.title,
+            content=task_update.content,
+            status=task_update.status,
+        )
+
+        return await self.repository.update_task(task=task, task_update=task_update_data)
 
     async def delete_task_service(self, task_id: int, user_id: int) -> None:
         """Delete a task."""

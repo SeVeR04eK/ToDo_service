@@ -3,7 +3,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.repositories import SQLAlchemyTaskRepository
-from app.presentation.api.schemas import TaskCreate, TaskUpdate, TasksPagination
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData
 from app.domain.enums import TaskStatus
 
 from tests.factories import TaskFactory, UserFactory
@@ -18,26 +18,31 @@ class TestTaskRepository:
     async def test_create_task_success(self, db_session: AsyncSession, test_user):
         """Test successful task creation."""
         repo = SQLAlchemyTaskRepository(db_session)
-        task_data = TaskFactory.create_schema()
         
-        task = await repo.create_task(task_data, test_user.id)
+        task = await repo.create_task(
+            title="Test Task",
+            content="Test Content",
+            status=TaskStatus.todo,
+            user_id=test_user.id
+        )
         
         assert task.id is not None
-        assert task.title == task_data.title
-        assert task.content == task_data.content
-        assert task.status == task_data.status
+        assert task.title == "Test Task"
+        assert task.content == "Test Content"
+        assert task.status == TaskStatus.todo
         assert task.user_id == test_user.id
     
     @pytest.mark.asyncio
     async def test_create_task_with_default_status(self, db_session: AsyncSession, test_user):
         """Test task creation with default status."""
         repo = SQLAlchemyTaskRepository(db_session)
-        task_data = TaskCreate(
-            title="Test Task",
-            content="Test content"
-        )
         
-        task = await repo.create_task(task_data, test_user.id)
+        task = await repo.create_task(
+            title="Test Task",
+            content="Test content",
+            status=TaskStatus.todo,
+            user_id=test_user.id
+        )
         
         assert task.status == TaskStatus.todo
     
@@ -47,8 +52,8 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
-        pagination = TasksPagination()
-        tasks = await repo.get_tasks(test_user.id, pagination)
+        pagination = TaskPaginationData()
+        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
         assert len(tasks) == 5
     
@@ -58,8 +63,8 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
-        pagination = TasksPagination(limit=3)
-        tasks = await repo.get_tasks(test_user.id, pagination)
+        pagination = TaskPaginationData(limit=3)
+        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
         assert len(tasks) == 3
     
@@ -69,8 +74,8 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
-        pagination = TasksPagination(offset=5)
-        tasks = await repo.get_tasks(test_user.id, pagination)
+        pagination = TaskPaginationData(offset=5)
+        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
         assert len(tasks) == 5
     
@@ -80,8 +85,8 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
-        pagination = TasksPagination(limit=3, offset=2)
-        tasks = await repo.get_tasks(test_user.id, pagination)
+        pagination = TaskPaginationData(limit=3, offset=2)
+        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
         assert len(tasks) == 3
     
@@ -91,8 +96,8 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
-        pagination = TasksPagination(from_newest=False)
-        retrieved_tasks = await repo.get_tasks(test_user.id, pagination)
+        pagination = TaskPaginationData(from_newest=False)
+        retrieved_tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
         assert retrieved_tasks[0].id == tasks[0].id
         assert retrieved_tasks[-1].id == tasks[-1].id
@@ -103,8 +108,8 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
-        pagination = TasksPagination(from_newest=True)
-        retrieved_tasks = await repo.get_tasks(test_user.id, pagination)
+        pagination = TaskPaginationData(from_newest=True)
+        retrieved_tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
         assert retrieved_tasks[0].id == tasks[-1].id
         assert retrieved_tasks[-1].id == tasks[0].id
@@ -120,9 +125,9 @@ class TestTaskRepository:
         await TaskFactory.create_many_in_db(db_session, count=3, user_id=user1.id)
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=user2.id)
         
-        pagination = TasksPagination()
-        user1_tasks = await repo.get_tasks(user1.id, pagination)
-        user2_tasks = await repo.get_tasks(user2.id, pagination)
+        pagination = TaskPaginationData()
+        user1_tasks = await repo.get_tasks(user1.id, pagination, task_status=None)
+        user2_tasks = await repo.get_tasks(user2.id, pagination, task_status=None)
         
         assert len(user1_tasks) == 3
         assert len(user2_tasks) == 5
@@ -139,10 +144,10 @@ class TestTaskRepository:
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.done)
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
         
-        pagination = TasksPagination()
-        todo_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.todo, pagination)
-        in_progress_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.in_progress, pagination)
-        done_tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.done, pagination)
+        pagination = TaskPaginationData()
+        todo_tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.todo)
+        in_progress_tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.in_progress)
+        done_tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.done)
         
         assert len(todo_tasks) == 2
         assert len(in_progress_tasks) == 1
@@ -159,8 +164,8 @@ class TestTaskRepository:
         for _ in range(5):
             await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
         
-        pagination = TasksPagination(limit=2, offset=1)
-        tasks = await repo.get_tasks_by_status(test_user.id, TaskStatus.todo, pagination)
+        pagination = TaskPaginationData(limit=2, offset=1)
+        tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.todo)
         
         assert len(tasks) == 2
     
@@ -206,7 +211,7 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
-        update_data = TaskUpdate(
+        update_data = UpdateTaskData(
             title="Updated Title",
             content="Updated Content",
             status=TaskStatus.done
@@ -224,7 +229,7 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         original_task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
-        update_data = TaskUpdate(title="Updated Title Only")
+        update_data = UpdateTaskData(title="Updated Title Only")
         
         updated_task = await repo.update_task(original_task, update_data)
         
@@ -238,7 +243,7 @@ class TestTaskRepository:
         repo = SQLAlchemyTaskRepository(db_session)
         task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
-        update_data = TaskUpdate()
+        update_data = UpdateTaskData()
         
         updated_task = await repo.update_task(task, update_data)
         

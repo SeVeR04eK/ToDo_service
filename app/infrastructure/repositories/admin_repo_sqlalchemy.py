@@ -5,8 +5,8 @@ from sqlalchemy import select
 
 from app.infrastructure.models import User as UserORM, Role as RoleORM
 from app.domain.entities import User, Role
-from app.domain.mappers import user_from_orm, role_from_orm
-from app.presentation.api.schemas import OnlyUserPermission, RoleCreate
+from app.infrastructure.mappers import user_from_orm, role_from_orm
+from app.domain.value_objects import UserPermissionData
 from app.domain.interfaces import AdminRepository
 
 
@@ -31,7 +31,7 @@ class SQLAlchemyAdminRepository(AdminRepository):
         orm_users = (await self.session.scalars(request)).all()
         return [user_from_orm(u) for u in orm_users]
 
-    async def user_perm(self, user: User, user_permission: OnlyUserPermission) -> User:
+    async def user_perm(self, user: User, user_permission: UserPermissionData) -> User:
         """Update user permissions (is_active status and role ID)."""
 
         # Get the ORM user from the domain user
@@ -41,10 +41,13 @@ class SQLAlchemyAdminRepository(AdminRepository):
         if orm_user is None:
             return user
 
-        # exclude_unset=True and exclude_none=True only include fields that were explicitly set and not None
-        user_data = user_permission.model_dump(exclude_unset=True, exclude_none=True)
+        update_data = {
+            key: value
+            for key, value in vars(user_permission).items()
+            if value is not None
+        }
 
-        for key, value in user_data.items():
+        for key, value in update_data.items():
             setattr(orm_user, key, value)
 
         await self.session.commit()
@@ -55,10 +58,10 @@ class SQLAlchemyAdminRepository(AdminRepository):
 
         return user_from_orm(orm_user)
 
-    async def create_role(self, new_role: RoleCreate) -> Role:
+    async def create_role(self, name: str) -> Role:
         """Create a new role."""
 
-        orm_role = RoleORM(name=new_role.name)
+        orm_role = RoleORM(name=name)
 
         self.session.add(orm_role)
         await self.session.commit()

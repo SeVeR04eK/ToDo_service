@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.repositories import SQLAlchemyAdminRepository
-from app.presentation.api.schemas import OnlyUserPermission, RoleCreate
+from app.domain.value_objects import UserPermissionData
 
 from tests.factories import UserFactory, RoleFactory
 
@@ -59,7 +59,7 @@ class TestAdminRepository:
     async def test_user_perm_update_is_active(self, db_session: AsyncSession, test_user):
         """Test updating user is_active field."""
         repo = SQLAlchemyAdminRepository(session=db_session)
-        user_perm = OnlyUserPermission(is_active=False, role_id=None)
+        user_perm = UserPermissionData(is_active=False, role_id=None)
         
         updated_user = await repo.user_perm(test_user, user_perm)
         
@@ -71,7 +71,7 @@ class TestAdminRepository:
         admin_role = await RoleFactory.create_in_db(db_session, name="admin")
         
         repo = SQLAlchemyAdminRepository(session=db_session)
-        user_perm = OnlyUserPermission(is_active=True, role_id=admin_role.id)
+        user_perm = UserPermissionData(is_active=True, role_id=admin_role.id)
         
         updated_user = await repo.user_perm(test_user, user_perm)
         
@@ -83,7 +83,7 @@ class TestAdminRepository:
         admin_role = await RoleFactory.create_in_db(db_session, name="admin")
         
         repo = SQLAlchemyAdminRepository(session=db_session)
-        user_perm = OnlyUserPermission(is_active=False, role_id=admin_role.id)
+        user_perm = UserPermissionData(is_active=False, role_id=admin_role.id)
         
         updated_user = await repo.user_perm(test_user, user_perm)
         
@@ -94,7 +94,7 @@ class TestAdminRepository:
     async def test_user_perm_no_changes(self, db_session: AsyncSession, test_user):
         """Test updating with no changes."""
         repo = SQLAlchemyAdminRepository(session=db_session)
-        user_perm = OnlyUserPermission(is_active=None, role_id=None)
+        user_perm = UserPermissionData(is_active=None, role_id=None)
         
         updated_user = await repo.user_perm(test_user, user_perm)
         
@@ -104,9 +104,8 @@ class TestAdminRepository:
     async def test_create_role_success(self, db_session: AsyncSession):
         """Test creating a new role."""
         repo = SQLAlchemyAdminRepository(session=db_session)
-        new_role = RoleCreate(name="moderator")
         
-        role = await repo.create_role(new_role)
+        role = await repo.create_role(name="moderator")
         
         assert role.name == "moderator"
         assert role.id is not None

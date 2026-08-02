@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from app.application.services import AdminService
 from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
 from app.domain.entities import User, Role
-from app.presentation.api.schemas import RoleCreate, TaskUpdate, TasksPagination
+from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
 from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError
 
 
@@ -166,7 +166,7 @@ class TestAdminService:
         mock_admin_repo.create_role.return_value = mock_role
         
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
-        new_role = RoleCreate(name="moderator")
+        new_role = CreateRoleDTO(name="moderator")
         role = await service.create_role_service(new_role)
         
         assert role.name == "moderator"
@@ -182,7 +182,7 @@ class TestAdminService:
         mock_admin_repo.get_role_id_by_name.return_value = 1
         
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
-        new_role = RoleCreate(name="moderator")
+        new_role = CreateRoleDTO(name="moderator")
         
         with pytest.raises(RoleAlreadyExistsError):
             await service.create_role_service(new_role)
@@ -198,7 +198,7 @@ class TestAdminService:
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
         
         with pytest.raises(UserNotFoundError):
-            await service.get_tasks_service(user_id=99999, task_status=None, pagination=TasksPagination())
+            await service.get_tasks_service(user_id=99999, task_status=None, pagination=TaskPaginationDTO())
 
     @pytest.mark.asyncio
     async def test_get_tasks_service_permission_denied(self):
@@ -214,7 +214,7 @@ class TestAdminService:
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
         
         with pytest.raises(PermissionDeniedError):
-            await service.get_tasks_service(user_id=1, task_status=None, pagination=TasksPagination())
+            await service.get_tasks_service(user_id=1, task_status=None, pagination=TaskPaginationDTO())
 
     @pytest.mark.asyncio
     async def test_get_task_service_user_not_found(self):
@@ -256,7 +256,7 @@ class TestAdminService:
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
         
         with pytest.raises(UserNotFoundError):
-            await service.update_task_service(task_id=1, user_id=99999, task_update=TaskUpdate())
+            await service.update_task_service(task_id=1, user_id=99999, task_update=UpdateTaskDTO())
 
     @pytest.mark.asyncio
     async def test_update_task_service_permission_denied(self):
@@ -272,7 +272,7 @@ class TestAdminService:
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
         
         with pytest.raises(PermissionDeniedError):
-            await service.update_task_service(task_id=1, user_id=1, task_update=TaskUpdate())
+            await service.update_task_service(task_id=1, user_id=1, task_update=UpdateTaskDTO())
 
     @pytest.mark.asyncio
     async def test_delete_task_service_user_not_found(self):

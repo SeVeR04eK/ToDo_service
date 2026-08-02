@@ -1,6 +1,7 @@
 from typing import List, Optional, Union
 
-from app.presentation.api.schemas import RoleCreate, OnlyUserPermission, TaskUpdate, TasksPagination
+from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData, UserPermissionData
 from app.domain.enums import TaskStatus
 from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
 from app.domain.entities import User, Role, Task
@@ -67,7 +68,7 @@ class AdminService:
                 raise RoleNotFoundError("Role not found")
             role_id = role
 
-        user_permission = OnlyUserPermission(is_active=is_active, role_id=role_id)
+        user_permission = UserPermissionData(is_active=is_active, role_id=role_id)
         return await self.admin_repository.user_perm(user=user, user_permission=user_permission)
 
     async def delete_user_service(self, user_id: int) -> None:
@@ -83,14 +84,16 @@ class AdminService:
 
         await self.user_repository.delete_user(user=user)
 
-    async def create_role_service(self, new_role: RoleCreate) -> Role:
+    async def create_role_service(self, new_role: CreateRoleDTO) -> Role:
         """Create a new role."""
 
-        role_exist = await self.admin_repository.get_role_id_by_name(name=new_role.name)
+        role_name = new_role.name
+
+        role_exist = await self.admin_repository.get_role_id_by_name(name=role_name)
         if role_exist is not None:
             raise RoleAlreadyExistsError("Role already exists")
 
-        role = await self.admin_repository.create_role(new_role=new_role)
+        role = await self.admin_repository.create_role(name=role_name)
 
         return role
 
@@ -99,7 +102,7 @@ class AdminService:
 
         return await self.admin_repository.get_roles()
 
-    async def get_tasks_service(self, user_id: int, task_status: Optional[TaskStatus], pagination: TasksPagination) -> List[Task]:
+    async def get_tasks_service(self, user_id: int, task_status: Optional[TaskStatus], pagination: TaskPaginationDTO) -> List[Task]:
         """Get tasks for a user with admin protection."""
 
         # Check if user exists
@@ -111,18 +114,17 @@ class AdminService:
         if target_user.role and target_user.role.name == "admin":
             raise PermissionDeniedError("Not enough permissions")
 
-        # Route to appropriate repository method based on whether status filter is provided
-        if task_status is not None:
-            return await self.task_repository.get_tasks_by_status(
-                user_id=user_id,
-                task_status=task_status,
-                pagination=pagination
-            )
-        else:
-            return await self.task_repository.get_tasks(
-                user_id=user_id,
-                pagination=pagination
-            )
+        pagination = TaskPaginationData(
+            limit=pagination.limit,
+            offset=pagination.offset,
+            from_newest=pagination.from_newest,
+        )
+
+        return await self.task_repository.get_tasks(
+            user_id=user_id,
+            task_status=task_status,
+            pagination=pagination)
+
 
     async def get_task_service(self, task_id: int, user_id: int) -> Task:
         """Get a single task for a user with admin protection."""
@@ -142,7 +144,7 @@ class AdminService:
 
         return task
 
-    async def update_task_service(self, task_id: int, user_id: int, task_update: TaskUpdate) -> Task:
+    async def update_task_service(self, task_id: int, user_id: int, task_update: UpdateTaskDTO) -> Task:
         """Update a task for a user with admin protection."""
 
         # Check if user exists
@@ -157,6 +159,12 @@ class AdminService:
         task = await self.task_repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
             raise TaskNotFoundError("Task not found")
+
+        task_update = UpdateTaskData(
+            title=task_update.title,
+            content=task_update.content,
+            status=task_update.status
+        )
 
         return await self.task_repository.update_task(task=task, task_update=task_update)
 

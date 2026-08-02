@@ -11,12 +11,12 @@ from .user_schema import UserCreate, UserRead, UserUpdate, UserRole
 from .tokens_schema import TokensResponse
 from .refresh_token_schema import RefreshTokenGet
 from .task_schema import TaskRead, TaskCreate, TaskUpdate
-from .admin_schema import UserPermission, OnlyUserPermission
+from .admin_schema import UserPermission
 from .role_schema import RoleRead, RoleCreate
 from .pagin_schema import TasksPagination
 
 __all__ = ["UserCreate", "UserRead", "TokensResponse",
            "RefreshTokenGet", "TaskCreate", "TaskRead",
            "TaskUpdate", "UserUpdate", "UserPermission",
-           "RoleRead", "RoleCreate", "OnlyUserPermission",
+           "RoleRead", "RoleCreate",
            "TasksPagination", "UserRole"]

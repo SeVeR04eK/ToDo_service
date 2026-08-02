@@ -2,11 +2,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from sqlalchemy import select, delete
 
-from app.presentation.api.schemas import TaskCreate, TaskUpdate, TasksPagination
 from app.domain.enums import TaskStatus
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData
 from app.infrastructure.models import Task as TaskORM
 from app.domain.entities import Task
-from app.domain.mappers import task_from_orm
+from app.infrastructure.mappers import task_from_orm
 from app.domain.interfaces import TaskRepository
 
 
@@ -16,13 +16,18 @@ class SQLAlchemyTaskRepository(TaskRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_task(self, task: TaskCreate, user_id: int) -> Task:
+    async def create_task(
+            self,
+            title: str,
+            content: str,
+            status: TaskStatus,
+            user_id: int) -> Task:
         """Create a new task for a user."""
 
         orm_task = TaskORM(
-            title=task.title,
-            content=task.content,
-            status=task.status,
+            title=title,
+            content=content,
+            status=status,
             user_id=user_id
         )
 
@@ -35,15 +40,19 @@ class SQLAlchemyTaskRepository(TaskRepository):
     async def get_tasks(
             self,
             user_id: int,
-            pagination: TasksPagination) -> List[Task]:
+            pagination: TaskPaginationData,
+            task_status: TaskStatus
+    ) -> List[Task]:
         """Get all tasks for a user with optional pagination and sorting."""
 
         request = select(TaskORM).where(TaskORM.user_id == user_id)
 
-        if pagination.from_newest:
-            request = request.order_by(TaskORM.id.desc())
-        else:
-            request = request.order_by(TaskORM.id.asc())
+        if task_status is not None:
+            request = request.where(TaskORM.status == task_status)
+
+        request = request.order_by(
+            TaskORM.id.desc() if pagination.from_newest else TaskORM.id.asc()
+        )
 
         if pagination.offset is not None:
             request = request.offset(pagination.offset)
@@ -52,31 +61,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
             request = request.limit(pagination.limit)
 
         orm_tasks = (await self.session.scalars(request)).all()
-        return [task_from_orm(t) for t in orm_tasks]
-
-    async def get_tasks_by_status(
-            self,
-            user_id: int,
-            task_status: TaskStatus,
-            pagination: TasksPagination
-    ) -> List[Task]:
-        """Get tasks for a user filtered by status with optional pagination and sorting."""
-
-        request = select(TaskORM).where(TaskORM.user_id == user_id, TaskORM.status == task_status)
-
-        if pagination.from_newest:
-            request = request.order_by(TaskORM.id.desc())
-        else:
-            request = request.order_by(TaskORM.id.asc())
-
-        if pagination.offset is not None:
-            request = request.offset(pagination.offset)
-
-        if pagination.limit is not None:
-            request = request.limit(pagination.limit)
-
-        orm_tasks = (await self.session.scalars(request)).all()
-        return [task_from_orm(t) for t in orm_tasks]
+        return [task_from_orm(task) for task in orm_tasks]
 
     async def get_task(self, task_id: int, user_id: int) -> Task | None:
         """Get a single task by ID for a specific user."""
@@ -86,7 +71,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
         orm_task = await self.session.scalar(request)
         return task_from_orm(orm_task) if orm_task else None
 
-    async def update_task(self, task: Task, task_update: TaskUpdate) -> Task:
+    async def update_task(self, task: Task, task_update: UpdateTaskData) -> Task:
         """Update an existing task with partial data."""
 
         # Get the ORM task from the domain task
@@ -97,7 +82,11 @@ class SQLAlchemyTaskRepository(TaskRepository):
             return task
 
         # exclude_unset=True only includes fields that were explicitly set
-        update_data = task_update.model_dump(exclude_unset=True)
+        update_data = {
+            key: value
+            for key, value in vars(task_update).items()
+            if value is not None
+        }
 
         for key, value in update_data.items():
             # Only set attributes that are not None to avoid NOT NULL constraint violations

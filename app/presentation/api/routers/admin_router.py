@@ -3,6 +3,7 @@ from typing import Annotated, Optional, Union, List
 
 from app.domain.entities import User
 from app.presentation.api.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination
+from app.application.dto import CreateRoleDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.enums import TaskStatus
 from app.presentation.api.dependencies import require_role, tasks_pagination
 from app.application.services import AdminService
@@ -188,6 +189,12 @@ async def get_tasks(
     """
 
     try:
+        pagination = TaskPaginationDTO(
+            limit=pagination.limit,
+            offset=pagination.offset,
+            from_newest=pagination.from_newest
+        )
+
         tasks = await service.get_tasks_service(
             user_id=user_id,
             task_status=task_status,
@@ -301,7 +308,14 @@ async def update_task(
     """Update a specific task for a user by ID (_Partial update_")."""
 
     try:
-        task = await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_update)
+        task_dto = UpdateTaskDTO(
+            title=task_update.title,
+            content=task_update.content,
+            status=task_update.status
+        )
+
+        task = await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_dto)
+
         return TaskRead(
             id=task.id,
             title=task.title,
@@ -349,7 +363,10 @@ async def create_role(
     """Create a new role."""
 
     try:
-        role = await service.create_role_service(new_role=new_role)
+        role_dto = CreateRoleDTO(name=new_role.name)
+
+        role = await service.create_role_service(new_role=role_dto)
+
         return RoleRead(
             id=role.id,
             name=role.name
