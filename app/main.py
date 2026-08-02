@@ -4,6 +4,8 @@ import asyncio
 
 from app.presentation.api import api_router
 from app.infrastructure.background_tasks import clean_tokens_task
+from app.domain.exceptions.base import DomainException
+from app.presentation.exception_handlers import domain_exception_handler
 
 
 @asynccontextmanager
@@ -81,3 +83,7 @@ It demonstrates how to design a reliable, secure, and easy‑to‑maintain API s
 )
 # Include all API routers
 app.include_router(api_router)
+app.add_exception_handler(
+    DomainException,
+    domain_exception_handler,
+)

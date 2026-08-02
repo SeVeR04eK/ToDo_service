@@ -7,7 +7,7 @@ from app.application.dto import CreateTaskDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.interfaces import TaskRepository
 from app.domain.entities import Task
 from app.domain.enums import TaskStatus
-from app.core.exceptions import TaskNotFoundError
+from app.domain.exceptions import TaskNotFoundError
 
 
 @pytest.mark.unit

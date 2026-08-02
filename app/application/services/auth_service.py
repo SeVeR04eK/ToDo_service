@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from app.core.exceptions import UserNotFoundError, InvalidRefreshTokenError
+from app.domain.exceptions import UserNotFoundError, InvalidRefreshTokenError
 from app.application.dto import Tokens
 from app.domain.interfaces import UserRepository, RefreshTokenRepository, TokenService
 from app.application.use_cases import AuthenticateUserUseCase
@@ -58,7 +58,7 @@ class AuthService:
 
         # Handle timezone comparison - SQLite returns naive datetimes
         if db_token is None:
-            raise InvalidRefreshTokenError("Invalid refresh token")
+            raise InvalidRefreshTokenError()
 
         # Make both datetimes comparable by ensuring they're both naive or both aware
         expires_at = db_token.expires_at
@@ -70,20 +70,20 @@ class AuthService:
             now = datetime.now(timezone.utc)
 
         if expires_at < now:
-            raise InvalidRefreshTokenError("Invalid refresh token")
+            raise InvalidRefreshTokenError()
 
         # Decode the refresh token to get user information
         payload = self.token_service.decode_refresh_token(refresh_token)
 
         if "id" not in payload or "sub" not in payload:
-            raise InvalidRefreshTokenError("Invalid refresh token")
+            raise InvalidRefreshTokenError()
 
         user_id = payload["id"]
 
         user_role = await self.user_repository.get_user_role(user_id)
 
         if user_role is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         # Delete the used refresh token (token rotation)
         await self.refresh_token_repository.delete_refresh_token(db_token)

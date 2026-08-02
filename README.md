@@ -147,34 +147,55 @@ Functionality for managing personal tasks:
 ```
 ToDo_service/
 ├── app/                      # main application package
-│   ├── api/                  # API layer
-│   │   ├── dependencies/     # FastAPI dependencies (auth, authorization)
-│   │   ├── middleware/       # Custom middleware
-│   │   └── routers/          # individual FastAPI routers
+│   ├── application/          # application layer (DTOs, services, use cases)
+│   │   ├── dto/              # Data Transfer Objects
+│   │   ├── services/         # Business logic services
+│   │   └── use_cases/        # Application use cases
 │   ├── core/                 # configuration, settings
-│   ├── db/                   # database connection, session, engine
-│   ├── migrations/           # Alembic migrations
-│   │   └── versions/         # generated migration files
-│   ├── models/               # SQLAlchemy ORM models
-│   ├── repositories/         # data access layer (CRUD repositories)
-│   ├── schemas/              # Pydantic request/response schemas
-│   ├── security/             # authentication, token management
-│   ├── services/             # business logic layer
-│   ├── utils/                # helper utilities
+│   ├── domain/               # domain layer
+│   │   ├── entities/         # Domain entities
+│   │   ├── enums/            # Domain enums
+│   │   ├── exceptions/       # Domain exceptions
+│   │   ├── interfaces/       # Repository interfaces
+│   │   └── value_objects/    # Value objects
+│   ├── infrastructure/       # infrastructure layer
+│   │   ├── background_tasks/  # Background tasks
+│   │   ├── database/         # Database configuration
+│   │   ├── mappers/          # ORM mappers
+│   │   ├── models/           # SQLAlchemy ORM models
+│   │   ├── repositories/     # Repository implementations
+│   │   ├── security/         # Security implementations
+│   │   └── services/         # Infrastructure services
+│   ├── presentation/          # presentation layer
+│   │   ├── api/              # API layer
+│   │   │   ├── dependencies/ # FastAPI dependencies
+│   │   │   ├── exception_handlers/ # Exception handlers
+│   │   │   └── routers/      # FastAPI routers
+│   │   └── schemas/         # Pydantic schemas
 │   └── main.py               # FastAPI application entry point
 ├── tests/                    # tests for application
+│   ├── api/                  # API integration tests
+│   ├── factories.py          # Test data factories
+│   ├── repositories/         # Repository layer tests
+│   └── services/             # Service layer tests
 ├── scripts/                  # helper scripts (seed)
 ├── screenshots/              # screenshots for README.md
 ├── alembic.ini               # Alembic configuration
+├── alembic/                  # Alembic migrations
+│   └── versions/             # generated migration files
 ├── LICENSE                   # project license
 ├── README.md                 # project documentation
-├── .env                      # environment variables (not committed)
+├── .dockerignore             # Docker ignore rules
 ├── .gitignore                # Git ignore rules
-├── Dockerfile.dev            # Development image
-├── docker-compose.dev.yml    # Dev environment
-├── docker-entrypoint.dev.sh  # Dev entrypoint
+├── Dockerfile                # Multi-stage Dockerfile (dev + prod)
+├── docker-compose.dev.yml    # Development environment
+├── docker-compose.prod.yml   # Production environment
+├── docker-entrypoint.sh      # Common entrypoint script
+├── .env.dev                  # Development environment variables
+├── .env.prod                 # Production environment variables
 ├── .env.example              # Template of environment variables
-└── requirements.txt          # project dependencies
+├── requirements.txt          # Production dependencies
+└── requirements-dev.txt      # Development dependencies
 
 
 ```
@@ -669,32 +690,28 @@ GET /admin/users?limit=10&offset=0
 
 ## Running the Project
 
-**⚠️ Development Environment Notice**
+The project supports three execution modes:
 
-This project is configured for development purposes only. The following aspects are NOT production-ready:
+**Docker DEV** — local development with hot‑reload and bind‑mount
 
-- **Configuration Management**: Settings are loaded from `.env` files without proper secrets management
-- **Containerization**: Docker setup uses development configurations with hot-reload and debug features
-- **Security**: Secret keys and passwords are stored in environment files without encryption
-- **Database**: Uses development database settings without proper backup/replication
+**Docker PROD** — production-ready optimized container setup
 
-For production deployment, you would need:
-- Proper secrets management (e.g., HashiCorp Vault, AWS Secrets Manager)
-- Production-grade container orchestration (Kubernetes with proper security contexts)
-- Environment-specific configurations (staging, production)
-- Proper SSL/TLS termination
-- Database clustering and automated backups
-- Security scanning and vulnerability management
+**Manual Setup** — run without Docker using your own environment
 
-The project supports two execution modes:
+---
 
-**Docker DEV** — the primary mode for local development (hot‑reload, bind‑mount, auto‑migrations)
+## Docker Development Mode (DEV)
 
-**Manual Setup** — run the application without Docker using your own environment configuration
+### Overview
 
-### Docker Development Mode (DEV)
+The development environment uses a multi-stage Docker build with:
+- Hot reload enabled for fast development
+- Source code mounted as volume
+- Development dependencies included
+- Automatic database migrations on startup
+- Seed scripts for initial data setup
 
-#### 1. Clone repository
+### 1. Clone repository
 
 ```
 git clone https://github.com/SeVeR04eK/ToDo_service.git
@@ -706,52 +723,155 @@ cd ToDo_service
 ### 2. Generate secret key
 
 ```
-python app/core/secret.py
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
 ---
 
 ### 3. Setup environment variables
 
-Create `.env.dev` file using `.env.example` template (only SECRET_KEY should be changed):
+The `.env.dev` file is already provided with default values. Update the `SECRET_KEY` with your generated key:
 
-```
+```bash
+# .env.dev
 DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
-SECRET_KEY=your_secret_key           
+SECRET_KEY=your_generated_secret_key_here
 FIRST_ADMIN_USERNAME=admin
 FIRST_ADMIN_PASSWORD=admin123
+DEBUG=true
 ```
 
 ---
 
-### 4. Run docker compose
+### 4. Run development environment
 
-```
+```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
 
+This will:
+- Build the Docker image using the `dev` stage
+- Start PostgreSQL database
+- Start the FastAPI backend with hot reload
+- Run database migrations automatically
+- Run seed scripts (roles and admin user)
+
 ---
 
-### 5. Open docs
+### 5. Access the application
 
+- **API Documentation**: http://127.0.0.1:8000/docs
+- **Database**: localhost:5432
+
+---
+
+### 6. Stop the environment
+
+```bash
+docker compose -f docker-compose.dev.yml down
 ```
-http://127.0.0.1:8000/docs
+
+To remove volumes (including database data):
+
+```bash
+docker compose -f docker-compose.dev.yml down -v
 ```
 
 ---
 
-### Manual
+## Docker Production Mode (PROD)
 
-#### 1. Clone repository
+### Overview
+
+The production environment uses an optimized Docker setup with:
+- Multi-stage build for minimal image size
+- Production ASGI server (Gunicorn with Uvicorn workers)
+- No source code volumes
+- Only production dependencies
+- Health checks and restart policies
+- Network isolation
+
+### 1. Clone repository
 
 ```
 git clone https://github.com/SeVeR04eK/ToDo_service.git
-cd tToDo_service
+cd ToDo_service
 ```
 
 ---
 
-#### 2. Create virtual environment
+### 2. Setup environment variables
+
+Create `.env.prod` with production values:
+
+```bash
+# .env.prod
+DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
+SECRET_KEY=your_production_secret_key_minimum_32_characters
+FIRST_ADMIN_USERNAME=admin
+FIRST_ADMIN_PASSWORD=your_secure_admin_password
+DEBUG=false
+```
+
+**⚠️ Security Notice**: In production, use proper secrets management (HashiCorp Vault, AWS Secrets Manager, etc.) instead of environment files.
+
+---
+
+### 3. Run production environment
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+This will:
+- Build the Docker image using the `prod` stage
+- Start PostgreSQL with health checks
+- Start FastAPI with Gunicorn (4 workers)
+- Run database migrations automatically
+- Configure restart policies
+
+**Note**: Seed scripts are NOT run in production. Run them manually if needed:
+
+```bash
+docker compose -f docker-compose.prod.yml exec backend python -m scripts.seed_roles
+docker compose -f docker-compose.prod.yml exec backend python -m scripts.seed_admin
+```
+
+---
+
+### 4. Access the application
+
+- **API Documentation**: http://127.0.0.1:8000/docs
+- **Database**: localhost:5432
+
+---
+
+### 5. Stop the environment
+
+```bash
+docker compose -f docker-compose.prod.yml down
+```
+
+To remove volumes:
+
+```bash
+docker compose -f docker-compose.prod.yml down -v
+```
+
+---
+
+## Manual Setup
+
+### 1. Clone repository
+
+```
+git clone https://github.com/SeVeR04eK/ToDo_service.git
+cd ToDo_service
+```
+
+---
+
+### 2. Create virtual environment
 
 ```
 python -m venv venv
@@ -761,7 +881,7 @@ venv\Scripts\activate     # Windows
 
 ---
 
-#### 3. Install dependencies
+### 3. Install dependencies
 
 ```
 pip install -r requirements.txt
@@ -769,7 +889,7 @@ pip install -r requirements.txt
 
 ---
 
-#### 4. Generate secret key
+### 4. Generate secret key
 
 ```
 python -c "import secrets; print(secrets.token_hex(32))"
@@ -777,7 +897,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 ---
 
-#### 5. Create database
+### 5. Create database
 
 ```
 CREATE DATABASE todo_service;   #psql
@@ -785,9 +905,9 @@ CREATE DATABASE todo_service;   #psql
 
 ---
 
-#### 6. Setup environment variables
+### 6. Setup environment variables
 
-Create `.env.dev` file using `.env.example` template:
+Create `.env` file using `.env.example` template:
 
 ```
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/todo_service
@@ -798,7 +918,7 @@ FIRST_ADMIN_PASSWORD=admin123
 
 ---
 
-#### 7. Run migrations
+### 7. Run migrations
 
 ```
 alembic upgrade head
@@ -806,16 +926,16 @@ alembic upgrade head
 
 ---
 
-#### 8. Run seeds
+### 8. Run seeds
 
 ```
-python scripts/seed_roles.py
-python scripts/seed_admin.py
+python -m scripts.seed_roles
+python -m scripts.seed_admin
 ```
 
 ---
 
-#### 9. Start server
+### 9. Start server
 
 ```
 uvicorn app.main:app --reload
@@ -823,11 +943,52 @@ uvicorn app.main:app --reload
 
 ---
 
-#### 10. Open docs
+### 10. Open docs
 
 ```
 http://127.0.0.1:8000/docs
 ```
+
+---
+
+## Docker Architecture Explanation
+
+### Multi-Stage Build
+
+The Dockerfile uses a multi-stage build pattern:
+
+```
+base (common dependencies)
+  ├── dev (development stage with hot reload)
+  └── prod (production stage with Gunicorn)
+```
+
+**Why separate dev and prod?**
+- **Development**: Includes dev tools, enables hot reload, mounts source code for fast iteration
+- **Production**: Minimal image size, production server, no dev dependencies, optimized for performance
+
+### Entrypoint Script
+
+The `docker-entrypoint.sh` script:
+- Runs database migrations (`alembic upgrade head`)
+- Executes the command passed as arguments (`exec "$@"`)
+- Uses `set -e` to fail immediately on errors
+
+**Why no seed scripts in entrypoint?**
+- Seed scripts can cause issues with multiple replicas in production
+- They should be run manually or through deployment scripts
+- Prevents duplicate data creation during scaling
+
+### Environment Files
+
+- **`.env.dev`**: Development environment variables with debug enabled
+- **`.env.prod`**: Production environment variables with debug disabled
+- **`.env.example`**: Template showing required variables
+
+### Docker Compose Files
+
+- **`docker-compose.dev.yml`**: Development configuration with volumes and hot reload
+- **`docker-compose.prod.yml`**: Production configuration with health checks and restart policies
 
 ---
 ## Test Suite

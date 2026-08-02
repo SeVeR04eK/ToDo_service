@@ -5,7 +5,7 @@ from app.application.services import UserService
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.domain.interfaces import UserRepository
 from app.domain.entities import User, Role
-from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
+from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 
 
 @pytest.mark.unit

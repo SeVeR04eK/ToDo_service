@@ -182,7 +182,7 @@ class TestUserRouter:
             json={"username": "existing_user"}
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 409
 
     @pytest.mark.asyncio
     async def test_get_user_not_found(self, authenticated_client: AsyncClient):

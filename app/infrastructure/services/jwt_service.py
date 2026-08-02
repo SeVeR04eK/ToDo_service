@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 
 from app.core import settings
 from app.domain.interfaces import TokenService
-from app.core.exceptions import InvalidAccessTokenError, InvalidRefreshTokenError
+from app.domain.exceptions import InvalidAccessTokenError, InvalidRefreshTokenError
 
 
 class JWTService(TokenService):

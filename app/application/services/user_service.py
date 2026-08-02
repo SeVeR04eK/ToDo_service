@@ -1,7 +1,7 @@
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.domain.value_objects import UserUpdateData
 from app.domain.interfaces import UserRepository
-from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
+from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 from app.domain.entities import User
 
 
@@ -15,7 +15,7 @@ class UserService:
         # Check if username already exists
         existing_user = await self.repository.get_user_by_username(username=user.username)
         if existing_user is not None:
-            raise UsernameAlreadyExistsError("Username already taken")
+            raise UsernameAlreadyExistsError()
 
         return await self.repository.create_user(username=user.username, password=user.password)
 
@@ -24,7 +24,7 @@ class UserService:
 
         user = await self.repository.get_user_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         return user
 
@@ -32,12 +32,12 @@ class UserService:
 
         user = await self.repository.get_user_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
         # Check if username already exists
         if user_update.username != user.username and user_update.username is not None:
             existing_user = await self.repository.get_user_by_username(username=user_update.username)
             if existing_user is not None:
-                raise UsernameAlreadyExistsError("Username already taken")
+                raise UsernameAlreadyExistsError()
 
         user_update_data = UserUpdateData(
             username=user_update.username,
@@ -51,6 +51,6 @@ class UserService:
 
         user = await self.repository.get_user_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         await self.repository.delete_user(user=user)

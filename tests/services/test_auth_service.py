@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 from app.application.services import AuthService
 from app.domain.interfaces import UserRepository, RefreshTokenRepository, TokenService
 from app.domain.entities import User, Role, RefreshToken
-from app.core.exceptions import InvalidRefreshTokenError, UserNotFoundError
+from app.domain.exceptions import InvalidRefreshTokenError, UserNotFoundError
 
 
 @pytest.mark.unit

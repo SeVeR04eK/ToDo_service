@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
 from app.domain.value_objects import TaskPaginationData, UpdateTaskData, UserPermissionData
 from app.domain.enums import TaskStatus
-from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
+from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
 from app.domain.entities import User, Role, Task
 from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
 
@@ -33,7 +33,7 @@ class AdminService:
 
         user = await self.user_repository.get_user_by_username(username=username)
         if user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         return user
 
@@ -42,7 +42,7 @@ class AdminService:
 
         user = await self.user_repository.get_user_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         return user
 
@@ -51,21 +51,21 @@ class AdminService:
 
         user = await self.user_repository.get_user_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         if user.role is None:
-            raise RoleNotFoundError("User role not found")
+            raise RoleNotFoundError()
 
         # Prevent admins from modifying other admins' permissions
         if user.role.name == "admin":
-            raise PermissionDeniedError("Not enough permissions")
+            raise PermissionDeniedError()
 
         # Resolve role name to role ID if role is being updated
         role_id = None
         if role_name is not None:
             role = await self.admin_repository.get_role_id_by_name(role_name)
             if role is None:
-                raise RoleNotFoundError("Role not found")
+                raise RoleNotFoundError()
             role_id = role
 
         user_permission = UserPermissionData(is_active=is_active, role_id=role_id)
@@ -76,11 +76,11 @@ class AdminService:
 
         user = await self.user_repository.get_user_by_id(user_id=user_id)
         if user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         # Prevent deletion of admin users
         if user.role is None or user.role.name == "admin":
-            raise PermissionDeniedError("Not enough permissions")
+            raise PermissionDeniedError()
 
         await self.user_repository.delete_user(user=user)
 
@@ -91,7 +91,7 @@ class AdminService:
 
         role_exist = await self.admin_repository.get_role_id_by_name(name=role_name)
         if role_exist is not None:
-            raise RoleAlreadyExistsError("Role already exists")
+            raise RoleAlreadyExistsError()
 
         role = await self.admin_repository.create_role(name=role_name)
 
@@ -108,11 +108,11 @@ class AdminService:
         # Check if user exists
         target_user = await self.user_repository.get_user_by_id(user_id=user_id)
         if target_user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         # Prevent admins from accessing other admins' tasks
         if target_user.role and target_user.role.name == "admin":
-            raise PermissionDeniedError("Not enough permissions")
+            raise PermissionDeniedError()
 
         pagination = TaskPaginationData(
             limit=pagination.limit,
@@ -132,15 +132,15 @@ class AdminService:
         # Check if user exists
         target_user = await self.user_repository.get_user_by_id(user_id=user_id)
         if target_user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         # Prevent admins from accessing other admins' tasks
         if target_user.role and target_user.role.name == "admin":
-            raise PermissionDeniedError("Not enough permissions")
+            raise PermissionDeniedError()
 
         task = await self.task_repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
-            raise TaskNotFoundError("Task not found")
+            raise TaskNotFoundError()
 
         return task
 
@@ -150,15 +150,15 @@ class AdminService:
         # Check if user exists
         target_user = await self.user_repository.get_user_by_id(user_id=user_id)
         if target_user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         # Prevent admins from updating other admins' tasks
         if target_user.role and target_user.role.name == "admin":
-            raise PermissionDeniedError("Not enough permissions")
+            raise PermissionDeniedError()
 
         task = await self.task_repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
-            raise TaskNotFoundError("Task not found")
+            raise TaskNotFoundError()
 
         task_update = UpdateTaskData(
             title=task_update.title,
@@ -174,15 +174,15 @@ class AdminService:
         # Check if user exists
         target_user = await self.user_repository.get_user_by_id(user_id=user_id)
         if target_user is None:
-            raise UserNotFoundError("User not found")
+            raise UserNotFoundError()
 
         # Prevent admins from deleting other admins' tasks
         if target_user.role and target_user.role.name == "admin":
-            raise PermissionDeniedError("Not enough permissions")
+            raise PermissionDeniedError()
 
         task = await self.task_repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
-            raise TaskNotFoundError("Task not found")
+            raise TaskNotFoundError()
 
         await self.task_repository.delete_task(task_id=task_id, user_id=user_id)
 

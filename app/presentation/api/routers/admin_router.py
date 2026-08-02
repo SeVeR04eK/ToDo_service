@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Path, Query, HTTPException, Body
+from fastapi import APIRouter, Depends, status, Path, Query, Body
 from typing import Annotated, Optional, Union, List
 
 from app.domain.entities import User
@@ -7,7 +7,6 @@ from app.application.dto import CreateRoleDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.enums import TaskStatus
 from app.presentation.api.dependencies import require_role, tasks_pagination
 from app.application.services import AdminService
-from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, TaskNotFoundError, RoleAlreadyExistsError
 from app.presentation.api.schemas.user_schema import UserRole
 from app.presentation.api.dependencies.services_dep import get_admin_service
 
@@ -78,16 +77,13 @@ async def get_user(
 ) -> UserRead:
     """Get a specific user by ID."""
 
-    try:
-        user = await service.get_user_service(user_id)
-        return UserRead(
-            id=user.id,
-            username=user.username,
-            is_active=user.is_active,
-            role=UserRole(name=user.role.name) if user.role else None
-        )
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user = await service.get_user_service(user_id)
+    return UserRead(
+        id=user.id,
+        username=user.username,
+        is_active=user.is_active,
+        role=UserRole(name=user.role.name) if user.role else None
+    )
 
 @admin_router.patch("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead, summary="Update user permissions")
 async def user_permission(
@@ -134,20 +130,13 @@ async def user_permission(
 ) -> UserRead:
     """Update user permissions (_Partial update_)."""
 
-    try:
-        user = await service.permission_user_service(user_id=user_id, role_name=user_perm.role, is_active=user_perm.is_active)
-        return UserRead(
-            id=user.id,
-            username=user.username,
-            is_active=user.is_active,
-            role=UserRole(name=user.role.name) if user.role else None
-        )
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    except RoleNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
-    except PermissionDeniedError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    user = await service.permission_user_service(user_id=user_id, role_name=user_perm.role, is_active=user_perm.is_active)
+    return UserRead(
+        id=user.id,
+        username=user.username,
+        is_active=user.is_active,
+        role=UserRole(name=user.role.name) if user.role else None
+    )
 
 @admin_router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user")
 async def delete_user(
@@ -160,12 +149,7 @@ async def delete_user(
 ) -> None:
     """Delete a specific user by ID."""
 
-    try:
-        await service.delete_user_service(user_id)
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    except PermissionDeniedError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    await service.delete_user_service(user_id)
 
 @admin_router.get("/users/{user_id}/tasks", status_code=status.HTTP_200_OK, response_model=List[TaskRead], summary="Get user tasks")
 async def get_tasks(
@@ -188,34 +172,27 @@ async def get_tasks(
     - **from_newest**: Boolean to sort tasks from the newest first
     """
 
-    try:
-        pagination = TaskPaginationDTO(
-            limit=pagination.limit,
-            offset=pagination.offset,
-            from_newest=pagination.from_newest
-        )
+    pagination = TaskPaginationDTO(
+        limit=pagination.limit,
+        offset=pagination.offset,
+        from_newest=pagination.from_newest
+    )
 
-        tasks = await service.get_tasks_service(
-            user_id=user_id,
-            task_status=task_status,
-            pagination=pagination
+    tasks = await service.get_tasks_service(
+        user_id=user_id,
+        task_status=task_status,
+        pagination=pagination
+    )
+    return [
+        TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
         )
-        return [
-            TaskRead(
-                id=task.id,
-                title=task.title,
-                content=task.content,
-                status=task.status,
-                user_id=task.user_id
-            )
-            for task in tasks
-        ]
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    except TaskNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    except PermissionDeniedError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+        for task in tasks
+    ]
 
 @admin_router.get("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Get specific user task")
 async def get_task(
@@ -229,21 +206,14 @@ async def get_task(
 ) -> TaskRead:
     """Get a specific task for a user by ID."""
 
-    try:
-        task = await service.get_task_service(task_id=task_id, user_id=user_id)
-        return TaskRead(
-            id=task.id,
-            title=task.title,
-            content=task.content,
-            status=task.status,
-            user_id=task.user_id
-        )
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    except TaskNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    except PermissionDeniedError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    task = await service.get_task_service(task_id=task_id, user_id=user_id)
+    return TaskRead(
+        id=task.id,
+        title=task.title,
+        content=task.content,
+        status=task.status,
+        user_id=task.user_id
+    )
 
 @admin_router.patch("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Update user task")
 async def update_task(
@@ -307,28 +277,21 @@ async def update_task(
 ) -> TaskRead:
     """Update a specific task for a user by ID (_Partial update_")."""
 
-    try:
-        task_dto = UpdateTaskDTO(
-            title=task_update.title,
-            content=task_update.content,
-            status=task_update.status
-        )
+    task_dto = UpdateTaskDTO(
+        title=task_update.title,
+        content=task_update.content,
+        status=task_update.status
+    )
 
-        task = await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_dto)
+    task = await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_dto)
 
-        return TaskRead(
-            id=task.id,
-            title=task.title,
-            content=task.content,
-            status=task.status,
-            user_id=task.user_id
-        )
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    except TaskNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    except PermissionDeniedError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    return TaskRead(
+        id=task.id,
+        title=task.title,
+        content=task.content,
+        status=task.status,
+        user_id=task.user_id
+    )
 
 @admin_router.delete("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user task")
 async def delete_task(
@@ -342,14 +305,7 @@ async def delete_task(
 ) -> None:
     """Delete a specific task for a user by ID."""
 
-    try:
-        await service.delete_task_service(task_id=task_id, user_id=user_id)
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    except TaskNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    except PermissionDeniedError:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    await service.delete_task_service(task_id=task_id, user_id=user_id)
 
 @admin_router.post("/roles", status_code=status.HTTP_201_CREATED, response_model=RoleRead, summary="Create new role")
 async def create_role(
@@ -362,17 +318,14 @@ async def create_role(
 ) -> RoleRead:
     """Create a new role."""
 
-    try:
-        role_dto = CreateRoleDTO(name=new_role.name)
+    role_dto = CreateRoleDTO(name=new_role.name)
 
-        role = await service.create_role_service(new_role=role_dto)
+    role = await service.create_role_service(new_role=role_dto)
 
-        return RoleRead(
-            id=role.id,
-            name=role.name
-        )
-    except RoleAlreadyExistsError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role already exists")
+    return RoleRead(
+        id=role.id,
+        name=role.name
+    )
 
 @admin_router.get("/roles", status_code=status.HTTP_200_OK, response_model=List[RoleRead])
 async def get_roles(

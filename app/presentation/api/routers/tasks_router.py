@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, Path, Query, HTTPException, Body
+from fastapi import APIRouter, status, Depends, Path, Query, Body
 from typing import Annotated, Optional, List
 
 from app.domain.entities import User
@@ -7,7 +7,6 @@ from app.domain.enums import TaskStatus
 from app.application.dto import TaskPaginationDTO, CreateTaskDTO, UpdateTaskDTO
 from app.presentation.api.dependencies import require_role, tasks_pagination
 from app.application.services import TaskService
-from app.core.exceptions import TaskNotFoundError
 from app.presentation.api.dependencies.services_dep import get_task_service
 
 
@@ -94,17 +93,15 @@ async def get_task(
 ) -> TaskRead:
     """Get a specific task by ID for the **authenticated** user."""
 
-    try:
-        task = await service.get_task_service(task_id=task_id, user_id=user.id)
-        return TaskRead(
-            id=task.id,
-            title=task.title,
-            content=task.content,
-            status=task.status,
-            user_id=task.user_id
-        )
-    except TaskNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+    task = await service.get_task_service(task_id=task_id, user_id=user.id)
+    return TaskRead(
+        id=task.id,
+        title=task.title,
+        content=task.content,
+        status=task.status,
+        user_id=task.user_id
+    )
 
 @tasks_router.patch("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Update task")
 async def update_task(
@@ -167,23 +164,21 @@ async def update_task(
 ) -> TaskRead:
     """Update a specific task by ID for the **authenticated** user (_partial update_)."""
 
-    try:
-        task_dto = UpdateTaskDTO(
-            title=task_update.title,
-            content=task_update.content,
-            status=task_update.status
-        )
 
-        task = await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_dto)
-        return TaskRead(
-            id=task.id,
-            title=task.title,
-            content=task.content,
-            status=task.status,
-            user_id=task.user_id
-        )
-    except TaskNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    task_dto = UpdateTaskDTO(
+        title=task_update.title,
+        content=task_update.content,
+        status=task_update.status
+    )
+
+    task = await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_dto)
+    return TaskRead(
+        id=task.id,
+        title=task.title,
+        content=task.content,
+        status=task.status,
+        user_id=task.user_id
+    )
 
 @tasks_router.delete("/me/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete task")
 async def delete_task(
@@ -196,7 +191,4 @@ async def delete_task(
 ) -> None:
     """Delete a specific task by ID for the **authenticated** user."""
 
-    try:
-        await service.delete_task_service(task_id=task_id, user_id=user.id)
-    except TaskNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    await service.delete_task_service(task_id=task_id, user_id=user.id)

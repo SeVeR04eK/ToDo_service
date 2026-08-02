@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from app.domain.enums import TaskStatus
 from app.application.dto import CreateTaskDTO, UpdateTaskDTO, TaskPaginationDTO
-from app.core.exceptions import TaskNotFoundError
+from app.domain.exceptions import TaskNotFoundError
 from app.domain.entities import Task
 from app.domain.interfaces import TaskRepository
 from app.domain.value_objects import TaskPaginationData, UpdateTaskData
@@ -48,7 +48,7 @@ class TaskService:
 
         task = await self.repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
-            raise TaskNotFoundError("Task not found")
+            raise TaskNotFoundError()
 
         return task
 
@@ -62,7 +62,7 @@ class TaskService:
 
         task = await self.repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
-            raise TaskNotFoundError("Task not found")
+            raise TaskNotFoundError()
 
         task_update_data = UpdateTaskData(
             title=task_update.title,
@@ -77,6 +77,6 @@ class TaskService:
 
         task = await self.repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
-            raise TaskNotFoundError("Task not found")
+            raise TaskNotFoundError()
 
         await self.repository.delete_task(task_id=task_id, user_id=user_id)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, status, Depends, HTTPException, Body
+from fastapi import APIRouter, status, Depends, Body
 from typing import Annotated
 
 from app.domain.entities import User
@@ -6,7 +6,6 @@ from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.presentation.api.schemas import UserRead, UserCreate, UserUpdate, UserRole
 from app.presentation.api.dependencies import require_role
 from app.application.services import UserService
-from app.core.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 from app.presentation.api.dependencies.services_dep import get_user_service
 
 # User router for user profile management
@@ -19,23 +18,20 @@ async def create_user(
 ) -> UserRead:
     """Register a new user (_public endpoint, no authentication required_)."""
 
-    try:
-        user_dto = CreateUserDTO(
-            username=user.username,
-            password=user.password,
-            password_confirm=user.password_confirm
-        )
+    user_dto = CreateUserDTO(
+        username=user.username,
+        password=user.password,
+        password_confirm=user.password_confirm
+    )
 
-        user = await service.create_user_service(user_dto)
+    user = await service.create_user_service(user_dto)
 
-        return UserRead(
-            id=user.id,
-            username=user.username,
-            is_active=user.is_active,
-            role=UserRole(name=user.role.name) if user.role else None
-        )
-    except UsernameAlreadyExistsError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+    return UserRead(
+        id=user.id,
+        username=user.username,
+        is_active=user.is_active,
+        role=UserRole(name=user.role.name) if user.role else None
+    )
 
 @user_router.get("/me",status_code=status.HTTP_200_OK, response_model = UserRead, summary="Get user profile")
 async def get_user(
@@ -47,16 +43,13 @@ async def get_user(
 ) -> UserRead:
     """Get the **authenticated** user's profile."""
 
-    try:
-        user = await service.get_user_service(user.id)
-        return UserRead(
-            id=user.id,
-            username=user.username,
-            is_active=user.is_active,
-            role=UserRole(name=user.role.name) if user.role else None
-        )
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user = await service.get_user_service(user.id)
+    return UserRead(
+        id=user.id,
+        username=user.username,
+        is_active=user.is_active,
+        role=UserRole(name=user.role.name) if user.role else None
+    )
 
 @user_router.patch("/me",status_code=status.HTTP_200_OK, response_model = UserRead, summary="Update user profile")
 async def update_user(
@@ -104,25 +97,20 @@ async def update_user(
 ) -> UserRead:
     """Update the **authenticated** user's profile (_partial update_)."""
 
-    try:
-        user_dto = UpdateUserDTO(
-            username=user_update.username,
-            password=user_update.password,
-            password_confirm=user_update.password_confirm
-        )
+    user_dto = UpdateUserDTO(
+        username=user_update.username,
+        password=user_update.password,
+        password_confirm=user_update.password_confirm
+    )
 
-        user = await service.update_user_service(user_id=user.id, user_update=user_dto)
+    user = await service.update_user_service(user_id=user.id, user_update=user_dto)
 
-        return UserRead(
-            id=user.id,
-            username=user.username,
-            is_active=user.is_active,
-            role=UserRole(name=user.role.name) if user.role else None
-        )
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    except UsernameAlreadyExistsError:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username already taken")
+    return UserRead(
+        id=user.id,
+        username=user.username,
+        is_active=user.is_active,
+        role=UserRole(name=user.role.name) if user.role else None
+    )
 
 @user_router.delete("/me", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user account")
 async def delete_user(
@@ -134,10 +122,7 @@ async def delete_user(
 ) -> None:
     """Delete the **authenticated** user's account."""
 
-    try:
-        await service.delete_user_service(user.id)
-    except UserNotFoundError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    await service.delete_user_service(user.id)
 
 
 

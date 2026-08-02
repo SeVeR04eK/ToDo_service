@@ -5,7 +5,7 @@ from app.application.services import AdminService
 from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
 from app.domain.entities import User, Role
 from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
-from app.core.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError
+from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError
 
 
 @pytest.mark.unit

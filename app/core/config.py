@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from pydantic import field_validator, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -6,13 +7,17 @@ from datetime import timedelta
 # Base directory of the project (used for .env file path)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
+# Determine which .env file to use based on ENVIRONMENT variable
+ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
+ENV_FILE = BASE_DIR / f".env.{ENVIRONMENT}" if ENVIRONMENT in ["dev", "prod"] else BASE_DIR / ".env"
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables and .env file.
     
     This class uses Pydantic Settings to load configuration from:
     1. Environment variables (highest priority)
-    2. .env file in project root
+    2. .env file in project root (based on ENVIRONMENT variable)
     3. Default values (lowest priority)
     """
 
@@ -60,9 +65,9 @@ class Settings(BaseSettings):
             raise ValueError("DATABASE_URL must start with postgresql://, postgresql+asyncpg://, or sqlite://, sqlite+aiosqlite://")
         return v
 
-    # Load settings from .env file in project root
+    # Load settings from appropriate .env file
     model_config = SettingsConfigDict(
-        env_file=str(BASE_DIR / ".env"),
+        env_file=str(ENV_FILE),
         env_file_encoding="utf-8",
         case_sensitive=False,  # Allow both uppercase and lowercase env var names
         extra="ignore"  # Ignore extra environment variables
