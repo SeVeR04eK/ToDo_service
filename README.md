@@ -728,6 +728,10 @@ The project supports three execution modes:
 
 **Manual Setup** — run without Docker using your own environment
 
+**⚠️ Important**: In `app/core/config.py`, the line `ENVIRONMENT = os.getenv("ENVIRONMENT", "local")` controls which `.env` file is loaded. Change this to:
+- `"dev"` to load `.env.dev`
+- `"prod"` to load `.env.prod`
+- `"local"` to load `.env` (or keep as default)
 ---
 
 ## Docker Development Mode (DEV)
@@ -770,6 +774,8 @@ FIRST_ADMIN_USERNAME=admin
 FIRST_ADMIN_PASSWORD=admin123
 DEBUG=true
 ```
+
+**⚠️ Important**: When running with Docker DEV mode, ensure the `DATABASE_URL` uses `db` as the hostname (not `localhost`), as the database runs in a separate Docker container within the same network.
 
 ---
 
