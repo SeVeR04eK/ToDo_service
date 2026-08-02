@@ -185,8 +185,15 @@ class TestUserRouter:
         assert response.status_code == 409
 
     @pytest.mark.asyncio
-    async def test_get_user_not_found(self, authenticated_client: AsyncClient):
+    async def test_get_user_not_found(self, authenticated_client: AsyncClient, db_session: AsyncSession):
         """Test getting user when user doesn't exist (deleted user)."""
-        # This would require mocking the repository to return None
-        # For now, we'll skip this as it's an edge case
-        pass
+        from app.infrastructure.models import User as UserORM
+        from sqlalchemy import delete
+
+        # Delete the authenticated user
+        await db_session.execute(delete(UserORM).where(UserORM.id == 1))
+        await db_session.commit()
+
+        response = await authenticated_client.get("/user/me")
+
+        assert response.status_code == 404

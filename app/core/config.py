@@ -8,7 +8,7 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Determine which .env file to use based on ENVIRONMENT variable
-ENVIRONMENT = os.getenv("ENVIRONMENT", "dev")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "local")
 ENV_FILE = BASE_DIR / f".env.{ENVIRONMENT}" if ENVIRONMENT in ["dev", "prod"] else BASE_DIR / ".env"
 
 

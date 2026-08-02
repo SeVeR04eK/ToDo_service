@@ -1,18 +1,18 @@
 # ToDo Service Backend API (FastAPI + PostgreSQL)
 
-**API Version:** 0.0.1
+**API Version:** 0.1.0
 
-**Status:** Development Build (not production-ready)
+**Status:** Production-Ready Architecture
 
 ---
 
 ## Overview
 
-This project implements a fully-featured backend service for managing tasks and users. It follows layer-based architecture principles, separates concerns, and mimics real-world backend systems.
+This project implements a fully-featured backend service for managing tasks and users using **Clean Architecture** and **Domain-Driven Design (DDD)** principles. It provides a production-ready foundation with proper separation of concerns, dependency inversion, and testability.
 
 **What is this project?**
 
-The ToDo Service is a comprehensive REST API backend that provides task management functionality with robust user authentication and authorization. It serves as a practical example of modern backend development practices, demonstrating how to build scalable, maintainable, and secure web services using Python and FastAPI.
+The ToDo Service is a comprehensive REST API backend that provides task management functionality with robust user authentication and authorization. It serves as a practical example of modern backend development practices, demonstrating how to build scalable, maintainable, and secure web services using Python and FastAPI with clean architecture patterns.
 
 **Core Functionality:**
 
@@ -25,50 +25,67 @@ The ToDo Service is a comprehensive REST API backend that provides task manageme
 
 **Architecture Highlights:**
 
-The project implements a clean three-layer architecture:
+The project implements **Clean Architecture** with strict layer separation:
 
-- **API Layer** (`app/api/`): FastAPI routers handling HTTP requests and responses
-- **Service Layer** (`app/services/`): Business logic and orchestration between repositories
-- **Repository Layer** (`app/repositories/`): Data access operations using SQLAlchemy ORM
+- **Domain Layer** (`app/domain/`): Core business logic, entities, value objects, and interfaces
+- **Application Layer** (`app/application/`): Use cases, DTOs, and application services
+- **Infrastructure Layer** (`app/infrastructure/`): External concerns (database, security, repositories)
+- **Presentation Layer** (`app/presentation/`): API routers, schemas, and HTTP handling
 
-This separation ensures each layer has a single responsibility, making the codebase testable, maintainable, and scalable.
+This separation ensures:
+- **Dependency Inversion**: High-level modules don't depend on low-level modules
+- **Testability**: Each layer can be tested in isolation with proper mocking
+- **Maintainability**: Changes to infrastructure don't affect business logic
+- **Scalability**: Easy to add new features without modifying existing code
 
 **Key goals:**
 
-* Build a secure and scalable API following industry best practices
-* Demonstrate proper backend engineering patterns and architecture
-* Provide a learning resource for modern Python web development
+* Build a secure and scalable API following Clean Architecture and DDD principles
+* Demonstrate proper backend engineering patterns with production-ready structure
+* Provide a learning resource for modern Python web development with best practices
 * Implement robust authentication and authorization mechanisms
 * Showcase database design and migration management with Alembic
+* Provide comprehensive Docker setup for development and production environments
 
 ---
 
 ## Tech Stack
 
-* **Python 3.9+**
+### Core Framework
+* **Python 3.12+**
 * **FastAPI** — high-performance async web framework
-* **Uvicorn** — ASGI server
+* **Uvicorn** — ASGI server (development)
+* **Gunicorn** — production ASGI server with Uvicorn workers
+
+### Database
 * **PostgreSQL** — relational database
-* **SQLAlchemy (ORM)** — database abstraction
+* **SQLAlchemy 2.0** — async ORM with modern Python patterns
 * **Alembic** — database migrations
-* **Pydantic v2** — data validation & serialization
-* **Pydantic Settings** — environment configuration
 * **asyncpg** — async PostgreSQL driver
-* **psycopg2-binary** — sync PostgreSQL driver for alembic
-* **JWT (JSON Web Tokens)** — authentication
+* **psycopg2-binary** — sync PostgreSQL driver for migrations
+
+### Data Validation & Configuration
+* **Pydantic v2** — data validation & serialization
+* **Pydantic Settings** — environment configuration with ENVIRONMENT-based file loading
+
+### Security
+* **JWT (python-jose)** — authentication tokens
 * **Passlib / bcrypt** — password hashing
 * **python-multipart** — form/file uploads
-* **Black** — code formatting
+
+### Testing
 * **Pytest** — testing framework
-* **Pytest-asyncio** — async test support for asyncio/FastAPI
+* **Pytest-asyncio** — async test support
 * **Httpx** — async HTTP client for API testing
 * **Faker** — fake data generator for tests
 * **Pytest-cov** — test coverage reporting
-* **Aiosqlite** — lightweight async SQLite database for unit tests
+* **Aiosqlite** — lightweight async SQLite for unit tests
+
+### Development Tools
+* **Black** — code formatting
 * **Email Validator** — email validation
 * **Docker / Docker Compose** — containerization (DEV + PROD)
 * **Git** — version control
-* **Seed scripts** — automatic creation of roles and initial admin user
 
 ---
 
@@ -177,7 +194,8 @@ ToDo_service/
 │   ├── api/                  # API integration tests
 │   ├── factories.py          # Test data factories
 │   ├── repositories/         # Repository layer tests
-│   └── services/             # Service layer tests
+│   ├── services/             # Service layer tests
+│   └── use_cases/            # Use case layer tests
 ├── scripts/                  # helper scripts (seed)
 ├── screenshots/              # screenshots for README.md
 ├── alembic.ini               # Alembic configuration
@@ -191,9 +209,8 @@ ToDo_service/
 ├── docker-compose.dev.yml    # Development environment
 ├── docker-compose.prod.yml   # Production environment
 ├── docker-entrypoint.sh      # Common entrypoint script
-├── .env.dev                  # Development environment variables
-├── .env.prod                 # Production environment variables
-├── .env.example              # Template of environment variables
+├── .env.dev                  # Development environment variables (template)
+├── .env.prod                 # Production environment variables (template)
 ├── requirements.txt          # Production dependencies
 └── requirements-dev.txt      # Development dependencies
 
@@ -201,7 +218,20 @@ ToDo_service/
 ```
 
 **Principle:**
-`route → service → repository → database`
+`route → use case → service → repository → database`
+
+---
+
+## Configuration Management
+
+The application uses **environment-based configuration** with Pydantic Settings:
+
+- **ENVIRONMENT variable**: Controls which `.env` file is loaded (`.env.dev` or `.env.prod`)
+- **Development**: Uses `.env.dev` with debug mode enabled
+- **Production**: Uses `.env.prod` with debug mode disabled
+- **Validation**: Settings are validated on startup (secret key length, password strength, URL format)
+
+Configuration is managed in `app/core/config.py` with automatic environment file selection based on the `ENVIRONMENT` variable.
 
 ---
 
@@ -907,7 +937,7 @@ CREATE DATABASE todo_service;   #psql
 
 ### 6. Setup environment variables
 
-Create `.env` file using `.env.example` template:
+Use `.env.dev` as a template for local development:
 
 ```
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/todo_service
@@ -971,19 +1001,19 @@ base (common dependencies)
 
 The `docker-entrypoint.sh` script:
 - Runs database migrations (`alembic upgrade head`)
+- Runs seed scripts only when `ENVIRONMENT=dev` (roles and admin user)
 - Executes the command passed as arguments (`exec "$@"`)
 - Uses `set -e` to fail immediately on errors
 
-**Why no seed scripts in entrypoint?**
-- Seed scripts can cause issues with multiple replicas in production
-- They should be run manually or through deployment scripts
-- Prevents duplicate data creation during scaling
+**Why conditional seed scripts?**
+- Seed scripts run automatically in development for convenience
+- Seed scripts are NOT run in production to prevent issues with multiple replicas
+- They should be run manually in production if needed through deployment scripts
 
 ### Environment Files
 
-- **`.env.dev`**: Development environment variables with debug enabled
-- **`.env.prod`**: Production environment variables with debug disabled
-- **`.env.example`**: Template showing required variables
+- **`.env.dev`**: Development environment variables with debug enabled (template)
+- **`.env.prod`**: Production environment variables with debug disabled (template)
 
 ### Docker Compose Files
 
@@ -993,7 +1023,7 @@ The `docker-entrypoint.sh` script:
 ---
 ## Test Suite
 
-**tests/** directory contains the comprehensive test suite for the ToDo Service FastAPI application.
+**tests/** directory contains the comprehensive test suite for the ToDo Service FastAPI application, organized by architectural layers.
 
 ### Test Structure
 
@@ -1001,15 +1031,30 @@ The `docker-entrypoint.sh` script:
 tests/
 ├── conftest.py              # Pytest configuration and shared fixtures
 ├── factories.py             # Test data factories
-├── repositories/           # Repository layer tests
+├── api/                     # API integration tests (real dependencies)
+│   ├── test_admin_router.py
+│   ├── test_auth_router.py
+│   ├── test_tasks_router.py
+│   └── test_user_router.py
+├── repositories/            # Repository layer tests (real database)
+│   ├── test_admin_repo.py
 │   ├── test_task_repo.py
 │   └── test_user_repo.py
-├── services/                # Service layer tests
-│   └── test_task_service.py
-└── api/                     # API integration tests
-    ├── test_tasks_router.py
-    └── test_auth_router.py
+├── services/                # Service layer tests (mocked repositories)
+│   ├── test_admin_service.py
+│   ├── test_auth_service.py
+│   ├── test_task_service.py
+│   └── test_user_service.py
+└── use_cases/               # Use case layer tests (mocked dependencies)
+    └── test_authenticate_user.py
 ```
+
+### Test Strategy
+
+- **Unit Tests** (services, use_cases): Mock dependencies using `AsyncMock(spec=Interface)` for isolated testing
+- **Integration Tests** (repositories, API): Use real database sessions with SQLite in-memory
+- **Test Coverage**: 97% coverage across all layers
+- **185 Tests**: Comprehensive test suite covering success paths, edge cases, and error scenarios
 ---
 
 ### Running Tests
@@ -1056,12 +1101,13 @@ pytest -v
 ### Test Categories
 
 #### Unit Tests (`@pytest.mark.unit`)
-- Repository layer tests
-- Service layer tests
+- Service layer tests (mocked repositories)
+- Use case layer tests (mocked dependencies)
 - Test business logic in isolation
 
 #### Integration Tests (`@pytest.mark.integration`)
-- API endpoint tests
+- API endpoint tests (real dependencies with overrides)
+- Repository layer tests (real database)
 - Test full request/response cycle
 - Test authentication and authorization
 
@@ -1071,6 +1117,21 @@ pytest -v
 - `tasks`: Task-related tests
 - `auth`: Authentication-related tests
 - `slow`: Slow-running tests
+---
+
+## OpenAPI Documentation
+
+The API includes comprehensive OpenAPI documentation with detailed descriptions:
+
+- **Interactive Swagger UI**: Available at `/docs` endpoint
+- **ReDoc**: Available at `/redoc` endpoint
+- **Schema Documentation**: All endpoints include request/response schemas with field descriptions
+- **Authentication**: Bearer token authentication documented in security schemes
+- **Error Responses**: Domain exceptions are properly documented with status codes
+- **Example Values**: Request/response examples for all endpoints
+
+The documentation is auto-generated from Pydantic schemas and FastAPI route decorators, ensuring it stays in sync with the codebase.
+
 ---
 
 ### Fixtures
