@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 gunicorn
+starlette
 pydantic
 sqlalchemy[asyncio]
 asyncpg
@@ -13,3 +14,4 @@ python-jose[cryptography]
 python-multipart
 aiosqlite
 email-validator
+structlog

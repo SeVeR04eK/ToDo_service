@@ -1,3 +1,4 @@
+import os
 import pytest
 import asyncio
 from typing import AsyncGenerator, Generator
@@ -6,6 +7,9 @@ from sqlalchemy.pool import StaticPool
 from httpx import AsyncClient, ASGITransport
 from faker import Faker
 from sqlalchemy import select
+
+# Set environment variable to disable logging setup during tests
+os.environ["PYTEST_RUNNING"] = "true"
 
 from app.main import app
 from app.infrastructure.models import Base

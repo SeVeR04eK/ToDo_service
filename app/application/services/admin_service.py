@@ -1,3 +1,4 @@
+import structlog
 from typing import List, Optional, Union
 
 from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
@@ -6,6 +7,8 @@ from app.domain.enums import TaskStatus
 from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
 from app.domain.entities import User, Role, Task
 from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
+
+logger = structlog.get_logger(__name__)
 
 
 class AdminService:
@@ -49,15 +52,35 @@ class AdminService:
     async def permission_user_service(self, user_id: int, role_name: Optional[str], is_active: Optional[bool]) -> User:
         """Update user permissions (is_active status and role)."""
 
+        logger.info(
+            "Updating user permissions",
+            user_id=user_id,
+            role_name=role_name,
+            is_active=is_active,
+        )
+        
         user = await self.user_repository.get_user_by_id(user_id=user_id)
         if user is None:
+            logger.warning(
+                "User not found for permission update",
+                user_id=user_id,
+            )
             raise UserNotFoundError()
 
         if user.role is None:
+            logger.warning(
+                "User has no role",
+                user_id=user_id,
+            )
             raise RoleNotFoundError()
 
         # Prevent admins from modifying other admins' permissions
         if user.role.name == "admin":
+            logger.warning(
+                "Attempted to modify admin permissions",
+                user_id=user_id,
+                username=user.username,
+            )
             raise PermissionDeniedError()
 
         # Resolve role name to role ID if role is being updated
@@ -65,35 +88,82 @@ class AdminService:
         if role_name is not None:
             role = await self.admin_repository.get_role_id_by_name(role_name)
             if role is None:
+                logger.warning(
+                    "Role not found for permission update",
+                    role_name=role_name,
+                )
                 raise RoleNotFoundError()
             role_id = role
 
         user_permission = UserPermissionData(is_active=is_active, role_id=role_id)
-        return await self.admin_repository.user_perm(user=user, user_permission=user_permission)
+        updated_user = await self.admin_repository.user_perm(user=user, user_permission=user_permission)
+        
+        logger.info(
+            "User permissions updated",
+            user_id=user_id,
+            username=user.username,
+        )
+        
+        return updated_user
 
     async def delete_user_service(self, user_id: int) -> None:
         """Delete a user."""
 
+        logger.info(
+            "Admin deleting user",
+            user_id=user_id,
+        )
+        
         user = await self.user_repository.get_user_by_id(user_id=user_id)
         if user is None:
+            logger.warning(
+                "User not found for deletion by admin",
+                user_id=user_id,
+            )
             raise UserNotFoundError()
 
         # Prevent deletion of admin users
         if user.role is None or user.role.name == "admin":
+            logger.warning(
+                "Attempted to delete admin user",
+                user_id=user_id,
+                username=user.username,
+            )
             raise PermissionDeniedError()
 
         await self.user_repository.delete_user(user=user)
+        
+        logger.info(
+            "User deleted by admin",
+            user_id=user_id,
+            username=user.username,
+        )
 
     async def create_role_service(self, new_role: CreateRoleDTO) -> Role:
         """Create a new role."""
 
+        logger.info(
+            "Creating role",
+            role_name=new_role.name,
+        )
+        
         role_name = new_role.name
 
         role_exist = await self.admin_repository.get_role_id_by_name(name=role_name)
         if role_exist is not None:
+            logger.warning(
+                "Role already exists",
+                role_name=role_name,
+            )
             raise RoleAlreadyExistsError()
 
         role = await self.admin_repository.create_role(name=role_name)
+        
+        logger.info(
+            "Role created",
+            role_id=role.id,
+            role_name=role.name,
+        )
 
         return role
 

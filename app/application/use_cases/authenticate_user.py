@@ -1,7 +1,10 @@
+import structlog
 from app.domain.entities import User
 from app.domain.interfaces import UserRepository
 from app.domain.exceptions import InvalidCredentialsError
 from app.domain.interfaces import PasswordHasher
+
+logger = structlog.get_logger(__name__)
 
 
 
@@ -25,12 +28,27 @@ class AuthenticateUserUseCase:
         user = await self.repository.get_user_by_username(username)
 
         if user is None:
+            logger.warning(
+                "Authentication failed: user not found",
+                username=username,
+            )
             raise InvalidCredentialsError()
 
         if not self.password_hasher.verify(
             password,
             user.hashed_password
         ):
+            logger.warning(
+                "Authentication failed: invalid password",
+                username=username,
+                user_id=user.id,
+            )
             raise InvalidCredentialsError()
+
+        logger.debug(
+            "User authenticated successfully",
+            user_id=user.id,
+            username=user.username,
+        )
 
         return user

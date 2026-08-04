@@ -1,11 +1,20 @@
+import os
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import asyncio
 
+from app.core.logging import setup_logging
 from app.presentation.api import api_router
 from app.infrastructure.background_tasks import clean_tokens_task
 from app.domain.exceptions.base import DomainException
 from app.presentation.exception_handlers import domain_exception_handler
+from app.presentation.api.middleware import CorrelationIdMiddleware, RequestLoggingMiddleware
+
+
+# Initialize logging before creating the FastAPI app
+# Skip logging setup during tests to avoid pollution
+if os.getenv("PYTEST_RUNNING") != "true":
+    setup_logging()
 
 
 @asynccontextmanager
@@ -87,3 +96,7 @@ app.add_exception_handler(
     DomainException,
     domain_exception_handler,
 )
+
+# Add middleware (order matters - correlation ID must be first)
+app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(RequestLoggingMiddleware)

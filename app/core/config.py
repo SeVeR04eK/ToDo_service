@@ -38,6 +38,18 @@ class Settings(BaseSettings):
     
     # Application Settings
     debug: bool = False
+    
+    # Logging Configuration
+    log_level: str = "INFO"
+
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Validate that log_level is a valid Python logging level."""
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if v.upper() not in valid_levels:
+            raise ValueError(f"LOG_LEVEL must be one of: {', '.join(valid_levels)}")
+        return v.upper()
 
     @field_validator("secret_key")
     @classmethod

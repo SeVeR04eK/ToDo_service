@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
+import structlog
 
 from app.domain.exceptions import UserNotFoundError, InvalidRefreshTokenError
 from app.application.dto import Tokens
 from app.domain.interfaces import UserRepository, RefreshTokenRepository, TokenService
 from app.application.use_cases import AuthenticateUserUseCase
+
+logger = structlog.get_logger(__name__)
 
 
 class AuthService:
@@ -24,6 +27,11 @@ class AuthService:
     async def authentication_service(self, username: str, password: str) -> Tokens:
         """Authenticate user and return access/refresh tokens."""
 
+        logger.info(
+            "User login attempt",
+            username=username,
+        )
+        
         user = await self.authenticate_user_use_case.execute(username, password)
 
         # Invalidate all existing refresh tokens for this user (single session per user)
@@ -45,6 +53,12 @@ class AuthService:
             expires=expires
         )
 
+        logger.info(
+            "User logged in successfully",
+            user_id=user.id,
+            username=user.username,
+        )
+
         return Tokens(
             refresh_token=refresh_token,
             access_token=access_token,
@@ -54,10 +68,13 @@ class AuthService:
     async def refresh_service(self, refresh_token: str) -> Tokens:
         """Refresh access token using a valid refresh token."""
 
+        logger.info("Token refresh attempt")
+        
         db_token = await self.refresh_token_repository.get_token_expires(refresh_token)
 
         # Handle timezone comparison - SQLite returns naive datetimes
         if db_token is None:
+            logger.warning("Refresh token not found")
             raise InvalidRefreshTokenError()
 
         # Make both datetimes comparable by ensuring they're both naive or both aware
@@ -70,12 +87,14 @@ class AuthService:
             now = datetime.now(timezone.utc)
 
         if expires_at < now:
+            logger.warning("Refresh token expired")
             raise InvalidRefreshTokenError()
 
         # Decode the refresh token to get user information
         payload = self.token_service.decode_refresh_token(refresh_token)
 
         if "id" not in payload or "sub" not in payload:
+            logger.warning("Invalid refresh token payload")
             raise InvalidRefreshTokenError()
 
         user_id = payload["id"]
@@ -83,6 +102,7 @@ class AuthService:
         user_role = await self.user_repository.get_user_role(user_id)
 
         if user_role is None:
+            logger.warning("User not found during token refresh", user_id=user_id)
             raise UserNotFoundError()
 
         # Delete the used refresh token (token rotation)
@@ -106,6 +126,12 @@ class AuthService:
             user_id=user_id,
             token=new_refresh,
             expires=expires
+        )
+
+        logger.info(
+            "Token refreshed successfully",
+            user_id=user_id,
+            username=username,
         )
 
         return Tokens(

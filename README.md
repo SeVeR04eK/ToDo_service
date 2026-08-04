@@ -54,6 +54,7 @@ This separation ensures:
 ### Core Framework
 * **Python 3.12+**
 * **FastAPI** — high-performance async web framework
+* **Starlette** — lightweight ASGI framework
 * **Uvicorn** — ASGI server (development)
 * **Gunicorn** — production ASGI server with Uvicorn workers
 
@@ -156,6 +157,21 @@ Functionality for managing personal tasks:
 * Ownership checks (users access only their data)
 * Admin overrides
 * Proper HTTP status codes (401 / 403)
+
+---
+
+### Logging
+
+* Structured logging with JSON format using structlog
+* Request/response logging middleware with correlation IDs
+* Automatic log level based on request duration (info for <1s, warning for >=1s)
+* Configurable log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+* Context-aware logging with request tracking across application layers
+- HTTP method
+- Request path
+- Status code
+- Request duration in milliseconds
+- Correlation ID for request tracing
 
 ---
 

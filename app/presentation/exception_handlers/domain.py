@@ -1,9 +1,12 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from typing import Type, Tuple, Dict
+import structlog
 
 from app.domain.exceptions import *
 from app.domain.exceptions.base import DomainException
+
+logger = structlog.get_logger(__name__)
 
 
 ERROR_MAP: Dict[Type[DomainException], Tuple[int, str]] = {
@@ -21,6 +24,13 @@ ERROR_MAP: Dict[Type[DomainException], Tuple[int, str]] = {
 
 async def domain_exception_handler(_request: Request, exc: DomainException):
     status_code, detail = ERROR_MAP.get(type(exc), (400, "Domain error"))
+    
+    logger.warning(
+        "Domain exception occurred",
+        exception_type=type(exc).__name__,
+        status_code=status_code,
+        detail=detail,
+    )
 
     return JSONResponse(
         status_code=status_code,

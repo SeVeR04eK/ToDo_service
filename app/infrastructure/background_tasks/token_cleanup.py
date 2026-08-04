@@ -1,11 +1,11 @@
 import asyncio
-import logging
+import structlog
 
 from app.domain.interfaces import RefreshTokenRepository
 from app.infrastructure.database import SessionLocal
 from app.presentation.api.dependencies.repositories_dep import get_refresh_token_repository_raw
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 async def clean_tokens_task():
@@ -16,7 +16,7 @@ async def clean_tokens_task():
                 repository: RefreshTokenRepository = get_refresh_token_repository_raw(session)
                 await repository.delete_expired_tokens()
                 logger.info("Expired tokens cleaned successfully")
-        except Exception as e:
-            logger.error(f"Error cleaning expired tokens: {e}")
+        except Exception:
+            logger.exception("Error cleaning expired tokens")
 
         await asyncio.sleep(7200)  # Run every 2 hours
