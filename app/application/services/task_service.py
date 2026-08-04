@@ -6,7 +6,7 @@ from app.application.dto import CreateTaskDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.exceptions import TaskNotFoundError
 from app.domain.entities import Task
 from app.domain.interfaces import TaskRepository
-from app.domain.value_objects import TaskPaginationData, UpdateTaskData
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData, Page
 
 logger = structlog.get_logger(__name__)
 
@@ -45,7 +45,7 @@ class TaskService:
             user_id: int,
             task_status: Optional[TaskStatus],
             pagination: TaskPaginationDTO
-    ) -> List[Task]:
+    ) -> Page[Task]:
         """Get tasks with optional filtering by status, pagination, and sorting."""
 
 

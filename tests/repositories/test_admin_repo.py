@@ -18,9 +18,10 @@ class TestAdminRepository:
         await UserFactory.create_in_db(db_session, username="user2")
         
         repo = SQLAlchemyAdminRepository(session=db_session)
-        users = await repo.get_users(limit=None, offset=None)
+        page = await repo.get_users(limit=None, offset=None)
         
-        assert len(users) >= 2
+        assert len(page.items) >= 2
+        assert page.total_items >= 2
 
     @pytest.mark.asyncio
     async def test_get_users_with_limit(self, db_session: AsyncSession):
@@ -29,9 +30,10 @@ class TestAdminRepository:
             await UserFactory.create_in_db(db_session, username=f"user{i}")
         
         repo = SQLAlchemyAdminRepository(session=db_session)
-        users = await repo.get_users(limit=3, offset=None)
+        page = await repo.get_users(limit=3, offset=None)
         
-        assert len(users) == 3
+        assert len(page.items) == 3
+        assert page.page_size == 3
 
     @pytest.mark.asyncio
     async def test_get_users_with_offset(self, db_session: AsyncSession):
@@ -40,9 +42,10 @@ class TestAdminRepository:
             await UserFactory.create_in_db(db_session, username=f"user{i}")
         
         repo = SQLAlchemyAdminRepository(session=db_session)
-        users = await repo.get_users(limit=None, offset=2)
+        page = await repo.get_users(limit=None, offset=2)
         
-        assert len(users) >= 3
+        assert len(page.items) >= 3
+        assert page.page == 1
 
     @pytest.mark.asyncio
     async def test_get_users_with_limit_and_offset(self, db_session: AsyncSession):
@@ -51,9 +54,11 @@ class TestAdminRepository:
             await UserFactory.create_in_db(db_session, username=f"user{i}")
         
         repo = SQLAlchemyAdminRepository(session=db_session)
-        users = await repo.get_users(limit=3, offset=5)
+        page = await repo.get_users(limit=3, offset=5)
         
-        assert len(users) == 3
+        assert len(page.items) == 3
+        assert page.page == 2
+        assert page.page_size == 3
 
     @pytest.mark.asyncio
     async def test_user_perm_update_is_active(self, db_session: AsyncSession, test_user):

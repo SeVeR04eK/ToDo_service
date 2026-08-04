@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from app.domain.entities import Task
 from app.domain.enums import TaskStatus
-from app.domain.value_objects import TaskPaginationData, UpdateTaskData
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData, Page
 
 class TaskRepository(ABC):
 
@@ -21,7 +21,7 @@ class TaskRepository(ABC):
         user_id: int,
         pagination: TaskPaginationData,
         task_status: TaskStatus
-    ) -> list[Task]: ...
+    ) -> Page[Task]: ...
 
     @abstractmethod
     async def get_task(

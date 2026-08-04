@@ -2,13 +2,13 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 from app.domain.entities import User, Role
-from app.domain.value_objects import UserPermissionData
+from app.domain.value_objects import UserPermissionData, Page
 
 
 class AdminRepository(ABC):
 
     @abstractmethod
-    async def get_users(self, limit: Optional[int], offset: Optional[int]) -> List[User]: ...
+    async def get_users(self, limit: Optional[int], offset: Optional[int]) -> Page[User]: ...
 
     @abstractmethod
     async def user_perm(self, user: User, user_permission: UserPermissionData) -> User: ...

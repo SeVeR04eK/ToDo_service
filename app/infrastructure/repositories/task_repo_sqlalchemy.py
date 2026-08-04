@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, func
 
 from app.domain.enums import TaskStatus
-from app.domain.value_objects import TaskPaginationData, UpdateTaskData
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData, Page
 from app.infrastructure.models import Task as TaskORM
 from app.domain.entities import Task
 from app.infrastructure.mappers import task_from_orm
@@ -42,26 +42,41 @@ class SQLAlchemyTaskRepository(TaskRepository):
             user_id: int,
             pagination: TaskPaginationData,
             task_status: TaskStatus
-    ) -> List[Task]:
+    ) -> Page[Task]:
         """Get all tasks for a user with optional pagination and sorting."""
 
-        request = select(TaskORM).where(TaskORM.user_id == user_id)
+        # Build base query
+        base_query = select(TaskORM).where(TaskORM.user_id == user_id)
 
         if task_status is not None:
-            request = request.where(TaskORM.status == task_status)
+            base_query = base_query.where(TaskORM.status == task_status)
 
-        request = request.order_by(
+        # Count total items
+        count_query = select(func.count()).select_from(base_query.subquery())
+        total_items = await self.session.scalar(count_query)
+
+        # Apply ordering
+        query = base_query.order_by(
             TaskORM.id.desc() if pagination.from_newest else TaskORM.id.asc()
         )
 
-        if pagination.offset is not None:
-            request = request.offset(pagination.offset)
+        # Calculate page and page_size from offset/limit
+        limit = pagination.limit if pagination.limit is not None else 10
+        offset = pagination.offset if pagination.offset is not None else 0
+        page = (offset // limit) + 1 if limit > 0 else 1
 
-        if pagination.limit is not None:
-            request = request.limit(pagination.limit)
+        # Apply pagination
+        query = query.offset(offset).limit(limit)
 
-        orm_tasks = (await self.session.scalars(request)).all()
-        return [task_from_orm(task) for task in orm_tasks]
+        orm_tasks = (await self.session.scalars(query)).all()
+        tasks = [task_from_orm(task) for task in orm_tasks]
+
+        return Page.create(
+            items=tasks,
+            page=page,
+            page_size=limit,
+            total_items=total_items or 0
+        )
 
     async def get_task(self, task_id: int, user_id: int) -> Task | None:
         """Get a single task by ID for a specific user."""

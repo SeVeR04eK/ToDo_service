@@ -67,8 +67,11 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) == 5
+        assert "items" in data
+        assert "pagination" in data
+        assert isinstance(data["items"], list)
+        assert len(data["items"]) == 5
+        assert data["pagination"]["total_items"] == 5
     
     @pytest.mark.asyncio
     async def test_get_tasks_empty(self, authenticated_client: AsyncClient):
@@ -77,7 +80,10 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data == []
+        assert "items" in data
+        assert "pagination" in data
+        assert data["items"] == []
+        assert data["pagination"]["total_items"] == 0
     
     @pytest.mark.asyncio
     async def test_get_tasks_unauthorized(self, client: AsyncClient):
@@ -97,8 +103,9 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["status"] == TaskStatus.todo
+        assert len(data["items"]) == 1
+        assert data["items"][0]["status"] == TaskStatus.todo
+        assert data["pagination"]["total_items"] == 1
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_limit(self, authenticated_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -109,7 +116,9 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 3
+        assert len(data["items"]) == 3
+        assert data["pagination"]["page_size"] == 3
+        assert data["pagination"]["total_items"] == 10
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_offset(self, authenticated_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -120,7 +129,8 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 5
+        assert len(data["items"]) == 5
+        assert data["pagination"]["total_items"] == 10
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_from_newest(self, authenticated_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -131,8 +141,8 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data[0]["id"] == tasks[-1].id
-        assert data[-1]["id"] == tasks[0].id
+        assert data["items"][0]["id"] == tasks[-1].id
+        assert data["items"][-1]["id"] == tasks[0].id
     
     @pytest.mark.asyncio
     async def test_get_tasks_limit_validation(self, authenticated_client: AsyncClient):
@@ -160,12 +170,15 @@ class TestTasksRouter:
         for _ in range(3):
             await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.in_progress)
         
-        response = await authenticated_client.get("/tasks/me?task_status=todo&limit=2&offset=1&from_newest=true")
+        response = await authenticated_client.get("/tasks/me?task_status=todo&limit=2&offset=2&from_newest=true")
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        assert all(task["status"] == TaskStatus.todo for task in data)
+        assert len(data["items"]) == 2
+        assert all(task["status"] == TaskStatus.todo for task in data["items"])
+        assert data["pagination"]["total_items"] == 5
+        assert data["pagination"]["page"] == 2
+        assert data["pagination"]["has_previous"] is True
     
     @pytest.mark.asyncio
     async def test_get_task_by_id_success(self, authenticated_client: AsyncClient, test_task):
@@ -351,7 +364,9 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        assert "items" in data
+        assert "pagination" in data
+        assert isinstance(data["items"], list)
     
     @pytest.mark.asyncio
     async def test_task_response_model_structure(self, authenticated_client: AsyncClient, task_create_data: dict):

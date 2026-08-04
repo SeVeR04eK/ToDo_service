@@ -14,7 +14,8 @@ class TestAdminService:
 
     @pytest.mark.asyncio
     async def test_get_users_service_with_offset(self):
-        """Test that offset with username returns empty list."""
+        """Test that offset with username returns empty page."""
+        from app.domain.value_objects import Page
         mock_user_repo = AsyncMock(spec=UserRepository)
         mock_admin_repo = AsyncMock(spec=AdminRepository)
         mock_task_repo = AsyncMock(spec=TaskRepository)
@@ -22,7 +23,8 @@ class TestAdminService:
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
         result = await service.get_users_service(username="test", limit=None, offset=1)
         
-        assert result == []
+        assert isinstance(result, Page)
+        assert result.items == []
 
     @pytest.mark.asyncio
     async def test_get_user_service_success(self):

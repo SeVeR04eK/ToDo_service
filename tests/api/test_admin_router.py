@@ -22,7 +22,10 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) >= 3  # admin + 2 new users
+        assert "items" in data
+        assert "pagination" in data
+        assert len(data["items"]) >= 3  # admin + 2 new users
+        assert data["pagination"]["total_items"] >= 3
 
     @pytest.mark.asyncio
     async def test_get_users_with_username_filter(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession):
@@ -47,7 +50,8 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 3
+        assert len(data["items"]) == 3
+        assert data["pagination"]["page_size"] == 3
 
     @pytest.mark.asyncio
     async def test_get_users_unauthorized(self, client: AsyncClient):
@@ -141,7 +145,10 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
+        assert "items" in data
+        assert "pagination" in data
+        assert len(data["items"]) == 2
+        assert data["pagination"]["total_items"] == 2
 
     @pytest.mark.asyncio
     async def test_get_user_tasks_with_status_filter(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -153,8 +160,9 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["status"] == TaskStatus.todo
+        assert len(data["items"]) == 1
+        assert data["items"][0]["status"] == TaskStatus.todo
+        assert data["pagination"]["total_items"] == 1
 
     @pytest.mark.asyncio
     async def test_get_user_task_by_id_success(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -308,4 +316,6 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
+        # Roles endpoint returns a list (not paginated)
+        assert isinstance(data, list)
         assert len(data) >= 2

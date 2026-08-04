@@ -2,7 +2,7 @@ import structlog
 from typing import List, Optional, Union
 
 from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
-from app.domain.value_objects import TaskPaginationData, UpdateTaskData, UserPermissionData
+from app.domain.value_objects import TaskPaginationData, UpdateTaskData, UserPermissionData, Page
 from app.domain.enums import TaskStatus
 from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
 from app.domain.entities import User, Role, Task
@@ -24,15 +24,15 @@ class AdminService:
             username: Optional[str],
             limit: Optional[int],
             offset: Optional[int]
-    ) -> Union[List[User], User]:
-        """Get users - returns list if no username filter, single user if username provided."""
+    ) -> Union[Page[User], User]:
+        """Get users - returns paginated list if no username filter, single user if username provided."""
 
         if username is None:
             return await self.admin_repository.get_users(limit=limit, offset=offset)
 
         # Offset not supported when filtering by username
         if offset is not None:
-            return []
+            return Page.create(items=[], page=1, page_size=limit or 10, total_items=0)
 
         user = await self.user_repository.get_user_by_username(username=username)
         if user is None:
@@ -172,7 +172,7 @@ class AdminService:
 
         return await self.admin_repository.get_roles()
 
-    async def get_tasks_service(self, user_id: int, task_status: Optional[TaskStatus], pagination: TaskPaginationDTO) -> List[Task]:
+    async def get_tasks_service(self, user_id: int, task_status: Optional[TaskStatus], pagination: TaskPaginationDTO) -> Page[Task]:
         """Get tasks for a user with admin protection."""
 
         # Check if user exists

@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, Depends, Path, Query, Body
 from typing import Annotated, Optional, List
 
 from app.domain.entities import User
-from app.presentation.api.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination
+from app.presentation.api.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination, PaginatedResponse, PaginationMeta
 from app.domain.enums import TaskStatus
 from app.application.dto import TaskPaginationDTO, CreateTaskDTO, UpdateTaskDTO
 from app.presentation.api.dependencies import require_role, tasks_pagination
@@ -40,7 +40,7 @@ async def create_task(
         user_id=task.user_id
     )
 
-@tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=List[TaskRead], summary="Get all user's tasks")
+@tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=PaginatedResponse[TaskRead], summary="Get all user's tasks")
 async def get_tasks(
         user: Annotated[
                     User,
@@ -52,7 +52,7 @@ async def get_tasks(
             Query(title="Task Status")
         ] = None,
         pagination: TasksPagination = Depends(tasks_pagination)
-    ) -> List[TaskRead]:
+    ) -> PaginatedResponse[TaskRead]:
     """Get all tasks for the **authenticated** user with optional _filtering_ and _pagination_:
     - **task_status**: Optional task status filter
     - **limit**: Number of tasks to return
@@ -66,21 +66,32 @@ async def get_tasks(
         from_newest=pagination.from_newest
     )
 
-    tasks = await service.get_tasks_service(
+    page = await service.get_tasks_service(
         user_id=user.id,
         task_status=task_status,
         pagination=pagination_dto
     )
-    return [
-        TaskRead(
-            id=task.id,
-            title=task.title,
-            content=task.content,
-            status=task.status,
-            user_id=task.user_id
+    
+    return PaginatedResponse[TaskRead](
+        items=[
+            TaskRead(
+                id=task.id,
+                title=task.title,
+                content=task.content,
+                status=task.status,
+                user_id=task.user_id
+            )
+            for task in page.items
+        ],
+        pagination=PaginationMeta(
+            page=page.page,
+            page_size=page.page_size,
+            total_items=page.total_items,
+            total_pages=page.total_pages,
+            has_next=page.has_next,
+            has_previous=page.has_previous
         )
-        for task in tasks
-    ]
+    )
 
 @tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Get specific task")
 async def get_task(

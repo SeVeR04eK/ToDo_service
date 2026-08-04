@@ -443,15 +443,25 @@ Authorization: Bearer <access_token>
 
 Response:
 ```
-[
-    {
-        "id": 1,
-        "title": "example title",
-        "content": "example content",
-        "status": "todo",
-        "user_id": 1
+{
+    "items": [
+        {
+            "id": 1,
+            "title": "example title",
+            "content": "example content",
+            "status": "todo",
+            "user_id": 1
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "page_size": 10,
+        "total_items": 1,
+        "total_pages": 1,
+        "has_next": false,
+        "has_previous": false
     }
-]
+}
 ```
 
 * #### POST   /tasks/me
@@ -542,18 +552,40 @@ Request:
 Authorization: Bearer <access_token>
 ```
 
-Response:
+Response (paginated list):
 ```
-[
-    {
-        "username": "user",
-        "id": 1,
-        "is_active": true,
-        "role": {
-            "name": "user"
+{
+    "items": [
+        {
+            "username": "user",
+            "id": 1,
+            "is_active": true,
+            "role": {
+                "name": "user"
+            }
         }
+    ],
+    "pagination": {
+        "page": 1,
+        "page_size": 10,
+        "total_items": 1,
+        "total_pages": 1,
+        "has_next": false,
+        "has_previous": false
     }
-]
+}
+```
+
+Response (single user when filtered by username):
+```
+{
+    "username": "user",
+    "id": 1,
+    "is_active": true,
+    "role": {
+        "name": "user"
+    }
+}
 ```
 
 * #### GET    /admin/users/{user_id}   
@@ -616,15 +648,25 @@ Authorization: Bearer <access_token>
 
 Response:
 ```
-[
-    {
-        "id": 1,
-        "title": "example title",
-        "content": "example content",
-        "status": "todo",
-        "user_id": {user_id}
+{
+    "items": [
+        {
+            "id": 1,
+            "title": "example title",
+            "content": "example content",
+            "status": "todo",
+            "user_id": {user_id}
+        }
+    ],
+    "pagination": {
+        "page": 1,
+        "page_size": 10,
+        "total_items": 1,
+        "total_pages": 1,
+        "has_next": false,
+        "has_previous": false
     }
-]
+}
 ```
 
 * #### GET    /admin/users/{user_id}/tasks/{task_id}    
@@ -697,7 +739,7 @@ Response:
 ]
 ```
 
-* #### POST   /admin/roles     
+* #### POST   /admin/roles
 
 Request:
 ```
@@ -731,6 +773,40 @@ GET /tasks/me?limit=10&offset=0
 GET /admin/users?username=string
 GET /admin/users?limit=10&offset=0
 ```
+
+---
+
+### Pagination
+
+All list endpoints that support pagination return a consistent paginated response format:
+
+```json
+{
+  "items": [...],
+  "pagination": {
+    "page": 1,
+    "page_size": 20,
+    "total_items": 157,
+    "total_pages": 8,
+    "has_next": true,
+    "has_previous": false
+  }
+}
+```
+
+**Pagination Parameters:**
+- `limit`: Number of items per page (default: 10, max: 100)
+- `offset`: Number of items to skip (for pagination navigation)
+
+**Pagination Response Fields:**
+- `page`: Current page number (1-indexed)
+- `page_size`: Number of items per page
+- `total_items`: Total number of items matching the query
+- `total_pages`: Total number of pages available
+- `has_next`: Whether there is a next page
+- `has_previous`: Whether there is a previous page
+
+**Note:** Filtering affects only the `items` list and `total_items`/`total_pages` counts.
 
 ---
 

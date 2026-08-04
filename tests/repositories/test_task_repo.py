@@ -53,9 +53,10 @@ class TestTaskRepository:
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
         pagination = TaskPaginationData()
-        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        page = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
-        assert len(tasks) == 5
+        assert len(page.items) == 5
+        assert page.total_items == 5
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_limit(self, db_session: AsyncSession, test_user):
@@ -64,9 +65,11 @@ class TestTaskRepository:
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
         pagination = TaskPaginationData(limit=3)
-        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        page = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
-        assert len(tasks) == 3
+        assert len(page.items) == 3
+        assert page.page_size == 3
+        assert page.total_items == 10
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_offset(self, db_session: AsyncSession, test_user):
@@ -75,9 +78,11 @@ class TestTaskRepository:
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
         pagination = TaskPaginationData(offset=5)
-        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        page = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
-        assert len(tasks) == 5
+        assert len(page.items) == 5
+        assert page.page == 1
+        assert page.total_items == 10
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_limit_and_offset(self, db_session: AsyncSession, test_user):
@@ -86,9 +91,11 @@ class TestTaskRepository:
         await TaskFactory.create_many_in_db(db_session, count=10, user_id=test_user.id)
         
         pagination = TaskPaginationData(limit=3, offset=2)
-        tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        page = await repo.get_tasks(test_user.id, pagination, task_status=None)
         
-        assert len(tasks) == 3
+        assert len(page.items) == 3
+        assert page.page == 1
+        assert page.page_size == 3
     
     @pytest.mark.asyncio
     async def test_get_tasks_ascending_order(self, db_session: AsyncSession, test_user):
@@ -97,7 +104,8 @@ class TestTaskRepository:
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
         pagination = TaskPaginationData(from_newest=False)
-        retrieved_tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        page = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        retrieved_tasks = page.items
         
         assert retrieved_tasks[0].id == tasks[0].id
         assert retrieved_tasks[-1].id == tasks[-1].id
@@ -109,7 +117,8 @@ class TestTaskRepository:
         tasks = await TaskFactory.create_many_in_db(db_session, count=5, user_id=test_user.id)
         
         pagination = TaskPaginationData(from_newest=True)
-        retrieved_tasks = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        page = await repo.get_tasks(test_user.id, pagination, task_status=None)
+        retrieved_tasks = page.items
         
         assert retrieved_tasks[0].id == tasks[-1].id
         assert retrieved_tasks[-1].id == tasks[0].id
@@ -126,8 +135,10 @@ class TestTaskRepository:
         await TaskFactory.create_many_in_db(db_session, count=5, user_id=user2.id)
         
         pagination = TaskPaginationData()
-        user1_tasks = await repo.get_tasks(user1.id, pagination, task_status=None)
-        user2_tasks = await repo.get_tasks(user2.id, pagination, task_status=None)
+        user1_page = await repo.get_tasks(user1.id, pagination, task_status=None)
+        user2_page = await repo.get_tasks(user2.id, pagination, task_status=None)
+        user1_tasks = user1_page.items
+        user2_tasks = user2_page.items
         
         assert len(user1_tasks) == 3
         assert len(user2_tasks) == 5
@@ -145,9 +156,12 @@ class TestTaskRepository:
         await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
         
         pagination = TaskPaginationData()
-        todo_tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.todo)
-        in_progress_tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.in_progress)
-        done_tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.done)
+        todo_page = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.todo)
+        in_progress_page = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.in_progress)
+        done_page = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.done)
+        todo_tasks = todo_page.items
+        in_progress_tasks = in_progress_page.items
+        done_tasks = done_page.items
         
         assert len(todo_tasks) == 2
         assert len(in_progress_tasks) == 1
@@ -165,9 +179,10 @@ class TestTaskRepository:
             await TaskFactory.create_in_db(db_session, user_id=test_user.id, status=TaskStatus.todo)
         
         pagination = TaskPaginationData(limit=2, offset=1)
-        tasks = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.todo)
+        page = await repo.get_tasks(test_user.id, pagination, task_status=TaskStatus.todo)
         
-        assert len(tasks) == 2
+        assert len(page.items) == 2
+        assert page.total_items == 5
     
     @pytest.mark.asyncio
     async def test_get_task_by_id_success(self, db_session: AsyncSession, test_user):

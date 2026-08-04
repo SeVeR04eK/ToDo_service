@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, Path, Query, Body
 from typing import Annotated, Optional, Union, List
 
 from app.domain.entities import User
-from app.presentation.api.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination
+from app.presentation.api.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination, PaginatedResponse, PaginationMeta
 from app.application.dto import CreateRoleDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.enums import TaskStatus
 from app.presentation.api.dependencies import require_role, tasks_pagination
@@ -13,7 +13,7 @@ from app.presentation.api.dependencies.services_dep import get_admin_service
 # Admin router - all endpoints require admin role authentication
 admin_router = APIRouter(prefix = "/admin", tags = ["admin"])
 
-@admin_router.get("/users", status_code=status.HTTP_200_OK, response_model=Union[List[UserRead], UserRead], summary="Get all users", response_description="Returns a single user if username filter is provided, otherwise returns a list of users")
+@admin_router.get("/users", status_code=status.HTTP_200_OK, response_model=Union[PaginatedResponse[UserRead], UserRead], summary="Get all users", response_description="Returns a single user if username filter is provided, otherwise returns a paginated list of users")
 async def get_users(
         # Underscore indicates we only need the dependency for authentication, not the actual user object
         _: Annotated[
@@ -33,7 +33,7 @@ async def get_users(
             Optional[int],
             Query(title="Offset for pagination", ge=1, le=100)
         ] = None
-) -> Union[list[UserRead], UserRead]:
+) -> Union[PaginatedResponse[UserRead], UserRead]:
     """
     Get all users with optional filtering by username and _pagination_:
 
@@ -42,28 +42,39 @@ async def get_users(
     - **offset**: Offset for pagination
     """
 
-    # Returns single UserRead if username is provided, otherwise returns list of UserRead
+    # Returns single UserRead if username is provided, otherwise returns PaginatedResponse[UserRead]
     result = await service.get_users_service(
         username=username,
         limit=limit,
         offset=offset
     )
     
-    if isinstance(result, list):
-        return [
+    if isinstance(result, User):
+        return UserRead(
+            id=result.id,
+            username=result.username,
+            is_active=result.is_active,
+            role=UserRole(name=result.role.name) if result.role else None
+        )
+    
+    return PaginatedResponse[UserRead](
+        items=[
             UserRead(
                 id=user.id,
                 username=user.username,
                 is_active=user.is_active,
                 role=UserRole(name=user.role.name) if user.role else None
             )
-            for user in result
-        ]
-    return UserRead(
-        id=result.id,
-        username=result.username,
-        is_active=result.is_active,
-        role=UserRole(name=result.role.name) if result.role else None
+            for user in result.items
+        ],
+        pagination=PaginationMeta(
+            page=result.page,
+            page_size=result.page_size,
+            total_items=result.total_items,
+            total_pages=result.total_pages,
+            has_next=result.has_next,
+            has_previous=result.has_previous
+        )
     )
 
 @admin_router.get("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead, summary="Get specific user")
@@ -151,7 +162,7 @@ async def delete_user(
 
     await service.delete_user_service(user_id)
 
-@admin_router.get("/users/{user_id}/tasks", status_code=status.HTTP_200_OK, response_model=List[TaskRead], summary="Get user tasks")
+@admin_router.get("/users/{user_id}/tasks", status_code=status.HTTP_200_OK, response_model=PaginatedResponse[TaskRead], summary="Get user tasks")
 async def get_tasks(
         _: Annotated[
                     User,
@@ -164,7 +175,7 @@ async def get_tasks(
             Query(title="Task Status")
         ] = None,
         pagination: TasksPagination = Depends(tasks_pagination),
-) -> List[TaskRead]:
+) -> PaginatedResponse[TaskRead]:
     """Get tasks for a specific user by ID with optional _filtering_ and _pagination_:
     - **task_status**: Filter tasks by status
     - **limit**: Limit the number of tasks returned
@@ -178,21 +189,32 @@ async def get_tasks(
         from_newest=pagination.from_newest
     )
 
-    tasks = await service.get_tasks_service(
+    page = await service.get_tasks_service(
         user_id=user_id,
         task_status=task_status,
         pagination=pagination
     )
-    return [
-        TaskRead(
-            id=task.id,
-            title=task.title,
-            content=task.content,
-            status=task.status,
-            user_id=task.user_id
+    
+    return PaginatedResponse[TaskRead](
+        items=[
+            TaskRead(
+                id=task.id,
+                title=task.title,
+                content=task.content,
+                status=task.status,
+                user_id=task.user_id
+            )
+            for task in page.items
+        ],
+        pagination=PaginationMeta(
+            page=page.page,
+            page_size=page.page_size,
+            total_items=page.total_items,
+            total_pages=page.total_pages,
+            has_next=page.has_next,
+            has_previous=page.has_previous
         )
-        for task in tasks
-    ]
+    )
 
 @admin_router.get("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Get specific user task")
 async def get_task(
