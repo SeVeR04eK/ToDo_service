@@ -43,9 +43,24 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     #CORS Configuration
-    cors_allow_origins: list[str]
-    cors_allow_methods: list[str]
-    cors_allow_headers: list[str]
+    cors_allow_origins: list[str] = [
+        "http://localhost:3000"
+    ]
+
+    cors_allow_methods: list[str] = [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "OPTIONS"
+    ]
+
+    cors_allow_headers: list[str] = [
+        "Authorization",
+        "Content-Type"
+    ]
+
     cors_allow_credentials: bool = True
 
     #Security headers
