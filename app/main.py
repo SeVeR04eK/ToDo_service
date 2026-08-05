@@ -3,13 +3,12 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 import asyncio
 
-from app.core.logging import setup_logging
+from app.core.logging import setup_logging, settings
 from app.presentation.api import api_router
 from app.infrastructure.background_tasks import clean_tokens_task
 from app.domain.exceptions.base import DomainException
 from app.presentation.exception_handlers import domain_exception_handler
-from app.presentation.api.middleware import CorrelationIdMiddleware, RequestLoggingMiddleware
-
+from app.presentation.api.middleware import setup_middlewares
 
 # Initialize logging before creating the FastAPI app
 # Skip logging setup during tests to avoid pollution
@@ -79,7 +78,7 @@ This project serves as a practical example of building a well‑organized backen
 It demonstrates how to design a reliable, secure, and easy‑to‑maintain API suitable for real applications and learning.
     """,
     summary="Task management API with authentication.",
-    version="0.1.0",
+    version="0.1.1",
     contact={
         "name": "Andrii Severyn",
         "email": "andrej.chees.bs@gmail.com",
@@ -98,5 +97,4 @@ app.add_exception_handler(
 )
 
 # Add middleware (order matters - correlation ID must be first)
-app.add_middleware(CorrelationIdMiddleware)
-app.add_middleware(RequestLoggingMiddleware)
+setup_middlewares(app, settings)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status, Path, Query, Body
 from typing import Annotated, Optional, Union, List
 
 from app.domain.entities import User
-from app.presentation.api.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination, PaginatedResponse, PaginationMeta
+from app.presentation.api.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination, PaginatedResponse, PaginationMeta, DataResponse, ListResponse
 from app.application.dto import CreateRoleDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.enums import TaskStatus
 from app.presentation.api.dependencies import require_role, tasks_pagination
@@ -13,7 +13,7 @@ from app.presentation.api.dependencies.services_dep import get_admin_service
 # Admin router - all endpoints require admin role authentication
 admin_router = APIRouter(prefix = "/admin", tags = ["admin"])
 
-@admin_router.get("/users", status_code=status.HTTP_200_OK, response_model=Union[PaginatedResponse[UserRead], UserRead], summary="Get all users", response_description="Returns a single user if username filter is provided, otherwise returns a paginated list of users")
+@admin_router.get("/users", status_code=status.HTTP_200_OK, response_model=Union[DataResponse[UserRead], PaginatedResponse[UserRead]], summary="Get all users", response_description="Returns a single user if username filter is provided, otherwise returns a paginated list of users")
 async def get_users(
         # Underscore indicates we only need the dependency for authentication, not the actual user object
         _: Annotated[
@@ -33,7 +33,7 @@ async def get_users(
             Optional[int],
             Query(title="Offset for pagination", ge=1, le=100)
         ] = None
-) -> Union[PaginatedResponse[UserRead], UserRead]:
+) -> Union[DataResponse[UserRead], PaginatedResponse[UserRead]]:
     """
     Get all users with optional filtering by username and _pagination_:
 
@@ -50,15 +50,17 @@ async def get_users(
     )
     
     if isinstance(result, User):
-        return UserRead(
-            id=result.id,
-            username=result.username,
-            is_active=result.is_active,
-            role=UserRole(name=result.role.name) if result.role else None
+        return DataResponse[UserRead](
+            data=UserRead(
+                id=result.id,
+                username=result.username,
+                is_active=result.is_active,
+                role=UserRole(name=result.role.name) if result.role else None
+            )
         )
     
     return PaginatedResponse[UserRead](
-        items=[
+        data=[
             UserRead(
                 id=user.id,
                 username=user.username,
@@ -67,7 +69,7 @@ async def get_users(
             )
             for user in result.items
         ],
-        pagination=PaginationMeta(
+        meta=PaginationMeta(
             page=result.page,
             page_size=result.page_size,
             total_items=result.total_items,
@@ -77,7 +79,7 @@ async def get_users(
         )
     )
 
-@admin_router.get("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead, summary="Get specific user")
+@admin_router.get("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=DataResponse[UserRead], summary="Get specific user")
 async def get_user(
         _: Annotated[
                     User,
@@ -85,18 +87,20 @@ async def get_user(
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
         service: AdminService = Depends(get_admin_service)
-) -> UserRead:
+) -> DataResponse[UserRead]:
     """Get a specific user by ID."""
 
     user = await service.get_user_service(user_id)
-    return UserRead(
-        id=user.id,
-        username=user.username,
-        is_active=user.is_active,
-        role=UserRole(name=user.role.name) if user.role else None
+    return DataResponse[UserRead](
+        data=UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=UserRole(name=user.role.name) if user.role else None
+        )
     )
 
-@admin_router.patch("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=UserRead, summary="Update user permissions")
+@admin_router.patch("/users/{user_id}", status_code=status.HTTP_200_OK, response_model=DataResponse[UserRead], summary="Update user permissions")
 async def user_permission(
         _: Annotated[
                     User,
@@ -138,15 +142,17 @@ async def user_permission(
             )
         ],
         service: AdminService = Depends(get_admin_service)
-) -> UserRead:
+) -> DataResponse[UserRead]:
     """Update user permissions (_Partial update_)."""
 
     user = await service.permission_user_service(user_id=user_id, role_name=user_perm.role, is_active=user_perm.is_active)
-    return UserRead(
-        id=user.id,
-        username=user.username,
-        is_active=user.is_active,
-        role=UserRole(name=user.role.name) if user.role else None
+    return DataResponse[UserRead](
+        data=UserRead(
+            id=user.id,
+            username=user.username,
+            is_active=user.is_active,
+            role=UserRole(name=user.role.name) if user.role else None
+        )
     )
 
 @admin_router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user")
@@ -196,7 +202,7 @@ async def get_tasks(
     )
     
     return PaginatedResponse[TaskRead](
-        items=[
+        data=[
             TaskRead(
                 id=task.id,
                 title=task.title,
@@ -206,7 +212,7 @@ async def get_tasks(
             )
             for task in page.items
         ],
-        pagination=PaginationMeta(
+        meta=PaginationMeta(
             page=page.page,
             page_size=page.page_size,
             total_items=page.total_items,
@@ -216,7 +222,7 @@ async def get_tasks(
         )
     )
 
-@admin_router.get("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Get specific user task")
+@admin_router.get("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=DataResponse[TaskRead], summary="Get specific user task")
 async def get_task(
         _: Annotated[
                     User,
@@ -225,19 +231,21 @@ async def get_task(
         user_id: Annotated[int, Path(..., title="User ID")],
         task_id: Annotated[int, Path(..., title="Task ID")],
         service: AdminService = Depends(get_admin_service)
-) -> TaskRead:
+) -> DataResponse[TaskRead]:
     """Get a specific task for a user by ID."""
 
     task = await service.get_task_service(task_id=task_id, user_id=user_id)
-    return TaskRead(
-        id=task.id,
-        title=task.title,
-        content=task.content,
-        status=task.status,
-        user_id=task.user_id
+    return DataResponse[TaskRead](
+        data=TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     )
 
-@admin_router.patch("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Update user task")
+@admin_router.patch("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_200_OK, response_model=DataResponse[TaskRead], summary="Update user task")
 async def update_task(
         _: Annotated[
                     User,
@@ -296,7 +304,7 @@ async def update_task(
             )
         ],
         service: AdminService = Depends(get_admin_service)
-) -> TaskRead:
+) -> DataResponse[TaskRead]:
     """Update a specific task for a user by ID (_Partial update_")."""
 
     task_dto = UpdateTaskDTO(
@@ -307,12 +315,14 @@ async def update_task(
 
     task = await service.update_task_service(task_id=task_id, user_id=user_id, task_update=task_dto)
 
-    return TaskRead(
-        id=task.id,
-        title=task.title,
-        content=task.content,
-        status=task.status,
-        user_id=task.user_id
+    return DataResponse[TaskRead](
+        data=TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     )
 
 @admin_router.delete("/users/{user_id}/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete user task")
@@ -329,7 +339,7 @@ async def delete_task(
 
     await service.delete_task_service(task_id=task_id, user_id=user_id)
 
-@admin_router.post("/roles", status_code=status.HTTP_201_CREATED, response_model=RoleRead, summary="Create new role")
+@admin_router.post("/roles", status_code=status.HTTP_201_CREATED, response_model=DataResponse[RoleRead], summary="Create new role")
 async def create_role(
         _: Annotated[
                     User,
@@ -337,33 +347,37 @@ async def create_role(
                 ],
         new_role: RoleCreate,
         service: AdminService = Depends(get_admin_service)
-) -> RoleRead:
+) -> DataResponse[RoleRead]:
     """Create a new role."""
 
     role_dto = CreateRoleDTO(name=new_role.name)
 
     role = await service.create_role_service(new_role=role_dto)
 
-    return RoleRead(
-        id=role.id,
-        name=role.name
+    return DataResponse[RoleRead](
+        data=RoleRead(
+            id=role.id,
+            name=role.name
+        )
     )
 
-@admin_router.get("/roles", status_code=status.HTTP_200_OK, response_model=List[RoleRead])
+@admin_router.get("/roles", status_code=status.HTTP_200_OK, response_model=ListResponse[RoleRead])
 async def get_roles(
         _: Annotated[
             User,
             Depends(require_role("admin"))
         ],
         service: AdminService = Depends(get_admin_service)
-) -> List[RoleRead]:
+) -> ListResponse[RoleRead]:
     roles = await service.get_roles_service()
-    return [
-        RoleRead(
-            id=role.id,
-            name=role.name
-        )
-        for role in roles
-    ]
+    return ListResponse[RoleRead](
+        data=[
+            RoleRead(
+                id=role.id,
+                name=role.name
+            )
+            for role in roles
+        ]
+    )
 
 

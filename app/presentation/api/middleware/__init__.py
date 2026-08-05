@@ -1,4 +1,3 @@
-from app.presentation.api.middleware.correlation import CorrelationIdMiddleware
-from app.presentation.api.middleware.logging import RequestLoggingMiddleware
+from .setup import setup_middlewares
 
-__all__ = ["CorrelationIdMiddleware", "RequestLoggingMiddleware"]
+__all__ = ["setup_middlewares"]

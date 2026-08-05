@@ -2,7 +2,7 @@ from fastapi import APIRouter, status, Depends, Path, Query, Body
 from typing import Annotated, Optional, List
 
 from app.domain.entities import User
-from app.presentation.api.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination, PaginatedResponse, PaginationMeta
+from app.presentation.api.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination, PaginatedResponse, PaginationMeta, DataResponse
 from app.domain.enums import TaskStatus
 from app.application.dto import TaskPaginationDTO, CreateTaskDTO, UpdateTaskDTO
 from app.presentation.api.dependencies import require_role, tasks_pagination
@@ -13,7 +13,7 @@ from app.presentation.api.dependencies.services_dep import get_task_service
 # Tasks router for task management (accessible by users and admins)
 tasks_router = APIRouter(prefix = "/tasks", tags = ["tasks"])
 
-@tasks_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = TaskRead, summary="Create a new task")
+@tasks_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = DataResponse[TaskRead], summary="Create a new task")
 async def create_task(
         user: Annotated[
             User,
@@ -21,7 +21,7 @@ async def create_task(
         ],
         task: TaskCreate,
         service: TaskService = Depends(get_task_service)
-) -> TaskRead:
+) -> DataResponse[TaskRead]:
     """Create a new task for the **authenticated** user."""
 
     task_dto = CreateTaskDTO(
@@ -32,12 +32,14 @@ async def create_task(
 
     task = await service.create_task_service(task_dto, user.id)
 
-    return TaskRead(
-        id=task.id,
-        title=task.title,
-        content=task.content,
-        status=task.status,
-        user_id=task.user_id
+    return DataResponse[TaskRead](
+        data=TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     )
 
 @tasks_router.get("/me", status_code=status.HTTP_200_OK, response_model=PaginatedResponse[TaskRead], summary="Get all user's tasks")
@@ -73,7 +75,7 @@ async def get_tasks(
     )
     
     return PaginatedResponse[TaskRead](
-        items=[
+        data=[
             TaskRead(
                 id=task.id,
                 title=task.title,
@@ -83,7 +85,7 @@ async def get_tasks(
             )
             for task in page.items
         ],
-        pagination=PaginationMeta(
+        meta=PaginationMeta(
             page=page.page,
             page_size=page.page_size,
             total_items=page.total_items,
@@ -93,7 +95,7 @@ async def get_tasks(
         )
     )
 
-@tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Get specific task")
+@tasks_router.get("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=DataResponse[TaskRead], summary="Get specific task")
 async def get_task(
         user: Annotated[
                     User,
@@ -101,20 +103,22 @@ async def get_task(
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
         service: TaskService = Depends(get_task_service)
-) -> TaskRead:
+) -> DataResponse[TaskRead]:
     """Get a specific task by ID for the **authenticated** user."""
 
 
     task = await service.get_task_service(task_id=task_id, user_id=user.id)
-    return TaskRead(
-        id=task.id,
-        title=task.title,
-        content=task.content,
-        status=task.status,
-        user_id=task.user_id
+    return DataResponse[TaskRead](
+        data=TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     )
 
-@tasks_router.patch("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=TaskRead, summary="Update task")
+@tasks_router.patch("/me/{task_id}", status_code=status.HTTP_200_OK, response_model=DataResponse[TaskRead], summary="Update task")
 async def update_task(
         user: Annotated[
                     User,
@@ -172,7 +176,7 @@ async def update_task(
             )
         ],
         service: TaskService = Depends(get_task_service)
-) -> TaskRead:
+) -> DataResponse[TaskRead]:
     """Update a specific task by ID for the **authenticated** user (_partial update_)."""
 
 
@@ -183,12 +187,14 @@ async def update_task(
     )
 
     task = await service.update_task_service(task_id=task_id, user_id=user.id, task_update=task_dto)
-    return TaskRead(
-        id=task.id,
-        title=task.title,
-        content=task.content,
-        status=task.status,
-        user_id=task.user_id
+    return DataResponse[TaskRead](
+        data=TaskRead(
+            id=task.id,
+            title=task.title,
+            content=task.content,
+            status=task.status,
+            user_id=task.user_id
+        )
     )
 
 @tasks_router.delete("/me/{task_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete task")

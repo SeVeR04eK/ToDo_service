@@ -28,8 +28,8 @@ class TestUserRouter:
 
         assert response.status_code == 201
         data = response.json()
-        assert data["username"] == "newuser"
-        assert "id" in data
+        assert data["data"]["username"] == "newuser"
+        assert "id" in data["data"]
 
     @pytest.mark.asyncio
     async def test_create_user_password_mismatch(self, client: AsyncClient):
@@ -64,8 +64,8 @@ class TestUserRouter:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == test_user.id
-        assert data["username"] == test_user.username
+        assert data["data"]["id"] == test_user.id
+        assert data["data"]["username"] == test_user.username
 
     @pytest.mark.asyncio
     async def test_get_user_unauthorized(self, client: AsyncClient):
@@ -88,7 +88,7 @@ class TestUserRouter:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["username"] == "updated_user"
+        assert data["data"]["username"] == "updated_user"
 
     @pytest.mark.asyncio
     async def test_update_user_username_only(self, authenticated_client: AsyncClient, test_user):
@@ -102,7 +102,7 @@ class TestUserRouter:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["username"] == "updated_user"
+        assert data["data"]["username"] == "updated_user"
 
     @pytest.mark.asyncio
     async def test_update_user_password_only(self, authenticated_client: AsyncClient, test_user):

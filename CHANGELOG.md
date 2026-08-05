@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-08-05
+
+### Added
+- Structured application logging with `structlog`
+- Request logging and correlation ID middleware for request tracing
+- Configurable log levels through environment variables
+- Standardized API response models:
+  - `DataResponse`
+  - `ListResponse`
+  - `PaginatedResponse`
+- Domain-level pagination support with pagination metadata
+- Security headers middleware with optional HSTS support
+- Configurable CORS settings
+
+### Changed
+- Standardized API responses using a consistent `data` wrapper format
+- Updated paginated responses:
+  - renamed `items` to `data`
+  - renamed `pagination` to `meta`
+- Updated repositories, services, and endpoints to support pagination
+- Centralized middleware registration and configuration
+- Improved structured logging across services, authentication, exceptions, and background tasks
+- Updated API documentation and OpenAPI schemas
+- Updated environment configuration for logging, CORS, and security settings
+
+### Tests
+- Updated API tests for standardized response formats
+- Added validation for pagination metadata and response structures
+- Updated authentication, user, task, and admin endpoint tests
+
 ## [0.1.0] - 2026-08-02
 
 ### Added

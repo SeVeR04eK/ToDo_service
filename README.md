@@ -1,6 +1,6 @@
 # ToDo Service Backend API (FastAPI + PostgreSQL)
 
-**API Version:** 0.1.0
+**API Version:** 0.1.1
 
 **Status:** Production-Ready Architecture
 
@@ -157,6 +157,49 @@ Functionality for managing personal tasks:
 * Ownership checks (users access only their data)
 * Admin overrides
 * Proper HTTP status codes (401 / 403)
+* Security headers middleware (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
+* Optional HSTS (HTTP Strict Transport Security) for production
+
+---
+
+### Middleware
+
+The application uses a layered middleware architecture for cross-cutting concerns:
+
+**Middleware Order (applied in reverse order):**
+
+1. **CorrelationIdMiddleware** - First middleware executed
+   - Generates unique UUID for each incoming request
+   - Binds correlation ID to structlog contextvars for request tracing
+   - Automatically includes `request_id` in all logs during the request lifecycle
+   - Clears contextvars after request completion
+
+2. **RequestLoggingMiddleware** - Second middleware executed
+   - Logs all HTTP requests with structured logging (JSON format)
+   - Captures HTTP method, request path, status code, and duration
+   - Automatic log level based on request duration:
+     - INFO for requests < 1 second
+     - WARNING for requests >= 1 second
+   - Automatically includes correlation ID from CorrelationIdMiddleware
+
+3. **SecurityHeadersMiddleware** - Third middleware executed
+   - Adds security headers to all responses:
+     - `X-Content-Type-Options: nosniff` - Prevents MIME type sniffing
+     - `X-Frame-Options: DENY` - Prevents clickjacking attacks
+     - `Referrer-Policy: strict-origin-when-cross-origin` - Controls referrer information
+     - `Permissions-Policy: camera=(), microphone=(), geolocation=()` - Restricts browser features
+   - Optionally adds HSTS header when `ENABLE_HSTS=true` (production)
+
+4. **CORSMiddleware** - Last middleware executed (FastAPI built-in)
+   - Configured via environment variables:
+     - `CORS_ALLOW_ORIGINS` - Allowed origins for cross-origin requests
+     - `CORS_ALLOW_METHODS` - Allowed HTTP methods
+     - `CORS_ALLOW_HEADERS` - Allowed request headers
+     - `CORS_ALLOW_CREDENTIALS` - Allow cookies in CORS requests
+
+**Middleware Configuration:**
+
+All middlewares are configured in `app/presentation/api/middleware/setup.py` and applied to the FastAPI app in `app/main.py`. The order is critical - correlation ID must be first to ensure all logs include the request identifier.
 
 ---
 
@@ -325,9 +368,11 @@ password=user12345
 Response:
 ```
 {
-    "refresh_token": "example.refresh.token",
-    "access_token": "example.access.token",
-    "token_type": "bearer"
+    "data": {
+        "refresh_token": "example.refresh.token",
+        "access_token": "example.access.token",
+        "token_type": "bearer"
+    }
 }
 ```
 
@@ -343,9 +388,11 @@ Request
 Response:
 ```
 {
-    "refresh_token": "example.new.refresh.token",
-    "access_token": "example.new.access.token",
-    "token_type": "bearer"
+    "data": {
+        "refresh_token": "example.new.refresh.token",
+        "access_token": "example.new.access.token",
+        "token_type": "bearer"
+    }
 }
 ```
 
@@ -365,11 +412,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "username": "user",
-    "id": 1,
-    "is_active": true,
-    "role": {
-        "name": "user"
+    "data": {
+        "username": "user",
+        "id": 1,
+        "is_active": true,
+        "role": {
+            "name": "user"
+        }
     }
 }
 ```
@@ -388,11 +437,13 @@ Request:
 Response:
 ```
 {
-  "username": "user",
-  "id": 1,
-  "is_active": true,
-  "role": {
-    "name": "user"
+  "data": {
+    "username": "user",
+    "id": 1,
+    "is_active": true,
+    "role": {
+      "name": "user"
+    }
   }
 }
 ```
@@ -413,11 +464,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "username": "new_user",
-    "id": 1,
-    "is_active": true,
-    "role": {
-        "name": "user"
+    "data": {
+        "username": "new_user",
+        "id": 1,
+        "is_active": true,
+        "role": {
+            "name": "user"
+        }
     }
 }
 ```
@@ -444,7 +497,7 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "items": [
+    "data": [
         {
             "id": 1,
             "title": "example title",
@@ -453,7 +506,7 @@ Response:
             "user_id": 1
         }
     ],
-    "pagination": {
+    "meta": {
         "page": 1,
         "page_size": 10,
         "total_items": 1,
@@ -480,11 +533,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "id": 1,
-    "title": "example title",
-    "content": "example content",
-    "status": "todo",
-    "user_id": 1
+    "data": {
+        "id": 1,
+        "title": "example title",
+        "content": "example content",
+        "status": "todo",
+        "user_id": 1
+    }
 }
 ```
 
@@ -498,11 +553,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "id": {task_id},
-    "title": "example title",
-    "content": "example content",
-    "status": "todo",
-    "user_id": 1
+    "data": {
+        "id": {task_id},
+        "title": "example title",
+        "content": "example content",
+        "status": "todo",
+        "user_id": 1
+    }
 }
 ```
 
@@ -522,11 +579,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "id": {task_id},
-    "title": "example new title",
-    "content": "example new content ",
-    "status": "done",
-    "user_id": 1
+    "data": {
+        "id": {task_id},
+        "title": "example new title",
+        "content": "example new content ",
+        "status": "done",
+        "user_id": 1
+    }
 }
 ```
 
@@ -555,7 +614,7 @@ Authorization: Bearer <access_token>
 Response (paginated list):
 ```
 {
-    "items": [
+    "data": [
         {
             "username": "user",
             "id": 1,
@@ -565,7 +624,7 @@ Response (paginated list):
             }
         }
     ],
-    "pagination": {
+    "meta": {
         "page": 1,
         "page_size": 10,
         "total_items": 1,
@@ -579,11 +638,13 @@ Response (paginated list):
 Response (single user when filtered by username):
 ```
 {
-    "username": "user",
-    "id": 1,
-    "is_active": true,
-    "role": {
-        "name": "user"
+    "data": {
+        "username": "user",
+        "id": 1,
+        "is_active": true,
+        "role": {
+            "name": "user"
+        }
     }
 }
 ```
@@ -598,11 +659,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "username": "user",
-    "id": {user_id},
-    "is_active": true,
-    "role": {
-        "name": "user"
+    "data": {
+        "username": "user",
+        "id": {user_id},
+        "is_active": true,
+        "role": {
+            "name": "user"
+        }
     }
 }
 ```
@@ -622,11 +685,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "username": "user",
-    "id": {user_id},
-    "is_active": false,
-    "role": {
-        "name": "admin"
+    "data": {
+        "username": "user",
+        "id": {user_id},
+        "is_active": false,
+        "role": {
+            "name": "admin"
+        }
     }
 }
 ```
@@ -649,7 +714,7 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "items": [
+    "data": [
         {
             "id": 1,
             "title": "example title",
@@ -658,7 +723,7 @@ Response:
             "user_id": {user_id}
         }
     ],
-    "pagination": {
+    "meta": {
         "page": 1,
         "page_size": 10,
         "total_items": 1,
@@ -679,11 +744,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "id": {task_id},
-    "title": "example title",
-    "content": "example content",
-    "status": "todo",
-    "user_id": {user_id}}
+    "data": {
+        "id": {task_id},
+        "title": "example title",
+        "content": "example content",
+        "status": "todo",
+        "user_id": {user_id}
+    }
 }
 ```
 
@@ -703,11 +770,13 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "id": {task_id},
-    "title": "example new title",
-    "content": "example new content ",
-    "status": "done",
-    "user_id": {user_id}
+    "data": {
+        "id": {task_id},
+        "title": "example new title",
+        "content": "example new content ",
+        "status": "done",
+        "user_id": {user_id}
+    }
 }
 ```
 
@@ -727,16 +796,18 @@ Authorization: Bearer <access_token>
 
 Response:
 ```
-[
-    {
-        "name": "user",
-        "id": 1
-    },
-    {
-        "name": "admin",
-        "id": 2
-    }
-]
+{
+    "data": [
+        {
+            "name": "user",
+            "id": 1
+        },
+        {
+            "name": "admin",
+            "id": 2
+        }
+    ]
+}
 ```
 
 * #### POST   /admin/roles
@@ -753,8 +824,10 @@ Authorization: Bearer <access_token>
 Response:
 ```
 {
-    "name": "moderator",
-    "id": 7
+    "data": {
+        "name": "moderator",
+        "id": 7
+    }
 }
 ```
 
@@ -776,14 +849,45 @@ GET /admin/users?limit=10&offset=0
 
 ---
 
-### Pagination
+### Response Format
 
-All list endpoints that support pagination return a consistent paginated response format:
+All successful API responses follow a consistent wrapped format for better API contract consistency and future extensibility.
 
+**Single Item Response (DataResponse[T]):**
 ```json
 {
-  "items": [...],
-  "pagination": {
+  "data": {
+    "id": 1,
+    "username": "john_doe",
+    "is_active": true,
+    "role": {
+      "name": "user"
+    }
+  }
+}
+```
+
+**List Response (ListResponse[T]):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "admin"
+    },
+    {
+      "id": 2,
+      "name": "user"
+    }
+  ]
+}
+```
+
+**Paginated Response (PaginatedResponse[T]):**
+```json
+{
+  "data": [...],
+  "meta": {
     "page": 1,
     "page_size": 20,
     "total_items": 157,
@@ -794,19 +898,26 @@ All list endpoints that support pagination return a consistent paginated respons
 }
 ```
 
+---
+
+### Pagination
+
+All list endpoints that support pagination return a consistent paginated response format with `data` and `meta` fields.
+
 **Pagination Parameters:**
 - `limit`: Number of items per page (default: 10, max: 100)
 - `offset`: Number of items to skip (for pagination navigation)
 
 **Pagination Response Fields:**
-- `page`: Current page number (1-indexed)
-- `page_size`: Number of items per page
-- `total_items`: Total number of items matching the query
-- `total_pages`: Total number of pages available
-- `has_next`: Whether there is a next page
-- `has_previous`: Whether there is a previous page
+- `data`: Array of items for the current page
+- `meta.page`: Current page number (1-indexed)
+- `meta.page_size`: Number of items per page
+- `meta.total_items`: Total number of items matching the query
+- `meta.total_pages`: Total number of pages available
+- `meta.has_next`: Whether there is a next page
+- `meta.has_previous`: Whether there is a previous page
 
-**Note:** Filtering affects only the `items` list and `total_items`/`total_pages` counts.
+**Note:** Filtering affects only the `data` list and `total_items`/`total_pages` counts.
 
 ---
 

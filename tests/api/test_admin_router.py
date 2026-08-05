@@ -22,10 +22,10 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert "items" in data
-        assert "pagination" in data
-        assert len(data["items"]) >= 3  # admin + 2 new users
-        assert data["pagination"]["total_items"] >= 3
+        assert "data" in data
+        assert "meta" in data
+        assert len(data["data"]) >= 3  # admin + 2 new users
+        assert data["meta"]["total_items"] >= 3
 
     @pytest.mark.asyncio
     async def test_get_users_with_username_filter(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession):
@@ -37,8 +37,8 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        # When filtering by username, service returns single UserRead object, not list
-        assert data["username"] == "specific_user"
+        # When filtering by username, service returns single UserRead object wrapped in DataResponse
+        assert data["data"]["username"] == "specific_user"
 
     @pytest.mark.asyncio
     async def test_get_users_with_limit(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession):
@@ -50,8 +50,8 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 3
-        assert data["pagination"]["page_size"] == 3
+        assert len(data["data"]) == 3
+        assert data["meta"]["page_size"] == 3
 
     @pytest.mark.asyncio
     async def test_get_users_unauthorized(self, client: AsyncClient):
@@ -67,8 +67,8 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == test_user.id
-        assert data["username"] == test_user.username
+        assert data["data"]["id"] == test_user.id
+        assert data["data"]["username"] == test_user.username
 
     @pytest.mark.asyncio
     async def test_get_user_by_id_not_found(self, authenticated_admin_client: AsyncClient):
@@ -87,8 +87,8 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["is_active"] is False
-        assert data["role"]["name"] == "admin"
+        assert data["data"]["is_active"] is False
+        assert data["data"]["role"]["name"] == "admin"
 
     @pytest.mark.asyncio
     async def test_update_user_permission_partial(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -100,7 +100,7 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["is_active"] is False
+        assert data["data"]["is_active"] is False
 
     @pytest.mark.asyncio
     async def test_delete_user_success(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession):
@@ -145,10 +145,10 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert "items" in data
-        assert "pagination" in data
-        assert len(data["items"]) == 2
-        assert data["pagination"]["total_items"] == 2
+        assert "data" in data
+        assert "meta" in data
+        assert len(data["data"]) == 2
+        assert data["meta"]["total_items"] == 2
 
     @pytest.mark.asyncio
     async def test_get_user_tasks_with_status_filter(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -160,9 +160,9 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 1
-        assert data["items"][0]["status"] == TaskStatus.todo
-        assert data["pagination"]["total_items"] == 1
+        assert len(data["data"]) == 1
+        assert data["data"][0]["status"] == TaskStatus.todo
+        assert data["meta"]["total_items"] == 1
 
     @pytest.mark.asyncio
     async def test_get_user_task_by_id_success(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -173,7 +173,7 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == task.id
+        assert data["data"]["id"] == task.id
 
     @pytest.mark.asyncio
     async def test_update_user_task_success(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -187,8 +187,8 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["title"] == "Admin Updated"
-        assert data["status"] == TaskStatus.done
+        assert data["data"]["title"] == "Admin Updated"
+        assert data["data"]["status"] == TaskStatus.done
 
     @pytest.mark.asyncio
     async def test_delete_user_task_success(self, authenticated_admin_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -209,7 +209,7 @@ class TestAdminRouter:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["name"] == "moderator"
+        assert data["data"]["name"] == "moderator"
 
     @pytest.mark.asyncio
     async def test_admin_endpoint_requires_admin_role(self, authenticated_client: AsyncClient):
@@ -316,6 +316,7 @@ class TestAdminRouter:
         
         assert response.status_code == 200
         data = response.json()
-        # Roles endpoint returns a list (not paginated)
-        assert isinstance(data, list)
-        assert len(data) >= 2
+        # Roles endpoint returns ListResponse with data field
+        assert "data" in data
+        assert isinstance(data["data"], list)
+        assert len(data["data"]) >= 2

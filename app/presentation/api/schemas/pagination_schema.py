@@ -14,6 +14,46 @@ class PaginationMeta(BaseModel):
     has_previous: bool = Field(..., description="Whether there is a previous page")
 
 
+class DataResponse(BaseModel, Generic[T]):
+    """Generic single-item response wrapper for API endpoints.
+    
+    This model provides a consistent response format for all single-item endpoints.
+    It wraps a single item in a 'data' field.
+    
+    Type Parameters:
+        T: The type of the single item
+        
+    Example:
+        {
+            "data": {
+                "id": 1,
+                "username": "user@example.com"
+            }
+        }
+    """
+    data: T = Field(..., description="The response data")
+
+
+class ListResponse(BaseModel, Generic[T]):
+    """Generic list response wrapper for API endpoints.
+    
+    This model provides a consistent response format for all non-paginated collection endpoints.
+    It wraps a list of items in a 'data' field.
+    
+    Type Parameters:
+        T: The type of items in the collection
+        
+    Example:
+        {
+            "data": [
+                {"id": 1, "username": "user1@example.com"},
+                {"id": 2, "username": "user2@example.com"}
+            ]
+        }
+    """
+    data: List[T] = Field(..., description="List of items")
+
+
 class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response wrapper for API endpoints.
     
@@ -25,10 +65,10 @@ class PaginatedResponse(BaseModel, Generic[T]):
         
     Example:
         {
-            "items": [{"id": 1, "title": "Task 1"}, {"id": 2, "title": "Task 2"}],
-            "pagination": {
+            "data": [{"id": 1, "title": "Task 1"}, {"id": 2, "title": "Task 2"}],
+            "meta": {
                 "page": 1,
-                "page_size": 20,
+                "limit": 20,
                 "total_items": 157,
                 "total_pages": 8,
                 "has_next": true,
@@ -36,5 +76,5 @@ class PaginatedResponse(BaseModel, Generic[T]):
             }
         }
     """
-    items: List[T] = Field(..., description="List of items for the current page")
-    pagination: PaginationMeta = Field(..., description="Pagination metadata")
+    data: List[T] = Field(..., description="List of items for the current page")
+    meta: PaginationMeta = Field(..., description="Pagination metadata")

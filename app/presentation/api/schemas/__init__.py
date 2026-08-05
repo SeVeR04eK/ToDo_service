@@ -15,11 +15,11 @@ from .task_schema import TaskRead, TaskCreate, TaskUpdate
 from .admin_schema import UserPermission
 from .role_schema import RoleRead, RoleCreate
 from .pagin_schema import TasksPagination
-from .pagination_schema import PaginatedResponse, PaginationMeta
+from .pagination_schema import PaginatedResponse, PaginationMeta, DataResponse, ListResponse
 
 __all__ = ["UserCreate", "UserRead", "TokensResponse",
            "RefreshTokenGet", "TaskCreate", "TaskRead",
            "TaskUpdate", "UserUpdate", "UserPermission",
            "RoleRead", "RoleCreate",
            "TasksPagination", "UserRole",
-           "PaginatedResponse", "PaginationMeta"]
+           "PaginatedResponse", "PaginationMeta", "DataResponse", "ListResponse"]

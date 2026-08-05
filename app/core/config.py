@@ -42,6 +42,15 @@ class Settings(BaseSettings):
     # Logging Configuration
     log_level: str = "INFO"
 
+    #CORS Configuration
+    cors_allow_origins: list[str]
+    cors_allow_methods: list[str]
+    cors_allow_headers: list[str]
+    cors_allow_credentials: bool = True
+
+    #Security headers
+    enable_hsts: bool = False
+
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

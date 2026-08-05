@@ -21,11 +21,11 @@ class TestTasksRouter:
         
         assert response.status_code == 201
         data = response.json()
-        assert data["title"] == task_create_data["title"]
-        assert data["content"] == task_create_data["content"]
-        assert data["status"] == task_create_data["status"]
-        assert "id" in data
-        assert "user_id" in data
+        assert data["data"]["title"] == task_create_data["title"]
+        assert data["data"]["content"] == task_create_data["content"]
+        assert data["data"]["status"] == task_create_data["status"]
+        assert "id" in data["data"]
+        assert "user_id" in data["data"]
     
     @pytest.mark.asyncio
     async def test_create_task_unauthorized(self, client: AsyncClient, task_create_data: dict):
@@ -67,11 +67,11 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert "items" in data
-        assert "pagination" in data
-        assert isinstance(data["items"], list)
-        assert len(data["items"]) == 5
-        assert data["pagination"]["total_items"] == 5
+        assert "data" in data
+        assert "meta" in data
+        assert isinstance(data["data"], list)
+        assert len(data["data"]) == 5
+        assert data["meta"]["total_items"] == 5
     
     @pytest.mark.asyncio
     async def test_get_tasks_empty(self, authenticated_client: AsyncClient):
@@ -80,10 +80,10 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert "items" in data
-        assert "pagination" in data
-        assert data["items"] == []
-        assert data["pagination"]["total_items"] == 0
+        assert "data" in data
+        assert "meta" in data
+        assert data["data"] == []
+        assert data["meta"]["total_items"] == 0
     
     @pytest.mark.asyncio
     async def test_get_tasks_unauthorized(self, client: AsyncClient):
@@ -103,9 +103,9 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 1
-        assert data["items"][0]["status"] == TaskStatus.todo
-        assert data["pagination"]["total_items"] == 1
+        assert len(data["data"]) == 1
+        assert data["data"][0]["status"] == TaskStatus.todo
+        assert data["meta"]["total_items"] == 1
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_limit(self, authenticated_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -116,9 +116,9 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 3
-        assert data["pagination"]["page_size"] == 3
-        assert data["pagination"]["total_items"] == 10
+        assert len(data["data"]) == 3
+        assert data["meta"]["page_size"] == 3
+        assert data["meta"]["total_items"] == 10
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_offset(self, authenticated_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -129,8 +129,8 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 5
-        assert data["pagination"]["total_items"] == 10
+        assert len(data["data"]) == 5
+        assert data["meta"]["total_items"] == 10
     
     @pytest.mark.asyncio
     async def test_get_tasks_with_from_newest(self, authenticated_client: AsyncClient, db_session: AsyncSession, test_user):
@@ -141,8 +141,8 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["items"][0]["id"] == tasks[-1].id
-        assert data["items"][-1]["id"] == tasks[0].id
+        assert data["data"][0]["id"] == tasks[-1].id
+        assert data["data"][-1]["id"] == tasks[0].id
     
     @pytest.mark.asyncio
     async def test_get_tasks_limit_validation(self, authenticated_client: AsyncClient):
@@ -174,11 +174,11 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert len(data["items"]) == 2
-        assert all(task["status"] == TaskStatus.todo for task in data["items"])
-        assert data["pagination"]["total_items"] == 5
-        assert data["pagination"]["page"] == 2
-        assert data["pagination"]["has_previous"] is True
+        assert len(data["data"]) == 2
+        assert all(task["status"] == TaskStatus.todo for task in data["data"])
+        assert data["meta"]["total_items"] == 5
+        assert data["meta"]["page"] == 2
+        assert data["meta"]["has_previous"] is True
     
     @pytest.mark.asyncio
     async def test_get_task_by_id_success(self, authenticated_client: AsyncClient, test_task):
@@ -187,9 +187,9 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == test_task.id
-        assert data["title"] == test_task.title
-        assert data["content"] == test_task.content
+        assert data["data"]["id"] == test_task.id
+        assert data["data"]["title"] == test_task.title
+        assert data["data"]["content"] == test_task.content
     
     @pytest.mark.asyncio
     async def test_get_task_by_id_not_found(self, authenticated_client: AsyncClient):
@@ -238,10 +238,10 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["id"] == test_task.id
-        assert data["title"] == task_update_data["title"]
-        assert data["content"] == task_update_data["content"]
-        assert data["status"] == task_update_data["status"]
+        assert data["data"]["id"] == test_task.id
+        assert data["data"]["title"] == task_update_data["title"]
+        assert data["data"]["content"] == task_update_data["content"]
+        assert data["data"]["status"] == task_update_data["status"]
     
     @pytest.mark.asyncio
     async def test_update_task_partial(self, authenticated_client: AsyncClient, test_task):
@@ -252,8 +252,8 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert data["title"] == "Updated Title Only"
-        assert data["content"] == test_task.content  # Unchanged
+        assert data["data"]["title"] == "Updated Title Only"
+        assert data["data"]["content"] == test_task.content  # Unchanged
     
     @pytest.mark.asyncio
     async def test_update_task_not_found(self, authenticated_client: AsyncClient, task_update_data: dict):
@@ -364,9 +364,9 @@ class TestTasksRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert "items" in data
-        assert "pagination" in data
-        assert isinstance(data["items"], list)
+        assert "data" in data
+        assert "meta" in data
+        assert isinstance(data["data"], list)
     
     @pytest.mark.asyncio
     async def test_task_response_model_structure(self, authenticated_client: AsyncClient, task_create_data: dict):
@@ -378,4 +378,4 @@ class TestTasksRouter:
         
         required_fields = ["id", "title", "content", "status", "user_id"]
         for field in required_fields:
-            assert field in data, f"Missing field: {field}"
+            assert field in data["data"], f"Missing field: {field}"
