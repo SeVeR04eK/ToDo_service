@@ -571,7 +571,7 @@ Authorization: Bearer <access_token>
 
 {
   "title": "example new title",
-  "content": "example new content ",
+  "content": "example new content",
   "status": "done"
 }
 ```
@@ -582,7 +582,7 @@ Response:
     "data": {
         "id": {task_id},
         "title": "example new title",
-        "content": "example new content ",
+        "content": "example new content",
         "status": "done",
         "user_id": 1
     }
@@ -762,7 +762,7 @@ Authorization: Bearer <access_token>
 
 {
   "title": "example new title",
-  "content": "example new content ",
+  "content": "example new content",
   "status": "done"
 }
 ```
@@ -773,7 +773,7 @@ Response:
     "data": {
         "id": {task_id},
         "title": "example new title",
-        "content": "example new content ",
+        "content": "example new content",
         "status": "done",
         "user_id": {user_id}
     }

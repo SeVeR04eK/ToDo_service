@@ -5,7 +5,7 @@ from app.application.services import AdminService
 from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
 from app.domain.entities import User, Role
 from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
-from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError
+from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, InvalidPaginationParameters
 
 
 @pytest.mark.unit
@@ -14,17 +14,37 @@ class TestAdminService:
 
     @pytest.mark.asyncio
     async def test_get_users_service_with_offset(self):
-        """Test that offset with username returns empty page."""
+        """Test that offset without username returns paginated result."""
         from app.domain.value_objects import Page
         mock_user_repo = AsyncMock(spec=UserRepository)
         mock_admin_repo = AsyncMock(spec=AdminRepository)
         mock_task_repo = AsyncMock(spec=TaskRepository)
-        
+
+        mock_admin_repo.get_users.return_value = Page.create(items=[], page=1, page_size=10, total_items=0)
+
         service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
-        result = await service.get_users_service(username="test", limit=None, offset=1)
-        
+        result = await service.get_users_service(username=None, limit=None, offset=1)
+
         assert isinstance(result, Page)
         assert result.items == []
+
+    @pytest.mark.asyncio
+    async def test_get_users_service_username_with_pagination_raises_error(self):
+        """Test that username with pagination parameters raises InvalidPaginationParameters."""
+        mock_user_repo = AsyncMock(spec=UserRepository)
+        mock_admin_repo = AsyncMock(spec=AdminRepository)
+        mock_task_repo = AsyncMock(spec=TaskRepository)
+
+        service = AdminService(user_repository=mock_user_repo, admin_repository=mock_admin_repo, task_repository=mock_task_repo)
+
+        with pytest.raises(InvalidPaginationParameters):
+            await service.get_users_service(username="testuser", limit=10, offset=None)
+
+        with pytest.raises(InvalidPaginationParameters):
+            await service.get_users_service(username="testuser", limit=None, offset=5)
+
+        with pytest.raises(InvalidPaginationParameters):
+            await service.get_users_service(username="testuser", limit=10, offset=5)
 
     @pytest.mark.asyncio
     async def test_get_user_service_success(self):

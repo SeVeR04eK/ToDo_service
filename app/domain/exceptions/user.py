@@ -14,3 +14,8 @@ class UsernameAlreadyExistsError(DomainException):
 class PermissionDeniedError(DomainException):
     """Raised when a user lacks permission to perform an action."""
     pass
+
+
+class InvalidPaginationParameters(DomainException):
+    """Raised when pagination parameters are provided with username filter."""
+    pass

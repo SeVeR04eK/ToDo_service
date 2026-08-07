@@ -88,7 +88,7 @@ class SQLAlchemyAdminRepository(AdminRepository):
         orm_roles = (await self.session.scalars(select(RoleORM))).all()
         return [role_from_orm(r) for r in orm_roles]
 
-    async def get_role_id_by_name(self, name: str) -> int:
+    async def get_role_id_by_name(self, name: str) -> int | None:
         """Get a role ID by its name."""
 
         request = select(RoleORM.id).where(RoleORM.name == name)

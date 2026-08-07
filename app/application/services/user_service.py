@@ -58,7 +58,7 @@ class UserService:
             "Updating user",
             user_id=user_id,
         )
-        
+
         user = await self.repository.get_user_by_id(user_id=user_id)
         if user is None:
             logger.warning(
@@ -66,6 +66,7 @@ class UserService:
                 user_id=user_id,
             )
             raise UserNotFoundError()
+
         # Check if username already exists
         if user_update.username != user.username and user_update.username is not None:
             existing_user = await self.repository.get_user_by_username(username=user_update.username)
@@ -75,6 +76,14 @@ class UserService:
                     username=user_update.username,
                 )
                 raise UsernameAlreadyExistsError()
+
+        # Validate password confirmation if password is being updated
+        if user_update.password is not None and user_update.password != user_update.password_confirm:
+            logger.warning(
+                "Password confirmation mismatch during user update",
+                user_id=user_id,
+            )
+            raise ValueError("Passwords do not match")
 
         user_update_data = UserUpdateData(
             username=user_update.username,

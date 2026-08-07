@@ -41,7 +41,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
             self,
             user_id: int,
             pagination: TaskPaginationData,
-            task_status: TaskStatus
+            task_status: TaskStatus | None
     ) -> Page[Task]:
         """Get all tasks for a user with optional pagination and sorting."""
 

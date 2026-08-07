@@ -35,10 +35,10 @@ class TestAuthRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data["data"]
-        assert "refresh_token" in data["data"]
-        assert "token_type" in data["data"]
-        assert data["data"]["token_type"] == "bearer"
+        assert "access_token" in data
+        assert "refresh_token" in data
+        assert "token_type" in data
+        assert data["token_type"] == "bearer"
     
     @pytest.mark.asyncio
     async def test_authentication_wrong_username(self, client: AsyncClient):
@@ -106,9 +106,9 @@ class TestAuthRouter:
         
         assert response.status_code == 200
         data = response.json()
-        assert "access_token" in data["data"]
-        assert "refresh_token" in data["data"]
-        assert "token_type" in data["data"]
+        assert "access_token" in data
+        assert "refresh_token" in data
+        assert "token_type" in data
     
     @pytest.mark.asyncio
     async def test_refresh_token_invalid(self, client: AsyncClient):

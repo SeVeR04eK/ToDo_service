@@ -262,7 +262,7 @@ async def update_task(
                         "description": "Update user task with all fields: title, content, status",
                         "value": {
                             "title": "example new title",
-                            "content": "example new content ",
+                            "content": "example new content",
                             "status": "done"
                         }
                     },
@@ -277,7 +277,7 @@ async def update_task(
                         "summary": "Update user task with only the provided content.",
                         "description": "Update user task with only the provided field: content",
                         "value": {
-                            "content": "example new content "
+                            "content": "example new content"
                         }
                     },
                     "partial_status": {

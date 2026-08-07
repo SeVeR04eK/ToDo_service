@@ -4,7 +4,7 @@ from typing import List, Optional, Union
 from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
 from app.domain.value_objects import TaskPaginationData, UpdateTaskData, UserPermissionData, Page
 from app.domain.enums import TaskStatus
-from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError
+from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError, InvalidPaginationParameters
 from app.domain.entities import User, Role, Task
 from app.domain.interfaces import UserRepository, AdminRepository, TaskRepository
 
@@ -30,9 +30,15 @@ class AdminService:
         if username is None:
             return await self.admin_repository.get_users(limit=limit, offset=offset)
 
-        # Offset not supported when filtering by username
-        if offset is not None:
-            return Page.create(items=[], page=1, page_size=limit or 10, total_items=0)
+        # Pagination parameters not allowed when filtering by username
+        if limit is not None or offset is not None:
+            logger.warning(
+                "Pagination parameters provided with username filter",
+                username=username,
+                limit=limit,
+                offset=offset,
+            )
+            raise InvalidPaginationParameters()
 
         user = await self.user_repository.get_user_by_username(username=username)
         if user is None:
