@@ -1,6 +1,5 @@
-from typing import cast
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select, CursorResult
+from sqlalchemy import delete, select
 from datetime import datetime, timezone
 
 from app.infrastructure.models import RefreshToken as RefreshTokenORM
@@ -43,9 +42,9 @@ class SQLAlchemyRefreshTokenRepository(RefreshTokenRepository):
         """Atomically delete a refresh token by its value and return True if deleted, False if not found."""
 
         request = delete(RefreshTokenORM).where(RefreshTokenORM.token == refresh_token)
-        result = cast(CursorResult, await self.session.execute(request))
+        result = await self.session.execute(request)
         await self.session.flush()
-        return result.rowcount() > 0
+        return result.rowcount > 0 # type: ignore[attr-defined]
 
     async def get_token_expires(self, refresh_token: str) -> RefreshToken | None:
         """Get a refresh token by its value to check expiration."""
