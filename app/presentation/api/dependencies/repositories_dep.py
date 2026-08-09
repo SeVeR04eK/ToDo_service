@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends
+
 from app.domain.interfaces import PasswordHasher
 from app.presentation.api.dependencies.password_hasher_dep import get_password_hasher
 
@@ -9,6 +10,7 @@ from app.infrastructure.repositories import (
     SQLAlchemyRefreshTokenRepository,
     SQLAlchemyAdminRepository,
 )
+
 from app.domain.interfaces import (
     UserRepository,
     TaskRepository,
@@ -36,10 +38,12 @@ def get_refresh_token_repository(
 ) -> RefreshTokenRepository:
     return SQLAlchemyRefreshTokenRepository(session)
 
+
 def get_refresh_token_repository_raw(
     session: AsyncSession = Depends(get_session),
 ) -> RefreshTokenRepository:
     return SQLAlchemyRefreshTokenRepository(session)
+
 
 def get_admin_repository(
     session: AsyncSession = Depends(get_session),

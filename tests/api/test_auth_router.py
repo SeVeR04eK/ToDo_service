@@ -98,6 +98,7 @@ class TestAuthRouter:
             token=refresh_token,
             expires=expires
         )
+        await db_session.commit()
         
         response = await client.post(
             "/auth/refresh",

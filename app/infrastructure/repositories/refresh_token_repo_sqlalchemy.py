@@ -1,5 +1,6 @@
+from typing import cast
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, CursorResult
 from datetime import datetime, timezone
 
 from app.infrastructure.models import RefreshToken as RefreshTokenORM
@@ -22,25 +23,29 @@ class SQLAlchemyRefreshTokenRepository(RefreshTokenRepository):
             token=token,
             expires_at=expires)
         )
-        await self.session.commit()
 
     async def delete_refresh_token_by_user_id(self, user_id: int) -> None:
         """Delete all refresh tokens for a user (used on logout)."""
 
         request = delete(RefreshTokenORM).where(RefreshTokenORM.user_id == user_id)
         await self.session.execute(request)
-        await self.session.commit()
+        await self.session.flush()
 
     async def delete_refresh_token(self, token: RefreshToken) -> None:
         """Delete a specific refresh token."""
 
-        # Get the ORM token from the domain token
-        request = select(RefreshTokenORM).where(RefreshTokenORM.id == token.id)
-        orm_token = await self.session.scalar(request)
-        
-        if orm_token:
-            await self.session.delete(orm_token)
-            await self.session.commit()
+        # Use atomic delete by ID to prevent race conditions
+        request = delete(RefreshTokenORM).where(RefreshTokenORM.id == token.id)
+        await self.session.execute(request)
+        await self.session.flush()
+
+    async def consume_refresh_token(self, refresh_token: str) -> bool:
+        """Atomically delete a refresh token by its value and return True if deleted, False if not found."""
+
+        request = delete(RefreshTokenORM).where(RefreshTokenORM.token == refresh_token)
+        result = cast(CursorResult, await self.session.execute(request))
+        await self.session.flush()
+        return result.rowcount() > 0
 
     async def get_token_expires(self, refresh_token: str) -> RefreshToken | None:
         """Get a refresh token by its value to check expiration."""
@@ -57,4 +62,3 @@ class SQLAlchemyRefreshTokenRepository(RefreshTokenRepository):
 
         request = delete(RefreshTokenORM).where(RefreshTokenORM.expires_at < now)
         await self.session.execute(request)
-        await self.session.commit()

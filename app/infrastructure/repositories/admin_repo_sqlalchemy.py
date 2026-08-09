@@ -63,7 +63,7 @@ class SQLAlchemyAdminRepository(AdminRepository):
         for key, value in update_data.items():
             setattr(orm_user, key, value)
 
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(
             orm_user,
             ["role"]
@@ -77,7 +77,7 @@ class SQLAlchemyAdminRepository(AdminRepository):
         orm_role = RoleORM(name=name)
 
         self.session.add(orm_role)
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(orm_role)
 
         return role_from_orm(orm_role)

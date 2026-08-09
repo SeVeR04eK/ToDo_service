@@ -32,7 +32,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
         )
 
         self.session.add(orm_task)
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(orm_task)
 
         return task_from_orm(orm_task)
@@ -108,7 +108,7 @@ class SQLAlchemyTaskRepository(TaskRepository):
             if value is not None:
                 setattr(orm_task, key, value)
 
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(orm_task)
 
         return task_from_orm(orm_task)
@@ -118,4 +118,3 @@ class SQLAlchemyTaskRepository(TaskRepository):
 
         request = delete(TaskORM).where(TaskORM.user_id == user_id, TaskORM.id == task_id)
         await self.session.execute(request)
-        await self.session.commit()

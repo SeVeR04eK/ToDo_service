@@ -27,6 +27,14 @@ class RefreshTokenRepository(ABC):
     ) -> None: ...
 
     @abstractmethod
+    async def consume_refresh_token(
+        self,
+        refresh_token: str,
+    ) -> bool:
+        """Atomically delete a refresh token by its value and return True if deleted, False if not found."""
+        ...
+
+    @abstractmethod
     async def get_token_expires(
         self,
         refresh_token: str,

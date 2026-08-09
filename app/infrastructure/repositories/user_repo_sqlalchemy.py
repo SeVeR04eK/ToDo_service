@@ -25,7 +25,7 @@ class SQLAlchemyUserRepository(UserRepository):
         )
 
         self.session.add(orm_user)
-        await self.session.commit()
+        await self.session.flush()
 
         await self.session.refresh(
             orm_user,
@@ -86,7 +86,7 @@ class SQLAlchemyUserRepository(UserRepository):
             else:
                 setattr(orm_user, key, value)
 
-        await self.session.commit()
+        await self.session.flush()
         await self.session.refresh(
             orm_user,
             ["role"]
@@ -103,4 +103,3 @@ class SQLAlchemyUserRepository(UserRepository):
         
         if orm_user is not None:
             await self.session.delete(orm_user)
-            await self.session.commit()

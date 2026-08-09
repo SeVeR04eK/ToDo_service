@@ -23,6 +23,7 @@ class TestSQLAlchemyUserRepository:
             username="testuser",
             password="TestPassword123!"
         )
+        await db_session.commit()
         
         assert user.id is not None
         assert user.username == "testuser"
@@ -88,6 +89,7 @@ class TestSQLAlchemyUserRepository:
         update_data = UserUpdateData(username="updated_username")
         
         updated_user = await repo.update_user(test_user, update_data)
+        await db_session.commit()
         
         assert updated_user.username == "updated_username"
         assert updated_user.id == test_user.id
@@ -103,6 +105,7 @@ class TestSQLAlchemyUserRepository:
         )
         
         updated_user = await repo.update_user(test_user, update_data)
+        await db_session.commit()
         
         assert updated_user.hashed_password != old_password
         assert updated_user.id == test_user.id
@@ -119,6 +122,7 @@ class TestSQLAlchemyUserRepository:
         )
         
         updated_user = await repo.update_user(test_user, update_data)
+        await db_session.commit()
         
         assert updated_user.username == "new_username"
         assert updated_user.hashed_password != old_password
@@ -131,6 +135,7 @@ class TestSQLAlchemyUserRepository:
         update_data = UserUpdateData()
         
         updated_user = await repo.update_user(test_user, update_data)
+        await db_session.commit()
         
         assert updated_user.username == test_user.username
         assert updated_user.hashed_password == test_user.hashed_password
@@ -143,6 +148,7 @@ class TestSQLAlchemyUserRepository:
         user_id = test_user.id
         
         await repo.delete_user(test_user)
+        await db_session.commit()
         
         deleted_user = await repo.get_user_by_id(user_id)
         assert deleted_user is None
@@ -156,6 +162,7 @@ class TestSQLAlchemyUserRepository:
             username="duplicate_user",
             password="TestPassword123!"
         )
+        await db_session.commit()
         
         # Attempt to create another user with same username
         with pytest.raises(Exception):  # Should raise integrity error

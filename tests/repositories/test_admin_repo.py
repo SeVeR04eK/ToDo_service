@@ -67,6 +67,7 @@ class TestAdminRepository:
         user_perm = UserPermissionData(is_active=False, role_id=None)
         
         updated_user = await repo.user_perm(test_user, user_perm)
+        await db_session.commit()
         
         assert updated_user.is_active is False
 
@@ -79,6 +80,7 @@ class TestAdminRepository:
         user_perm = UserPermissionData(is_active=True, role_id=admin_role.id)
         
         updated_user = await repo.user_perm(test_user, user_perm)
+        await db_session.commit()
         
         assert updated_user.role_id == admin_role.id
 
@@ -91,6 +93,7 @@ class TestAdminRepository:
         user_perm = UserPermissionData(is_active=False, role_id=admin_role.id)
         
         updated_user = await repo.user_perm(test_user, user_perm)
+        await db_session.commit()
         
         assert updated_user.is_active is False
         assert updated_user.role_id == admin_role.id
@@ -102,6 +105,7 @@ class TestAdminRepository:
         user_perm = UserPermissionData(is_active=None, role_id=None)
         
         updated_user = await repo.user_perm(test_user, user_perm)
+        await db_session.commit()
         
         assert updated_user.id == test_user.id
 
@@ -111,6 +115,7 @@ class TestAdminRepository:
         repo = SQLAlchemyAdminRepository(session=db_session)
         
         role = await repo.create_role(name="moderator")
+        await db_session.commit()
         
         assert role.name == "moderator"
         assert role.id is not None

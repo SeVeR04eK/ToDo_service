@@ -1,7 +1,7 @@
 import structlog
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.domain.value_objects import UserUpdateData
-from app.domain.interfaces import UserRepository
+from app.domain.interfaces import UnitOfWork
 from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 from app.domain.entities import User
 
@@ -10,8 +10,8 @@ logger = structlog.get_logger(__name__)
 
 class UserService:
 
-    def __init__(self, repository: UserRepository):
-        self.repository = repository
+    def __init__(self, unit_of_work: UnitOfWork):
+        self.unit_of_work = unit_of_work
 
     async def create_user_service(self, user: CreateUserDTO) -> User:
 
@@ -20,16 +20,19 @@ class UserService:
             username=user.username,
         )
         
-        # Check if username already exists
-        existing_user = await self.repository.get_user_by_username(username=user.username)
-        if existing_user is not None:
-            logger.warning(
-                "Username already exists",
-                username=user.username,
-            )
-            raise UsernameAlreadyExistsError()
+        async with self.unit_of_work:
+            # Check if username already exists
+            existing_user = await self.unit_of_work.user_repository.get_user_by_username(username=user.username)
+            if existing_user is not None:
+                logger.warning(
+                    "Username already exists",
+                    username=user.username,
+                )
+                raise UsernameAlreadyExistsError()
 
-        created_user = await self.repository.create_user(username=user.username, password=user.password)
+            created_user = await self.unit_of_work.user_repository.create_user(username=user.username, password=user.password)
+            
+            await self.unit_of_work.commit()
         
         logger.info(
             "User created",
@@ -42,7 +45,7 @@ class UserService:
 
     async def get_user_service(self, user_id: int) -> User:
 
-        user = await self.repository.get_user_by_id(user_id=user_id)
+        user = await self.unit_of_work.user_repository.get_user_by_id(user_id=user_id)
         if user is None:
             logger.warning(
                 "User not found",
@@ -59,39 +62,42 @@ class UserService:
             user_id=user_id,
         )
 
-        user = await self.repository.get_user_by_id(user_id=user_id)
-        if user is None:
-            logger.warning(
-                "User not found for update",
-                user_id=user_id,
-            )
-            raise UserNotFoundError()
-
-        # Check if username already exists
-        if user_update.username != user.username and user_update.username is not None:
-            existing_user = await self.repository.get_user_by_username(username=user_update.username)
-            if existing_user is not None:
+        async with self.unit_of_work:
+            user = await self.unit_of_work.user_repository.get_user_by_id(user_id=user_id)
+            if user is None:
                 logger.warning(
-                    "Username already exists during update",
-                    username=user_update.username,
+                    "User not found for update",
+                    user_id=user_id,
                 )
-                raise UsernameAlreadyExistsError()
+                raise UserNotFoundError()
 
-        # Validate password confirmation if password is being updated
-        if user_update.password is not None and user_update.password != user_update.password_confirm:
-            logger.warning(
-                "Password confirmation mismatch during user update",
-                user_id=user_id,
+            # Check if username already exists
+            if user_update.username != user.username and user_update.username is not None:
+                existing_user = await self.unit_of_work.user_repository.get_user_by_username(username=user_update.username)
+                if existing_user is not None:
+                    logger.warning(
+                        "Username already exists during update",
+                        username=user_update.username,
+                    )
+                    raise UsernameAlreadyExistsError()
+
+            # Validate password confirmation if password is being updated
+            if user_update.password is not None and user_update.password != user_update.password_confirm:
+                logger.warning(
+                    "Password confirmation mismatch during user update",
+                    user_id=user_id,
+                )
+                raise ValueError("Passwords do not match")
+
+            user_update_data = UserUpdateData(
+                username=user_update.username,
+                password=user_update.password,
+                password_confirm=user_update.password_confirm
             )
-            raise ValueError("Passwords do not match")
 
-        user_update_data = UserUpdateData(
-            username=user_update.username,
-            password=user_update.password,
-            password_confirm=user_update.password_confirm
-        )
-
-        updated_user = await self.repository.update_user(user=user, user_update=user_update_data)
+            updated_user = await self.unit_of_work.user_repository.update_user(user=user, user_update=user_update_data)
+            
+            await self.unit_of_work.commit()
         
         logger.info(
             "User updated",
@@ -108,15 +114,18 @@ class UserService:
             user_id=user_id,
         )
         
-        user = await self.repository.get_user_by_id(user_id=user_id)
-        if user is None:
-            logger.warning(
-                "User not found for deletion",
-                user_id=user_id,
-            )
-            raise UserNotFoundError()
+        async with self.unit_of_work:
+            user = await self.unit_of_work.user_repository.get_user_by_id(user_id=user_id)
+            if user is None:
+                logger.warning(
+                    "User not found for deletion",
+                    user_id=user_id,
+                )
+                raise UserNotFoundError()
 
-        await self.repository.delete_user(user=user)
+            await self.unit_of_work.user_repository.delete_user(user=user)
+            
+            await self.unit_of_work.commit()
         
         logger.info(
             "User deleted",

@@ -25,6 +25,7 @@ class TestTaskRepository:
             status=TaskStatus.todo,
             user_id=test_user.id
         )
+        await db_session.commit()
         
         assert task.id is not None
         assert task.title == "Test Task"
@@ -43,6 +44,7 @@ class TestTaskRepository:
             status=TaskStatus.todo,
             user_id=test_user.id
         )
+        await db_session.commit()
         
         assert task.status == TaskStatus.todo
     
@@ -233,6 +235,7 @@ class TestTaskRepository:
         )
         
         updated_task = await repo.update_task(task, update_data)
+        await db_session.commit()
         
         assert updated_task.title == "Updated Title"
         assert updated_task.content == "Updated Content"
@@ -247,6 +250,7 @@ class TestTaskRepository:
         update_data = UpdateTaskData(title="Updated Title Only")
         
         updated_task = await repo.update_task(original_task, update_data)
+        await db_session.commit()
         
         assert updated_task.title == "Updated Title Only"
         assert updated_task.content == original_task.content
@@ -261,6 +265,7 @@ class TestTaskRepository:
         update_data = UpdateTaskData()
         
         updated_task = await repo.update_task(task, update_data)
+        await db_session.commit()
         
         assert updated_task.title == task.title
         assert updated_task.content == task.content
@@ -273,6 +278,7 @@ class TestTaskRepository:
         task = await TaskFactory.create_in_db(db_session, user_id=test_user.id)
         
         await repo.delete_task(task.id, test_user.id)
+        await db_session.commit()
         
         deleted_task = await repo.get_task(task.id, test_user.id)
         assert deleted_task is None
@@ -289,6 +295,7 @@ class TestTaskRepository:
         
         # User2 trying to delete user1's task
         await repo.delete_task(task.id, user2.id)
+        await db_session.commit()
         
         # Task should still exist
         retrieved_task = await repo.get_task(task.id, user1.id)
@@ -301,3 +308,4 @@ class TestTaskRepository:
         
         # Should not raise an error
         await repo.delete_task(99999, test_user.id)
+        await db_session.commit()

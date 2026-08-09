@@ -24,14 +24,17 @@ from app.presentation.api.dependencies.repositories_dep import (
     get_user_repository,
     get_task_repository,
     get_refresh_token_repository,
-    get_admin_repository,
+    get_admin_repository
 )
+
+from app.presentation.api.dependencies.uow import get_unit_of_work
 from app.infrastructure.repositories import (
     SQLAlchemyUserRepository,
     SQLAlchemyTaskRepository,
     SQLAlchemyRefreshTokenRepository,
     SQLAlchemyAdminRepository,
 )
+from app.infrastructure.unit_of_work import SQLAlchemyUnitOfWork
 
 # Test database URL (SQLite for testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -95,11 +98,15 @@ async def client(db_session: AsyncSession) -> AsyncGenerator:
     async def override_get_admin_repository():
         yield SQLAlchemyAdminRepository(db_session)
 
+    async def override_get_unit_of_work():
+        yield SQLAlchemyUnitOfWork(db_session, password_hasher)
+
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_user_repository] = override_get_user_repository
     app.dependency_overrides[get_task_repository] = override_get_task_repository
     app.dependency_overrides[get_refresh_token_repository] = override_get_refresh_token_repository
     app.dependency_overrides[get_admin_repository] = override_get_admin_repository
+    app.dependency_overrides[get_unit_of_work] = override_get_unit_of_work
 
     async with AsyncClient(
             transport=ASGITransport(app=app),
