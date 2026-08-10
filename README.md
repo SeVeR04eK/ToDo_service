@@ -228,11 +228,13 @@ ToDo_service/
 │   │   ├── services/         # Business logic services
 │   │   └── use_cases/        # Application use cases
 │   ├── core/                 # configuration, settings
+│   │   ├── config/           # Application configuration and environment settings
+│   │   ├── logging/          # Logging setup: formatters, handlers, log configuration
 │   ├── domain/               # domain layer
 │   │   ├── entities/         # Domain entities
 │   │   ├── enums/            # Domain enums
 │   │   ├── exceptions/       # Domain exceptions
-│   │   ├── interfaces/       # Repository interfaces
+│   │   ├── interfaces/       # Repository and Unit of Work interfaces
 │   │   └── value_objects/    # Value objects
 │   ├── infrastructure/       # infrastructure layer
 │   │   ├── background_tasks/  # Background tasks
@@ -241,13 +243,16 @@ ToDo_service/
 │   │   ├── models/           # SQLAlchemy ORM models
 │   │   ├── repositories/     # Repository implementations
 │   │   ├── security/         # Security implementations
-│   │   └── services/         # Infrastructure services
-│   ├── presentation/          # presentation layer
+│   │   ├── services/         # Infrastructure services
+│   │   └── unit_of_work/     # Unit of Work implementation
+│   ├── migrations/           # alembic migrations
+│   ├── presentation/         # presentation layer
 │   │   ├── api/              # API layer
-│   │   │   ├── dependencies/ # FastAPI dependencies
-│   │   │   ├── exception_handlers/ # Exception handlers
-│   │   │   └── routers/      # FastAPI routers
-│   │   └── schemas/         # Pydantic schemas
+│   │   │   ├── dependencies/ # FastAPI dependencies (including UoW)
+│   │   │   ├── middleware/   # Request, logging, security, CORS middlewares
+│   │   │   ├── routers/      # FastAPI routers
+│   │   │   └── schemas/      # Pydantic schemas
+│   │   └── exception_handlers/ # Exception handlers
 │   └── main.py               # FastAPI application entry point
 ├── tests/                    # tests for application
 │   ├── api/                  # API integration tests
@@ -277,7 +282,26 @@ ToDo_service/
 ```
 
 **Principle:**
-`route → use case → service → repository → database`
+`route → use case → service → unit_of_work → repository → database`
+
+**Transaction Flow with Unit of Work:**
+- Services inject `UnitOfWork` instead of individual repositories
+- Repositories use `flush()` and `refresh()` instead of `commit()`
+- Services call `unitOfWork.commit()` to persist changes atomically
+- Automatic rollback on exceptions via async context manager
+
+---
+
+## Unit of Work Pattern
+
+The application implements the **Unit of Work (UoW)** pattern to manage transactions and ensure data consistency across multiple repository operations.
+
+### Key Benefits
+
+- **Atomic Operations**: Multiple repository operations can be committed together or rolled back as a unit
+- **Concurrency Safety**: Refresh token consumption is atomic, preventing race conditions
+- **Centralized Transaction Control**: Application layer controls transaction boundaries
+- **Testability**: Easier to test transactional behavior with explicit commit/rollback
 
 ---
 
@@ -312,16 +336,16 @@ Configuration is managed in `app/core/config.py` with automatic environment file
 * title
 * content
 * status (Enum)
-* user_id (FK)
+* user_id (FK, indexed)
 
 ---
 
 ### Refresh Tokens
 
 * id
-* user_id (FK)
+* user_id (FK, indexed)
 * token
-* expires_at
+* expires_at (indexed)
 
 ---
 
@@ -368,11 +392,9 @@ password=user12345
 Response:
 ```
 {
-    "data": {
-        "refresh_token": "example.refresh.token",
-        "access_token": "example.access.token",
-        "token_type": "bearer"
-    }
+    "refresh_token": "example.refresh.token",
+    "access_token": "example.access.token",
+    "token_type": "bearer"
 }
 ```
 
@@ -388,13 +410,13 @@ Request
 Response:
 ```
 {
-    "data": {
-        "refresh_token": "example.new.refresh.token",
-        "access_token": "example.new.access.token",
-        "token_type": "bearer"
-    }
+    "refresh_token": "example.new.refresh.token",
+    "access_token": "example.new.access.token",
+    "token_type": "bearer"
 }
 ```
+
+**Note:** Refresh token rotation is enabled - each refresh returns a new refresh token and invalidates the old one.
 
 ---
 
@@ -649,6 +671,8 @@ Response (single user when filtered by username):
 }
 ```
 
+**Important:** When filtering by `username`, pagination parameters (`limit` and `offset`) are **not allowed** and will result in an `InvalidPaginationParameters` exception. This is because username filtering returns a single user, making pagination meaningless.
+
 * #### GET    /admin/users/{user_id}   
 
 Request:
@@ -886,7 +910,7 @@ All successful API responses follow a consistent wrapped format for better API c
 **Paginated Response (PaginatedResponse[T]):**
 ```json
 {
-  "data": [...],
+  "data": [],
   "meta": {
     "page": 1,
     "page_size": 20,

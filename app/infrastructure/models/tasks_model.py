@@ -18,4 +18,8 @@ class Task(Base):
     )
 
     # CASCADE delete ensures tasks are removed when user is deleted
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
