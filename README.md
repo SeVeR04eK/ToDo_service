@@ -1,6 +1,6 @@
 # ToDo Service Backend API (FastAPI + PostgreSQL)
 
-**API Version:** 0.1.1
+**API Version:** 0.2.0
 
 **Status:** Production-Ready Architecture
 
@@ -100,6 +100,7 @@ This separation ensures:
 * Refresh token rotation
 * Role-based access control (RBAC)
 * Active/inactive user handling
+* Null-safe role checks to prevent authentication bypasses
 
 ---
 
@@ -111,6 +112,15 @@ Features available to regular users:
 * Get Account Information 
 * Update Account Information 
 * Delete Account  
+
+---
+
+### Health Monitoring
+
+* Health check endpoint for service monitoring
+* Database connectivity verification
+* Service status and version information
+* Degraded status reporting for database issues
 
 ---
 
@@ -159,6 +169,7 @@ Functionality for managing personal tasks:
 * Proper HTTP status codes (401 / 403)
 * Security headers middleware (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy)
 * Optional HSTS (HTTP Strict Transport Security) for production
+* Null-safe authentication checks to prevent privilege escalation
 
 ---
 
@@ -374,6 +385,33 @@ Configuration is managed in `app/core/config.py` with automatic environment file
 ---
 
 ## API Examples
+
+### Health Check
+
+* #### GET /health
+
+Request:
+```
+GET /health
+```
+
+Response:
+```
+{
+    "status": "healthy",
+    "timestamp": "2026-08-15T12:00:00.000000",
+    "service": "ToDo Service API",
+    "version": "0.2.0",
+    "database": {
+        "status": "healthy",
+        "error": null
+    }
+}
+```
+
+**Note:** Use this endpoint for service monitoring and health checks in production environments.
+
+---
 
 ### Auth
 
@@ -878,7 +916,7 @@ GET /admin/users?limit=10&offset=0
 All successful API responses follow a consistent wrapped format for better API contract consistency and future extensibility.
 
 **Single Item Response (DataResponse[T]):**
-```json
+```
 {
   "data": {
     "id": 1,
@@ -892,7 +930,7 @@ All successful API responses follow a consistent wrapped format for better API c
 ```
 
 **List Response (ListResponse[T]):**
-```json
+```
 {
   "data": [
     {
@@ -908,7 +946,7 @@ All successful API responses follow a consistent wrapped format for better API c
 ```
 
 **Paginated Response (PaginatedResponse[T]):**
-```json
+```
 {
   "data": [],
   "meta": {
@@ -1441,6 +1479,9 @@ open htmlcov/index.html
 * Test isolation to ensure each test runs independently
 * In‑memory database usage for fast test execution
 * Fixtures and factories to reduce duplication and improve maintainability
+* Null-safe authentication checks to prevent security vulnerabilities
+* Connection pooling with health checks for database reliability
+* Health monitoring endpoint for production observability
 
 ## Why This Project Matters
 

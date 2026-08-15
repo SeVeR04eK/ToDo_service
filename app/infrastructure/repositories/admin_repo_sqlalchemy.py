@@ -22,8 +22,8 @@ class SQLAlchemyAdminRepository(AdminRepository):
         # selectinload eagerly loads the role relationship to avoid N+1 queries
         base_query = select(UserORM).options(selectinload(UserORM.role))
 
-        # Count total items
-        count_query = select(func.count()).select_from(base_query.subquery())
+        # Count total items - optimized to avoid subquery overhead
+        count_query = select(func.count(UserORM.id))
         total_items = await self.session.scalar(count_query)
 
         # Calculate page and page_size from offset/limit

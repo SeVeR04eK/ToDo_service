@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [0.2.0] - 2026-08-15
+
+### Added
+
+- Unit of Work architecture with centralized transaction management
+- Atomic refresh-token consumption to prevent concurrent token reuse
+- Database indexes for frequently queried task and refresh-token columns
+- Database connection pooling and health check endpoint
+- `InvalidPaginationParameters` exception for invalid pagination usage
+
+### Changed
+
+- Migrated services and repositories to the Unit of Work pattern
+- Optimized pagination count queries for better database performance
+- Added pagination validation when filtering users by username
+- Added null-safe role checks for authentication and authorization
+- Updated API documentation and README with Unit of Work, token rotation, and pagination changes
+
+### Fixed
+
+- Updated authentication to return OAuth2-compatible token responses
+
+### Tests
+
+- Updated authentication and pagination tests
+- Added Unit of Work integration tests for commit, rollback, and transaction atomicity
+- Updated repository and service tests for transactional behavior
+
+
 ## [0.1.1] - 2026-08-05
 
 ### Added
@@ -31,6 +61,7 @@ All notable changes to this project will be documented in this file.
 - Updated API tests for standardized response formats
 - Added validation for pagination metadata and response structures
 - Updated authentication, user, task, and admin endpoint tests
+
 
 ## [0.1.0] - 2026-08-02
 

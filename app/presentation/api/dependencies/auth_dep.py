@@ -28,4 +28,8 @@ async def get_current_user(
     if not user.is_active:
         raise PermissionDeniedError()
 
+    # Ensure role is loaded to prevent null pointer issues in RBAC
+    if user.role is None:
+        raise PermissionDeniedError()
+
     return user

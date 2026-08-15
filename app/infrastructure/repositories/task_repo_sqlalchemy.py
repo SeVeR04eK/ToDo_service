@@ -1,5 +1,4 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
 from sqlalchemy import select, delete, func
 
 from app.domain.enums import TaskStatus
@@ -51,8 +50,10 @@ class SQLAlchemyTaskRepository(TaskRepository):
         if task_status is not None:
             base_query = base_query.where(TaskORM.status == task_status)
 
-        # Count total items
-        count_query = select(func.count()).select_from(base_query.subquery())
+        # Count total items - optimized to avoid subquery overhead
+        count_query = select(func.count(TaskORM.id)).where(TaskORM.user_id == user_id)
+        if task_status is not None:
+            count_query = count_query.where(TaskORM.status == task_status)
         total_items = await self.session.scalar(count_query)
 
         # Apply ordering
