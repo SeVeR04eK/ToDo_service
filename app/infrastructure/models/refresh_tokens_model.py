@@ -39,3 +39,8 @@ class RefreshToken(Base):
         ForeignKey("refresh_tokens.id", ondelete="SET NULL"),
         nullable=True
     )
+    family_created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )

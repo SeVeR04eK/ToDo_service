@@ -65,6 +65,7 @@ class TestAuthService:
 
         expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
         created_at = datetime.now(timezone.utc)
+        family_created_at = datetime.now(timezone.utc)
         mock_token = RefreshToken(
             id=1,
             token_hash="hashed_valid_token",
@@ -72,7 +73,8 @@ class TestAuthService:
             user_id=1,
             expires_at=expires_at,
             created_at=created_at,
-            revoked_at=None
+            revoked_at=None,
+            family_created_at=family_created_at
         )
         new_mock_token = RefreshToken(
             id=2,
@@ -81,7 +83,8 @@ class TestAuthService:
             user_id=1,
             expires_at=expires_at,
             created_at=created_at,
-            revoked_at=None
+            revoked_at=None,
+            family_created_at=family_created_at
         )
         mock_uow.refresh_token_repository.get_by_token_hash.return_value = mock_token
         mock_uow.user_repository.get_user_role.return_value = "user"
@@ -149,7 +152,7 @@ class TestAuthService:
         mock_auth_use_case = AsyncMock()
         
         expired_time = datetime.now(timezone.utc) - timedelta(hours=1)
-        created_at = datetime.now(timezone.utc) - timedelta(days=1)
+        created_at = family_created_at = datetime.now(timezone.utc)
         mock_token = RefreshToken(
             id=1,
             token_hash="hashed_expired_token",
@@ -157,7 +160,8 @@ class TestAuthService:
             user_id=1,
             expires_at=expired_time,
             created_at=created_at,
-            revoked_at=None
+            revoked_at=None,
+            family_created_at=family_created_at
         )
         mock_uow.refresh_token_repository.get_by_token_hash.return_value = mock_token
         
@@ -175,6 +179,42 @@ class TestAuthService:
             await service.refresh_service("expired_token")
 
     @pytest.mark.asyncio
+    async def test_refresh_service_expired_family(self):
+        """Test refresh with expired token raises InvalidRefreshTokenError."""
+        mock_uow = AsyncMock(spec=UnitOfWork)
+        mock_uow.refresh_token_repository = AsyncMock()
+        mock_token_service = AsyncMock(spec=TokenService)
+        mock_auth_use_case = AsyncMock()
+
+        expired_time = datetime.now(timezone.utc) + timedelta(hours=1)
+        created_at = datetime.now(timezone.utc)
+        family_created_at = datetime.now(timezone.utc) - timedelta(days=30)
+        mock_token = RefreshToken(
+            id=1,
+            token_hash="hashed_expired_token",
+            family_id="family-123",
+            user_id=1,
+            expires_at=expired_time,
+            created_at=created_at,
+            revoked_at=None,
+            family_created_at=family_created_at
+        )
+        mock_uow.refresh_token_repository.get_by_token_hash.return_value = mock_token
+
+        mock_token_hasher = AsyncMock(spec=TokenHasher)
+        mock_token_hasher.hash.return_value = "hashed_token"
+
+        service = AuthService(
+            unit_of_work=mock_uow,
+            token_service=mock_token_service,
+            authenticate_user_use_case=mock_auth_use_case,
+            token_hasher=mock_token_hasher
+        )
+
+        with pytest.raises(InvalidRefreshTokenError):
+            await service.refresh_service("expired_token")
+
+    @pytest.mark.asyncio
     async def test_refresh_service_user_not_found(self):
         """Test refresh when user doesn't exist raises InvalidRefreshTokenError (security measure)."""
         mock_uow = AsyncMock(spec=UnitOfWork)
@@ -184,7 +224,7 @@ class TestAuthService:
         mock_auth_use_case = AsyncMock()
         
         expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        created_at = datetime.now(timezone.utc)
+        created_at = family_created_at = datetime.now(timezone.utc)
         mock_token = RefreshToken(
             id=1,
             token_hash="hashed_valid_token",
@@ -192,7 +232,8 @@ class TestAuthService:
             user_id=1,
             expires_at=expires_at,
             created_at=created_at,
-            revoked_at=None
+            revoked_at=None,
+            family_created_at=family_created_at
         )
         mock_uow.refresh_token_repository.get_by_token_hash.return_value = mock_token
         mock_uow.user_repository.get_user_role.return_value = None
@@ -220,7 +261,7 @@ class TestAuthService:
         mock_auth_use_case = AsyncMock()
         
         expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        created_at = datetime.now(timezone.utc)
+        created_at = family_created_at = datetime.now(timezone.utc)
         mock_token = RefreshToken(
             id=1,
             token_hash="hashed_invalid_payload_token",
@@ -228,7 +269,8 @@ class TestAuthService:
             user_id=1,
             expires_at=expires_at,
             created_at=created_at,
-            revoked_at=None
+            revoked_at=None,
+            family_created_at=family_created_at
         )
         mock_uow.refresh_token_repository.get_by_token_hash.return_value = mock_token
         mock_token_service.decode_refresh_token.return_value = {"sub": "test"}  # Missing "id"
@@ -256,7 +298,7 @@ class TestAuthService:
         mock_auth_use_case = AsyncMock()
 
         expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
-        created_at = datetime.now(timezone.utc)
+        created_at = family_created_at = datetime.now(timezone.utc)
         mock_token = RefreshToken(
             id=1,
             token_hash="hashed_consumed_token",
@@ -264,7 +306,8 @@ class TestAuthService:
             user_id=1,
             expires_at=expires_at,
             created_at=created_at,
-            revoked_at=None
+            revoked_at=None,
+            family_created_at=family_created_at
         )
         new_mock_token = RefreshToken(
             id=2,
@@ -273,7 +316,8 @@ class TestAuthService:
             user_id=1,
             expires_at=expires_at,
             created_at=created_at,
-            revoked_at=None
+            revoked_at=None,
+            family_created_at=family_created_at
         )
         mock_uow.refresh_token_repository.get_by_token_hash.return_value = mock_token
         mock_uow.user_repository.get_user_role.return_value = "user"

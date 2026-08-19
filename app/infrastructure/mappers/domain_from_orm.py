@@ -48,5 +48,6 @@ def refresh_token_from_orm(orm_token: RefreshTokenORM) -> RefreshToken:
         expires_at=orm_token.expires_at,
         created_at=orm_token.created_at,
         revoked_at=orm_token.revoked_at,
-        replaced_by=orm_token.replaced_by
+        replaced_by=orm_token.replaced_by,
+        family_created_at=orm_token.family_created_at
     )

@@ -21,16 +21,22 @@ class SQLAlchemyRefreshTokenRepository(RefreshTokenRepository):
         token_hash: str,
         family_id: str,
         expires: datetime,
+        family_created_at: Optional[datetime] = None
     ) -> RefreshToken:
         """Create a new refresh token for a user."""
 
         now = datetime.now(timezone.utc)
+
+        if family_created_at is None:
+            family_created_at = now
+
         orm_token = RefreshTokenORM(
             user_id=user_id,
             token_hash=token_hash,
             family_id=family_id,
             expires_at=expires,
             created_at=now,
+            family_created_at=family_created_at
         )
         self.session.add(orm_token)
         await self.session.flush()

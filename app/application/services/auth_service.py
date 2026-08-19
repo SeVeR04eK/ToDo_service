@@ -5,6 +5,7 @@ import uuid
 from app.domain.exceptions import InvalidRefreshTokenError, InvalidCredentialsError
 from app.application.dto import Tokens
 from app.domain.interfaces import UnitOfWork, TokenService
+from app.domain.entities import RefreshToken
 from app.application.use_cases import AuthenticateUserUseCase
 from app.domain.interfaces import TokenHasher
 from app.core import settings
@@ -26,6 +27,13 @@ class AuthService:
         self.token_service = token_service
         self.authenticate_user_use_case = authenticate_user_use_case
         self.token_hasher = token_hasher
+
+
+    async def revoke_token_and_fail(self, db_token: RefreshToken):
+        await self.unit_of_work.refresh_token_repository.revoke_family_by_id(db_token.family_id)
+        await self.unit_of_work.commit()
+        raise InvalidRefreshTokenError()
+
 
     async def authentication_service(self, username: str, password: str) -> Tokens:
         """Authenticate user and return access/refresh tokens."""
@@ -127,19 +135,27 @@ class AuthService:
                 token_id=db_token.id
             )
             # Revoke the entire family as a security measure
-            await self.unit_of_work.refresh_token_repository.revoke_family_by_id(db_token.family_id)
-            await self.unit_of_work.commit()
-            raise InvalidRefreshTokenError()
+            await self.revoke_token_and_fail(db_token)
 
         # Check token expiration
         now = datetime.now(timezone.utc)
+
         expires_at = db_token.expires_at
         if expires_at.tzinfo is None:
             now = now.replace(tzinfo=None)
 
-        if expires_at < now:
+        if db_token.expires_at < now:
             logger.warning("refresh_failed", user_id=user_id, reason="token_expired")
             raise InvalidRefreshTokenError()
+
+        # Check family expiration
+        family_created_at = db_token.family_created_at
+        if family_created_at.tzinfo is None:
+            now = now.replace(tzinfo=None)
+
+        if db_token.family_created_at + settings.family_token_expire_days <= now:
+            logger.warning("refresh_failed", user_id=user_id, reason="family_token_expired")
+            await self.revoke_token_and_fail(db_token)
 
         async with self.unit_of_work:
             # Issue new tokens
@@ -163,7 +179,8 @@ class AuthService:
                 user_id=user_id,
                 token_hash=new_token_hash,
                 family_id=family_id,
-                expires=expires
+                expires=expires,
+                family_created_at=db_token.family_created_at
             )
 
             # Revoke the old token and link it to the new one (token rotation)

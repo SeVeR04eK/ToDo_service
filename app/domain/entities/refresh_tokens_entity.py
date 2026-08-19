@@ -12,5 +12,6 @@ class RefreshToken:
     family_id: str
     expires_at: datetime
     created_at: datetime
+    family_created_at: datetime
     revoked_at: Optional[datetime] = None
     replaced_by: Optional[int] = None

@@ -14,6 +14,7 @@ class RefreshTokenRepository(ABC):
         token_hash: str,
         family_id: str,
         expires: datetime,
+        family_created_at: Optional[datetime] = None
     ) -> RefreshToken: ...
 
     @abstractmethod

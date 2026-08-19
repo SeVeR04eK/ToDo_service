@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     # JWT Token Configuration
     access_token_expire_minutes: timedelta = timedelta(minutes=15)
     refresh_token_expire_days: timedelta = timedelta(days=7)
+    family_token_expire_days: timedelta = timedelta(days=30)
     algorithm: str = "HS256"
     jwt_issuer: str = "todo-api"
     jwt_audience: str = "todo-api-users"
