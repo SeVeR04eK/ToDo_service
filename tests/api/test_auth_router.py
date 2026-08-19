@@ -4,9 +4,6 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.services.jwt_service import JWTService
-from app.domain.interfaces import RefreshTokenRepository
-from app.infrastructure.repositories import SQLAlchemyRefreshTokenRepository
-
 from tests.factories import UserFactory
 
 
@@ -39,6 +36,8 @@ class TestAuthRouter:
         assert "refresh_token" in data
         assert "token_type" in data
         assert data["token_type"] == "bearer"
+        assert "expires_in" in data
+        assert data["expires_in"] == 900
     
     @pytest.mark.asyncio
     async def test_authentication_wrong_username(self, client: AsyncClient):
@@ -84,32 +83,57 @@ class TestAuthRouter:
         assert response.status_code == 422
     
     @pytest.mark.asyncio
-    async def test_refresh_token_success(self, client: AsyncClient, db_session: AsyncSession, test_user):
+    async def test_refresh_token_success(self, client: AsyncClient, db_session: AsyncSession, test_role):
         """Test successful token refresh."""
+
+        # Clean up any existing user with this username to avoid conflicts
+        from app.infrastructure.repositories import SQLAlchemyUserRepository
+        from app.infrastructure.repositories import SQLAlchemyRefreshTokenRepository
+        from app.infrastructure.security.bcrypt_password_hasher import BcryptPasswordHasher
+        password_hasher = BcryptPasswordHasher()
+        user_repo = SQLAlchemyUserRepository(db_session, password_hasher)
+        refresh_token_repo = SQLAlchemyRefreshTokenRepository(db_session)
         
-        refresh_token_repo: RefreshTokenRepository = SQLAlchemyRefreshTokenRepository(db_session)
-        token_service = JWTService()
-        refresh_token, expires = await token_service.create_refresh_token(
-            username=test_user.username,
-            user_id=test_user.id
+        existing_user = await user_repo.get_user_by_username("refresh_test_user")
+        if existing_user:
+            # Clean up refresh tokens first (due to foreign key constraint)
+            await refresh_token_repo.delete_refresh_token_by_user_id(existing_user.id)
+            await user_repo.delete_user(existing_user)
+            await db_session.commit()
+
+        # Create a dedicated user for this test to avoid conflicts
+        user = await UserFactory.create_in_db(
+            db_session,
+            username="refresh_test_user",
+            password="TestPassword123!",
+            role_id=test_role.id
         )
-        await refresh_token_repo.create_refresh_token(
-            user_id=test_user.id,
-            token=refresh_token,
-            expires=expires
+
+        # First authenticate to get a valid refresh token
+        response = await client.post(
+            "/auth/authentication",
+            data={
+                "username": "refresh_test_user",
+                "password": "TestPassword123!"
+            }
         )
-        await db_session.commit()
-        
+
+        assert response.status_code == 200
+        data = response.json()
+        refresh_token = data["refresh_token"]
+
+        # Now use the refresh token to get new tokens
         response = await client.post(
             "/auth/refresh",
             json={"refresh_token": refresh_token}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
         assert "refresh_token" in data
         assert "token_type" in data
+        assert "expires_in" in data
     
     @pytest.mark.asyncio
     async def test_refresh_token_invalid(self, client: AsyncClient):

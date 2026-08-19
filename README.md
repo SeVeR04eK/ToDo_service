@@ -96,11 +96,16 @@ This separation ensures:
 
 * User registration & login
 * Password hashing (bcrypt)
-* JWT-based authentication (access tokens)
-* Refresh token rotation
+* JWT-based authentication with short-lived access tokens (15 minutes)
+* Refresh token rotation with secure token hashing (SHA-256)
+* Token families for session tracking
+* Refresh token reuse detection and family revocation
+* Atomic refresh operations with Unit of Work pattern
 * Role-based access control (RBAC)
 * Active/inactive user handling
 * Null-safe role checks to prevent authentication bypasses
+* OAuth2-compatible Bearer authentication with expires_in field
+* Logout endpoints for token revocation (single session and all sessions)
 
 ---
 
@@ -355,8 +360,12 @@ Configuration is managed in `app/core/config.py` with automatic environment file
 
 * id
 * user_id (FK, indexed)
-* token
+* token_hash (unique, indexed) - SHA-256 hash of the refresh token
+* family_id (indexed) - UUID for token family tracking
 * expires_at (indexed)
+* created_at
+* revoked_at (indexed, nullable)
+* replaced_by (FK to refresh_tokens.id, nullable)
 
 ---
 
@@ -376,11 +385,18 @@ Configuration is managed in `app/core/config.py` with automatic environment file
 
 ## Authentication Flow
 
-1. User logs in
-2. Server validates credentials
-3. JWT token is issued
-4. Client sends token in headers
-5. Protected endpoints validate token
+1. User logs in with username/password
+2. Server validates credentials and issues:
+   - Short-lived access token (15 minutes) with JWT claims (sub, id, role, exp, iat, iss, aud)
+   - Long-lived refresh token (7 days) with secure SHA-256 hash stored in database
+   - Token family ID for session tracking
+3. Client sends access token in Authorization header for API requests
+4. Protected endpoints validate JWT signature, algorithm, expiration, issuer, and audience
+5. When access token expires, client uses refresh token to get new tokens:
+   - Old refresh token is revoked (token rotation)
+   - New refresh token is issued with same family ID
+   - If old token is reused, entire family is revoked (security measure)
+6. Logout endpoints revoke refresh tokens (single session or all sessions)
 
 ---
 
@@ -432,7 +448,8 @@ Response:
 {
     "refresh_token": "example.refresh.token",
     "access_token": "example.access.token",
-    "token_type": "bearer"
+    "token_type": "bearer",
+    "expires_in": 900
 }
 ```
 
@@ -450,11 +467,42 @@ Response:
 {
     "refresh_token": "example.new.refresh.token",
     "access_token": "example.new.access.token",
-    "token_type": "bearer"
+    "token_type": "bearer",
+    "expires_in": 900
 }
 ```
 
 **Note:** Refresh token rotation is enabled - each refresh returns a new refresh token and invalidates the old one.
+
+* #### POST /auth/logout
+
+Request:
+```json
+{
+  "refresh_token": "example.refresh.token"
+}
+```
+
+Response:
+```
+204 No Content
+```
+
+**Note:** Revokes the current refresh token session.
+
+* #### POST /auth/logout-all
+
+Request:
+```
+Authorization: Bearer <access_token>
+```
+
+Response:
+```
+204 No Content
+```
+
+**Note:** Revokes all refresh token sessions for the authenticated user.
 
 ---
 

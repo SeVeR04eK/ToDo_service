@@ -18,6 +18,7 @@ from app.infrastructure.models.roles_model import Role as RoleORM
 from app.infrastructure.models import Task as TaskORM
 from app.infrastructure.services.jwt_service import JWTService
 from app.infrastructure.security.bcrypt_password_hasher import BcryptPasswordHasher
+from app.infrastructure.security.sha256_token_hasher import SHA256TokenHasher
 from app.domain.enums import TaskStatus
 from app.infrastructure.database import get_session
 from app.presentation.api.dependencies.repositories_dep import (
@@ -28,6 +29,7 @@ from app.presentation.api.dependencies.repositories_dep import (
 )
 
 from app.presentation.api.dependencies.uow import get_unit_of_work
+from app.presentation.api.dependencies.token_hasher_dep import get_token_hasher
 from app.infrastructure.repositories import (
     SQLAlchemyUserRepository,
     SQLAlchemyTaskRepository,
@@ -55,6 +57,7 @@ TestSessionLocal = async_sessionmaker(
 
 fake = Faker()
 password_hasher = BcryptPasswordHasher()
+token_hasher = SHA256TokenHasher()
 
 
 @pytest.fixture(scope="session")
@@ -101,12 +104,16 @@ async def client(db_session: AsyncSession) -> AsyncGenerator:
     async def override_get_unit_of_work():
         yield SQLAlchemyUnitOfWork(db_session, password_hasher)
 
+    async def override_get_token_hasher():
+        yield token_hasher
+
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_user_repository] = override_get_user_repository
     app.dependency_overrides[get_task_repository] = override_get_task_repository
     app.dependency_overrides[get_refresh_token_repository] = override_get_refresh_token_repository
     app.dependency_overrides[get_admin_repository] = override_get_admin_repository
     app.dependency_overrides[get_unit_of_work] = override_get_unit_of_work
+    app.dependency_overrides[get_token_hasher] = override_get_token_hasher
 
     async with AsyncClient(
             transport=ASGITransport(app=app),

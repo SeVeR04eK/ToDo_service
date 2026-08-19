@@ -43,6 +43,10 @@ def refresh_token_from_orm(orm_token: RefreshTokenORM) -> RefreshToken:
     return RefreshToken(
         id=orm_token.id,
         user_id=orm_token.user_id,
-        token=orm_token.token,
-        expires_at=orm_token.expires_at
+        token_hash=orm_token.token_hash,
+        family_id=orm_token.family_id,
+        expires_at=orm_token.expires_at,
+        created_at=orm_token.created_at,
+        revoked_at=orm_token.revoked_at,
+        replaced_by=orm_token.replaced_by
     )

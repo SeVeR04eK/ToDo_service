@@ -16,6 +16,7 @@ async def clean_tokens_task():
                 repository: RefreshTokenRepository = get_refresh_token_repository_raw(session)
                 await repository.delete_expired_tokens()
                 logger.info("Expired tokens cleaned successfully")
+                await session.commit()
         except Exception:
             logger.exception("Error cleaning expired tokens")
 

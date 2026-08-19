@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: timedelta = timedelta(minutes=15)
     refresh_token_expire_days: timedelta = timedelta(days=7)
     algorithm: str = "HS256"
+    jwt_issuer: str = "todo-api"
+    jwt_audience: str = "todo-api-users"
     
     # Application Settings
     debug: bool = False

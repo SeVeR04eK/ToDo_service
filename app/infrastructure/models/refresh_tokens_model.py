@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, String, DateTime, ForeignKey
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Optional
 
 from app.infrastructure.models import Base
 
@@ -16,9 +17,25 @@ class RefreshToken(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         index=True
     )
-    token: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    token_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    family_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True
+    )
+    replaced_by: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("refresh_tokens.id", ondelete="SET NULL"),
+        nullable=True
     )

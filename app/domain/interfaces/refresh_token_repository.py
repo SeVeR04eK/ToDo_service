@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Optional
 
 from app.domain.entities import RefreshToken
 
@@ -10,9 +11,10 @@ class RefreshTokenRepository(ABC):
     async def create_refresh_token(
         self,
         user_id: int,
-        token: str,
+        token_hash: str,
+        family_id: str,
         expires: datetime,
-    ) -> None: ...
+    ) -> RefreshToken: ...
 
     @abstractmethod
     async def delete_refresh_token_by_user_id(
@@ -27,18 +29,35 @@ class RefreshTokenRepository(ABC):
     ) -> None: ...
 
     @abstractmethod
-    async def consume_refresh_token(
+    async def revoke_refresh_token(
         self,
-        refresh_token: str,
+        token_id: int,
+        replaced_by: Optional[int] = None,
     ) -> bool:
-        """Atomically delete a refresh token by its value and return True if deleted, False if not found."""
+        """Revoke a refresh token by ID and optionally set the replacement token."""
         ...
 
     @abstractmethod
-    async def get_token_expires(
+    async def get_by_token_hash(
         self,
-        refresh_token: str,
+        token_hash: str,
     ) -> RefreshToken | None: ...
+
+    @abstractmethod
+    async def revoke_family_by_id(
+        self,
+        family_id: str,
+    ) -> None:
+        """Revoke all tokens in a family by family ID."""
+        ...
+
+    @abstractmethod
+    async def revoke_token_by_user_id(
+        self,
+        user_id: int,
+    ) -> None:
+        """Revoke all active refresh token families for a user."""
+        ...
 
     @abstractmethod
     async def delete_expired_tokens(

@@ -5,6 +5,8 @@ from typing import Annotated
 from app.presentation.api.schemas import TokensResponse, RefreshTokenGet
 from app.application.services import AuthService
 from app.presentation.api.dependencies.services_dep import get_auth_service
+from app.presentation.api.dependencies.auth_dep import get_current_user
+from app.domain.entities import User
 
 # Authentication router for login and token refresh
 auth_router = APIRouter(prefix = "/auth", tags = ["auth"])
@@ -24,7 +26,8 @@ async def authentication(
     return TokensResponse(
         refresh_token=tokens.refresh_token,
         access_token=tokens.access_token,
-        token_type=tokens.token_type
+        token_type=tokens.token_type,
+        expires_in=tokens.expires_in
     )
 
 @auth_router.post("/refresh", status_code=status.HTTP_200_OK, response_model = TokensResponse, summary="Access token refresh", response_description="Returns new access and refresh tokens (refresh token rotation enabled)")
@@ -36,5 +39,22 @@ async def refresh(refresh_token_data: RefreshTokenGet, service: AuthService = De
     return TokensResponse(
         refresh_token=tokens.refresh_token,
         access_token=tokens.access_token,
-        token_type=tokens.token_type
+        token_type=tokens.token_type,
+        expires_in=tokens.expires_in
     )
+
+@auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, summary="Logout", response_description="Revoke the current refresh token")
+async def logout(
+        refresh_token_data: RefreshTokenGet,
+        service: AuthService = Depends(get_auth_service)
+) -> None:
+    """Logout by revoking the current refresh token."""
+    await service.logout_service(refresh_token_data.refresh_token)
+
+@auth_router.post("/logout-all", status_code=status.HTTP_204_NO_CONTENT, summary="Logout all sessions", response_description="Revoke all refresh tokens for the authenticated user")
+async def logout_all(
+        current_user: User = Depends(get_current_user),
+        service: AuthService = Depends(get_auth_service)
+) -> None:
+    """Logout by revoking all refresh tokens for the authenticated user."""
+    await service.logout_all_service(current_user.id)

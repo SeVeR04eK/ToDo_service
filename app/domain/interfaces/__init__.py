@@ -4,7 +4,8 @@ from .refresh_token_repository import RefreshTokenRepository
 from .admin_repository import AdminRepository
 from .token_service import TokenService
 from .password_hasher import PasswordHasher
+from .token_hasher import TokenHasher
 from .unit_of_work import UnitOfWork
 
 __all__ = ["UserRepository", "TaskRepository", "RefreshTokenRepository",
-           "AdminRepository", "TokenService", "PasswordHasher", "UnitOfWork"]
+           "AdminRepository", "TokenService", "PasswordHasher", "TokenHasher", "UnitOfWork"]

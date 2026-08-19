@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import uuid
 
 from jose import JWTError, jwt
 
@@ -20,13 +21,18 @@ class JWTService(TokenService):
         if delta is None:
             delta = settings.access_token_expire_minutes
 
-        expires = datetime.now(timezone.utc) + delta
+        now = datetime.now(timezone.utc)
+        expires = now + delta
+        iat = int(now.timestamp())
 
         payload = {
             "sub": username,
             "id": user_id,
             "role": role,
             "exp": int(expires.timestamp()),
+            "iat": iat,
+            "iss": settings.jwt_issuer,
+            "aud": settings.jwt_audience,
         }
 
         return jwt.encode(
@@ -45,12 +51,18 @@ class JWTService(TokenService):
         if delta is None:
             delta = settings.refresh_token_expire_days
 
-        expires = datetime.now(timezone.utc) + delta
+        now = datetime.now(timezone.utc)
+        expires = now + delta
+        iat = int(now.timestamp())
 
         payload = {
             "sub": username,
             "id": user_id,
             "exp": int(expires.timestamp()),
+            "iat": iat,
+            "jti": str(uuid.uuid4()),
+            "iss": settings.jwt_issuer,
+            "aud": settings.jwt_audience,
         }
 
         token = jwt.encode(
@@ -71,6 +83,8 @@ class JWTService(TokenService):
                 access_token,
                 settings.secret_key.get_secret_value(),
                 algorithms=[settings.algorithm],
+                issuer=settings.jwt_issuer,
+                audience=settings.jwt_audience,
             )
 
             if payload.get("sub") is None or payload.get("id") is None:
@@ -91,6 +105,8 @@ class JWTService(TokenService):
                 refresh_token,
                 settings.secret_key.get_secret_value(),
                 algorithms=[settings.algorithm],
+                issuer=settings.jwt_issuer,
+                audience=settings.jwt_audience,
             )
 
             if payload.get("sub") is None or payload.get("id") is None:
