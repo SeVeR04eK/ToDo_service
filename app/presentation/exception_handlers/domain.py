@@ -20,6 +20,7 @@ ERROR_MAP: Dict[Type[DomainException], Tuple[int, str, str]] = {
     InvalidAccessTokenError: (401, "INVALID_ACCESS_TOKEN", "Invalid access token"),
     InvalidRefreshTokenError: (401, "INVALID_REFRESH_TOKEN", "Invalid refresh token"),
     InvalidPaginationParameters: (400, "INVALID_PAGINATION_PARAMETERS", "Pagination parameters are not allowed when filtering by username"),
+    WeakPasswordError: (400, "WEAK_PASSWORD", "Password is too weak"),
 }
 
 

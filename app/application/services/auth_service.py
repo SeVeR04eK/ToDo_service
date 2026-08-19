@@ -46,9 +46,7 @@ class AuthService:
             raise
 
         async with self.unit_of_work:
-            # Invalidate all existing refresh tokens for this user
-            await self.unit_of_work.refresh_token_repository.revoke_token_by_user_id(user.id)
-
+            # Create new refresh token without revoking existing ones (support multiple sessions)
             access_token = self.token_service.create_access_token(
                 username=user.username,
                 user_id=user.id,

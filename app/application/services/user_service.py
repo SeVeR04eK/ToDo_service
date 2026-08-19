@@ -1,8 +1,8 @@
 import structlog
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.domain.value_objects import UserUpdateData
-from app.domain.interfaces import UnitOfWork
-from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError
+from app.domain.interfaces import UnitOfWork, PasswordValidator
+from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError, WeakPasswordError
 from app.domain.entities import User
 
 logger = structlog.get_logger(__name__)
@@ -10,8 +10,9 @@ logger = structlog.get_logger(__name__)
 
 class UserService:
 
-    def __init__(self, unit_of_work: UnitOfWork):
+    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator):
         self.unit_of_work = unit_of_work
+        self.password_validator = password_validator
 
     async def create_user_service(self, user: CreateUserDTO) -> User:
 
@@ -19,6 +20,16 @@ class UserService:
             "Creating user",
             username=user.username,
         )
+        
+        # Validate password strength
+        is_valid, error_message = self.password_validator.validate(user.password)
+        if not is_valid:
+            logger.warning(
+                "Password validation failed",
+                username=user.username,
+                reason=error_message
+            )
+            raise WeakPasswordError()
         
         async with self.unit_of_work:
             # Check if username already exists
@@ -61,6 +72,17 @@ class UserService:
             "Updating user",
             user_id=user_id,
         )
+
+        # Validate password strength if password is being updated
+        if user_update.password is not None:
+            is_valid, error_message = self.password_validator.validate(user_update.password)
+            if not is_valid:
+                logger.warning(
+                    "Password validation failed during update",
+                    user_id=user_id,
+                    reason=error_message
+                )
+                raise WeakPasswordError()
 
         async with self.unit_of_work:
             user = await self.unit_of_work.user_repository.get_user_by_id(user_id=user_id)

@@ -26,7 +26,6 @@ class TestAuthService:
         mock_role = Role(id=1, name="user")
         mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_auth_use_case.execute.return_value = mock_user
-        mock_uow.refresh_token_repository.revoke_token_by_user_id.return_value = None
         mock_uow.refresh_token_repository.create_refresh_token.return_value = None
         mock_token_service.create_access_token.return_value = "access_token"
         mock_token_service.create_refresh_token.return_value = ("refresh_token", datetime.now(timezone.utc) + timedelta(days=7))
@@ -52,6 +51,8 @@ class TestAuthService:
         assert tokens.refresh_token == "refresh_token"
         assert tokens.token_type == "bearer"
         mock_uow.commit.assert_awaited_once()
+        # Verify that revoke_token_by_user_id is NOT called (multiple sessions supported)
+        mock_uow.refresh_token_repository.revoke_token_by_user_id.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_refresh_service_success(self):

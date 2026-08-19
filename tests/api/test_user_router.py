@@ -21,8 +21,8 @@ class TestUserRouter:
             "/user/me",
             json={
                 "username": "newuser",
-                "password": "password123",
-                "password_confirm": "password123"
+                "password": "SecurePassword123",
+                "password_confirm": "SecurePassword123"
             }
         )
 
@@ -38,7 +38,7 @@ class TestUserRouter:
             "/user/me",
             json={
                 "username": "newuser",
-                "password": "password123",
+                "password": "SecurePassword123",
                 "password_confirm": "different123"
             }
         )
@@ -81,8 +81,8 @@ class TestUserRouter:
             "/user/me",
             json={
                 "username": "updated_user",
-                "password": "newpassword123",
-                "password_confirm": "newpassword123"
+                "password": "NewSecurePass123",
+                "password_confirm": "NewSecurePass123"
             }
         )
 
@@ -110,8 +110,8 @@ class TestUserRouter:
         response = await authenticated_client.patch(
             "/user/me",
             json={
-                "password": "newpassword123",
-                "password_confirm": "newpassword123"
+                "password": "NewSecurePass123",
+                "password_confirm": "NewSecurePass123"
             }
         )
 
@@ -123,7 +123,7 @@ class TestUserRouter:
         response = await authenticated_client.patch(
             "/user/me",
             json={
-                "password": "newpassword123",
+                "password": "NewSecurePass123",
                 "password_confirm": "different123"
             }
         )

@@ -168,6 +168,7 @@ Functionality for managing personal tasks:
 ### Security
 
 * Password hashing
+* Weak password validating
 * Protected endpoints via dependencies
 * Ownership checks (users access only their data)
 * Admin overrides
@@ -477,7 +478,7 @@ Response:
 * #### POST /auth/logout
 
 Request:
-```json
+```
 {
   "refresh_token": "example.refresh.token"
 }

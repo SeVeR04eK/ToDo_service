@@ -19,3 +19,8 @@ class PermissionDeniedError(DomainException):
 class InvalidPaginationParameters(DomainException):
     """Raised when pagination parameters are provided with username filter."""
     pass
+
+
+class WeakPasswordError(DomainException):
+    """Raised when a password is too weak."""
+    pass
