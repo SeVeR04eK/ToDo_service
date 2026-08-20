@@ -94,7 +94,7 @@ class TestUnitOfWorkTransactions:
 
         # Verify both tasks exist
         from app.domain.value_objects import TaskPaginationData
-        pagination = TaskPaginationData(limit=None, offset=None, from_newest=False)
+        pagination = TaskPaginationData()
         tasks_page = await uow.task_repository.get_tasks(
             user_id=test_user.id,
             pagination=pagination,
@@ -115,7 +115,7 @@ class TestUnitOfWorkTransactions:
 
         # Get initial task count
         uow1 = SQLAlchemyUnitOfWork(db_session, password_hasher)
-        pagination = TaskPaginationData(limit=None, offset=None, from_newest=False)
+        pagination = TaskPaginationData()
         initial_task_page = await uow1.task_repository.get_tasks(
             user_id=user_id,
             pagination=pagination,

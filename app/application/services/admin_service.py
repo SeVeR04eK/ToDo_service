@@ -26,6 +26,8 @@ class AdminService:
         """Get users - returns paginated list if no username filter, single user if username provided."""
 
         if username is None:
+            if limit is None:
+                limit = 100
             return await self.unit_of_work.admin_repository.get_users(limit=limit, offset=offset)
 
         # Pagination parameters not allowed when filtering by username
@@ -196,6 +198,9 @@ class AdminService:
         # Prevent admins from accessing other admins' tasks
         if target_user.role and target_user.role.name == "admin":
             raise PermissionDeniedError()
+
+        if pagination.limit is None:
+            pagination.limit = 100
 
         pagination = TaskPaginationData(
             limit=pagination.limit,

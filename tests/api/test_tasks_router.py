@@ -159,7 +159,7 @@ class TestTasksRouter:
         response = await authenticated_client.get("/tasks/me?offset=0")
         assert response.status_code == 422
         
-        response = await authenticated_client.get("/tasks/me?offset=101")
+        response = await authenticated_client.get("/tasks/me?offset=10001")
         assert response.status_code == 422
     
     @pytest.mark.asyncio

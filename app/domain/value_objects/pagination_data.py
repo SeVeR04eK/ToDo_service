@@ -3,6 +3,6 @@ from dataclasses import dataclass
 
 @dataclass
 class TaskPaginationData:
-    limit: int | None = None
+    limit: int = 100
     offset: int | None = None
     from_newest: bool = False

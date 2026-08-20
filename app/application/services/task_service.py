@@ -52,6 +52,9 @@ class TaskService:
         """Get tasks with optional filtering by status, pagination, and sorting."""
 
 
+        if pagination.limit is None:
+            pagination.limit = 100
+
         pagination_data = TaskPaginationData(
             limit=pagination.limit,
             offset=pagination.offset,

@@ -10,7 +10,7 @@ class PaginationBase(BaseModel):
     ] = None
     offset: Annotated[
         Optional[int],
-        Field(title="Offset for pagination", ge=1, le=100)
+        Field(title="Offset for pagination", ge=1, le=10000)
     ] = None
 
 class TasksPagination(PaginationBase):

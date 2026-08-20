@@ -8,7 +8,7 @@ class RoleBase(BaseModel):
 class RoleRead(RoleBase):
     """Schema for role response (includes database-generated ID)."""
     name: Annotated[str, Field(title="Role Name")]
-    id: Annotated[int, Field(default=1, title="Role ID")]
+    id: Annotated[int, Field(title="Role ID")]
 
     # Enable ORM mode to allow serialization from SQLAlchemy models
     model_config = {

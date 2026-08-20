@@ -31,7 +31,7 @@ async def get_users(
         ] = None,
         offset: Annotated[
             Optional[int],
-            Query(title="Offset for pagination", ge=1, le=100)
+            Query(title="Offset for pagination", ge=1, le=10000)
         ] = None
 ) -> Union[DataResponse[UserRead], PaginatedResponse[UserRead]]:
     """

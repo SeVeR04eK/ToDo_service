@@ -10,7 +10,7 @@ def tasks_pagination(
         ] = None,
         offset: Annotated[
             Optional[int],
-            Query(title="Offset for pagination", ge=1, le=100)
+            Query(title="Offset for pagination", ge=1, le=10000)
         ] = None,
         from_newest: Annotated[
             Optional[bool],
