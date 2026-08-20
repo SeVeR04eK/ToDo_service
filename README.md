@@ -167,8 +167,8 @@ Functionality for managing personal tasks:
 
 ### Security
 
-* Password hashing
-* Weak password validating
+* Password hashing and weak password validation
+* Previous password verification during update
 * Protected endpoints via dependencies
 * Ownership checks (users access only their data)
 * Admin overrides
@@ -566,7 +566,8 @@ Authorization: Bearer <access_token>
 {
   "username": "new_user",
   "password": "user12345",
-  "password_confirm": "user12345"
+  "password_confirm": "user12345",
+  "previous_password": "oldpassword123"
 }
 ```
 
@@ -583,6 +584,8 @@ Response:
     }
 }
 ```
+
+**Note:** The `previous_password` field is required only when updating the password. This ensures users must provide their current password before changing to a new one.
 
 * #### DELETE /user/me
 

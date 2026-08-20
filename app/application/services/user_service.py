@@ -1,8 +1,13 @@
 import structlog
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.domain.value_objects import UserUpdateData
-from app.domain.interfaces import UnitOfWork, PasswordValidator
-from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError, WeakPasswordError
+from app.domain.interfaces import UnitOfWork, PasswordValidator, PasswordHasher
+from app.domain.exceptions import (
+    UsernameAlreadyExistsError,
+    UserNotFoundError,
+    WeakPasswordError,
+    InvalidCredentialsError
+)
 from app.domain.entities import User
 
 logger = structlog.get_logger(__name__)
@@ -10,9 +15,10 @@ logger = structlog.get_logger(__name__)
 
 class UserService:
 
-    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator):
+    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator, password_hasher: PasswordHasher):
         self.unit_of_work = unit_of_work
         self.password_validator = password_validator
+        self.password_hasher = password_hasher
 
     async def create_user_service(self, user: CreateUserDTO) -> User:
 
@@ -73,17 +79,6 @@ class UserService:
             user_id=user_id,
         )
 
-        # Validate password strength if password is being updated
-        if user_update.password is not None:
-            is_valid, error_message = self.password_validator.validate(user_update.password)
-            if not is_valid:
-                logger.warning(
-                    "Password validation failed during update",
-                    user_id=user_id,
-                    reason=error_message
-                )
-                raise WeakPasswordError()
-
         async with self.unit_of_work:
             user = await self.unit_of_work.user_repository.get_user_by_id(user_id=user_id)
             if user is None:
@@ -93,8 +88,31 @@ class UserService:
                 )
                 raise UserNotFoundError()
 
+            # Verify previous password if password is being updated
+            if user_update.password is not None:
+                if not user_update.previous_password:
+                    raise InvalidCredentialsError()
+
+                is_verified = self.password_hasher.verify(user_update.previous_password, user.hashed_password)
+                if not is_verified:
+                    logger.warning(
+                        "Previous password verification failed during user update",
+                        user_id=user_id,
+                    )
+                    raise InvalidCredentialsError()
+
+                # Validate password strength
+                is_valid, error_message = self.password_validator.validate(user_update.password)
+                if not is_valid:
+                    logger.warning(
+                        "Password validation failed during update",
+                        user_id=user_id,
+                        reason=error_message
+                    )
+                    raise WeakPasswordError()
+
             # Check if username already exists
-            if user_update.username != user.username and user_update.username is not None:
+            if user_update.username and user_update.username != user.username:
                 existing_user = await self.unit_of_work.user_repository.get_user_by_username(username=user_update.username)
                 if existing_user is not None:
                     logger.warning(
@@ -103,18 +121,9 @@ class UserService:
                     )
                     raise UsernameAlreadyExistsError()
 
-            # Validate password confirmation if password is being updated
-            if user_update.password is not None and user_update.password != user_update.password_confirm:
-                logger.warning(
-                    "Password confirmation mismatch during user update",
-                    user_id=user_id,
-                )
-                raise ValueError("Passwords do not match")
-
             user_update_data = UserUpdateData(
                 username=user_update.username,
-                password=user_update.password,
-                password_confirm=user_update.password_confirm
+                password=user_update.password
             )
 
             updated_user = await self.unit_of_work.user_repository.update_user(user=user, user_update=user_update_data)

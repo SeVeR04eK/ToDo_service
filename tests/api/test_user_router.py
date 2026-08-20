@@ -43,7 +43,7 @@ class TestUserRouter:
             }
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_create_user_missing_fields(self, client: AsyncClient):
@@ -82,7 +82,8 @@ class TestUserRouter:
             json={
                 "username": "updated_user",
                 "password": "NewSecurePass123",
-                "password_confirm": "NewSecurePass123"
+                "password_confirm": "NewSecurePass123",
+                "previous_password": "TestPassword123!"
             }
         )
 
@@ -111,7 +112,8 @@ class TestUserRouter:
             "/user/me",
             json={
                 "password": "NewSecurePass123",
-                "password_confirm": "NewSecurePass123"
+                "password_confirm": "NewSecurePass123",
+                "previous_password": "TestPassword123!"
             }
         )
 
@@ -124,18 +126,19 @@ class TestUserRouter:
             "/user/me",
             json={
                 "password": "NewSecurePass123",
-                "password_confirm": "different123"
+                "password_confirm": "different123",
+                "previous_password": "TestPassword123!"
             }
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 400
 
     @pytest.mark.asyncio
     async def test_update_user_unauthorized(self, client: AsyncClient):
         """Test updating user without authentication."""
         response = await client.patch(
             "/user/me",
-            json={"username": "updated"}
+            json={"username": "updated", "previous_password": "oldpass"}
         )
 
         assert response.status_code == 401
@@ -197,3 +200,30 @@ class TestUserRouter:
         response = await authenticated_client.get("/user/me")
 
         assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_update_user_missing_previous_password(self, authenticated_client: AsyncClient, test_user):
+        """Test updating password without providing previous password."""
+        response = await authenticated_client.patch(
+            "/user/me",
+            json={
+                "password": "NewSecurePass123",
+                "password_confirm": "NewSecurePass123"
+            }
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_update_user_incorrect_previous_password(self, authenticated_client: AsyncClient, test_user):
+        """Test updating password with incorrect previous password."""
+        response = await authenticated_client.patch(
+            "/user/me",
+            json={
+                "password": "NewSecurePass123",
+                "password_confirm": "NewSecurePass123",
+                "previous_password": "wrongpassword"
+            }
+        )
+
+        assert response.status_code == 401

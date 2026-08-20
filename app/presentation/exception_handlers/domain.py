@@ -21,6 +21,7 @@ ERROR_MAP: Dict[Type[DomainException], Tuple[int, str, str]] = {
     InvalidRefreshTokenError: (401, "INVALID_REFRESH_TOKEN", "Invalid refresh token"),
     InvalidPaginationParameters: (400, "INVALID_PAGINATION_PARAMETERS", "Pagination parameters are not allowed when filtering by username"),
     WeakPasswordError: (400, "WEAK_PASSWORD", "Password is too weak"),
+    PasswordNotMatchError: (400, "PASSWORD_NOT_MATCH", "Password does not match"),
 }
 
 

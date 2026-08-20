@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.application.services import UserService
 from app.application.dto import CreateUserDTO, UpdateUserDTO
-from app.domain.interfaces import UnitOfWork, PasswordValidator
+from app.domain.interfaces import UnitOfWork, PasswordValidator, PasswordHasher
 from app.domain.entities import User, Role
 from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError
 
@@ -27,7 +27,9 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         user_data = CreateUserDTO(
             username="newuser",
             password="SecurePassword123",
@@ -54,7 +56,9 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         user = await service.get_user_service(1)
         
         assert user.id == 1
@@ -78,7 +82,9 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         user_update = UpdateUserDTO(username="updated_user")
         
         result = await service.update_user_service(1, user_update)
@@ -105,10 +111,13 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         user_update = UpdateUserDTO(
             password="NewSecurePass123",
-            password_confirm="NewSecurePass123"
+            password_confirm="NewSecurePass123",
+            previous_password="oldpassword"
         )
         
         result = await service.update_user_service(1, user_update)
@@ -135,11 +144,14 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         user_update = UpdateUserDTO(
             username="updated_user",
             password="NewSecurePass123",
-            password_confirm="NewSecurePass123"
+            password_confirm="NewSecurePass123",
+            previous_password="oldpassword"
         )
         
         result = await service.update_user_service(1, user_update)
@@ -164,7 +176,9 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         await service.delete_user_service(1)
         
         mock_uow.user_repository.get_user_by_id.assert_called_once_with(user_id=1)
@@ -183,7 +197,9 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         user_data = CreateUserDTO(
             username="existing",
             password="SecurePassword123",
@@ -205,7 +221,9 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         user_update = UpdateUserDTO(username="updated")
         
         with pytest.raises(UserNotFoundError):
@@ -223,7 +241,9 @@ class TestUserService:
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
         mock_password_validator.validate.return_value = (True, "")
-        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator)
+        mock_password_hasher = MagicMock(spec=PasswordHasher)
+        mock_password_hasher.verify.return_value = True
+        service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher)
         
         with pytest.raises(UserNotFoundError):
             await service.delete_user_service(99999)

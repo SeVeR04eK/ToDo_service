@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 from typing import Annotated
+from app.domain.exceptions import PasswordNotMatchError
 
 
 class UserBase(BaseModel):
@@ -55,7 +56,7 @@ class UserCreate(UserBase):
     def passwords_match(self):
         """Validate that password and password confirmation match."""
         if self.password != self.password_confirm:
-            raise ValueError("Passwords do not match")
+            raise PasswordNotMatchError
         return self
 
 class UserUpdate(UserBase):
@@ -82,12 +83,20 @@ class UserUpdate(UserBase):
             title="User Password Confirm"
         )
     ]
+    previous_password: Annotated[
+        str,
+        Field(
+            default=None,
+            min_length=1,
+            title="Previous Password"
+        )
+    ]
 
     @model_validator(mode="after")
     def passwords_match(self):
         """Validate that password and password confirmation match."""
-        if self.password != self.password_confirm:
-            raise ValueError("Passwords do not match")
+        if self.password is not None and self.password != self.password_confirm:
+            raise PasswordNotMatchError()
         return self
 
     model_config = {"extra": "ignore"}

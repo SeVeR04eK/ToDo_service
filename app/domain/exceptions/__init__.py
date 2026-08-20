@@ -6,11 +6,12 @@ from app.domain.exceptions.user import (
     UsernameAlreadyExistsError,
     PermissionDeniedError,
     InvalidPaginationParameters,
-    WeakPasswordError
+    WeakPasswordError,
+    PasswordNotMatchError
 )
 
 
 __all__ = ["InvalidCredentialsError", "InvalidAccessTokenError", "InvalidRefreshTokenError",
            "RoleNotFoundError", "RoleAlreadyExistsError", "TaskNotFoundError",
            "UserNotFoundError", "UsernameAlreadyExistsError", "PermissionDeniedError",
-           "InvalidPaginationParameters", "WeakPasswordError"]
+           "InvalidPaginationParameters", "WeakPasswordError", "PasswordNotMatchError"]

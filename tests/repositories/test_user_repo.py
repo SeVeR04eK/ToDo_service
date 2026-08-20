@@ -99,10 +99,7 @@ class TestSQLAlchemyUserRepository:
         """Test updating user password."""
         repo = SQLAlchemyUserRepository(db_session, password_hasher)
         old_password = test_user.hashed_password
-        update_data = UserUpdateData(
-            password="NewPassword123!",
-            password_confirm="NewPassword123!"
-        )
+        update_data = UserUpdateData(password="NewPassword123!")
         
         updated_user = await repo.update_user(test_user, update_data)
         await db_session.commit()
@@ -117,8 +114,7 @@ class TestSQLAlchemyUserRepository:
         old_password = test_user.hashed_password
         update_data = UserUpdateData(
             username="new_username",
-            password="NewPassword123!",
-            password_confirm="NewPassword123!"
+            password="NewPassword123!"
         )
         
         updated_user = await repo.update_user(test_user, update_data)

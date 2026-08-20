@@ -24,3 +24,7 @@ class InvalidPaginationParameters(DomainException):
 class WeakPasswordError(DomainException):
     """Raised when a password is too weak."""
     pass
+
+class PasswordNotMatchError(DomainException):
+    """Raised when the provided password does not match the user's password."""
+    pass

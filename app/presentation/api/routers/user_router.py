@@ -67,31 +67,33 @@ async def update_user(
                 openapi_examples={
                     "full": {
                         "summary": "Update user profile with all fields.",
-                        "description": "Update user profile with all fields: username, password, password_confirm",
+                        "description": "Update user profile with all fields: username, password, password_confirm, previous_password",
                         "value": {
                             "username": "user",
                             "password": "user12345",
-                            "password_confirm": "user12345"
+                            "password_confirm": "user12345",
+                            "previous_password": "oldpassword123"
                         }
                     },
                     "partial_username": {
                         "summary": "Update user profile with only the provided username.",
-                        "description": "Update user profile with only the provided field: username",
+                        "description": "Update user profile with only the provided field: username (previous_password still required)",
                         "value": {
                             "username": "user"
                         }
                     },
                     "partial_password": {
                         "summary": "Update user profile with only the provided password.",
-                        "description": "Update user profile with only the provided fields: password and password_confirm",
+                        "description": "Update user profile with only the provided fields: password, password_confirm, and previous_password",
                         "value": {
                             "password": "user12345",
-                            "password_confirm": "user12345"
+                            "password_confirm": "user12345",
+                            "previous_password": "oldpassword123"
                         }
                     },
                     "no_changes": {
-                        "summary": "No fields provided",
-                        "description": "PATCH request with no fields. Nothing will be updated.",
+                        "summary": "No fields provided except previous_password",
+                        "description": "PATCH request with no changes except previous_password. Nothing will be updated.",
                         "value": {}
                     }
                 }
@@ -104,7 +106,8 @@ async def update_user(
     user_dto = UpdateUserDTO(
         username=user_update.username,
         password=user_update.password,
-        password_confirm=user_update.password_confirm
+        password_confirm=user_update.password_confirm,
+        previous_password=user_update.previous_password
     )
 
     user = await service.update_user_service(user_id=user.id, user_update=user_dto)
