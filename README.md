@@ -1,6 +1,6 @@
 # ToDo Service Backend API (FastAPI + PostgreSQL)
 
-**API Version:** 0.2.0
+**API Version:** 0.3.0
 
 ---
 

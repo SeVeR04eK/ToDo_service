@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.3.0] - 2026-08-22
+
+### Added
+
+- Refresh token rotation, reuse detection, token families, and revocation.
+- JWT iss, aud, iat, and jti claims.
+- Logout and logout-all endpoints.
+- Password strength validation.
+- Current password validation for password updates.
+- 30-day absolute refresh token family lifetime.
+
+### Changed
+- Allow multiple active refresh token sessions.
+- Require previous_password for password updates.
+- Increased default pagination limit to 100.
+- Increased maximum offset to 10,000.
+- Updated migrations, repositories, services, DI, and tests.
+
+### Fixed
+- Removed unnecessary default value from RoleRead ID.
+
+### Documentation
+- Improved README and split documentation into separate files.
+
+---
+
 ## [0.2.0] - 2026-08-15
 
 ### Added
@@ -31,6 +57,7 @@ All notable changes to this project will be documented in this file.
 - Added Unit of Work integration tests for commit, rollback, and transaction atomicity
 - Updated repository and service tests for transactional behavior
 
+---
 
 ## [0.1.1] - 2026-08-05
 
