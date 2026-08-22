@@ -160,3 +160,36 @@ open htmlcov/index.html
 4. Follow naming convention: test_<functionality>_<scenario>
 5. Test both success and failure cases
 ---
+
+## Docker Architecture
+
+The Dockerfile uses a multi-stage build:
+
+```text
+base
+├── dev
+└── prod
+```
+
+### Development Stage
+
+* Development dependencies
+* Hot reload
+* Source-code bind mounts
+
+### Production Stage
+
+* Production dependencies
+* No source-code bind mounts
+* Gunicorn with Uvicorn workers
+
+### Entrypoint
+
+The `docker-entrypoint.sh` script:
+
+* Runs database migrations with `alembic upgrade head`
+* Runs seed scripts when `ENVIRONMENT=dev`
+* Executes the configured application command with `exec "$@"`
+* Uses `set -e` to fail immediately on errors
+
+Seed scripts are not executed in production to avoid automatic data modification when multiple replicas are running. They can be executed manually through deployment procedures when required.
