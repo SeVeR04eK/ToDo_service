@@ -2,7 +2,7 @@
 
 ## Health Check
 
-![Auth](screenshots/health.png)
+![Health](../screenshots/health.png)
 
 ### GET /health
 
@@ -31,7 +31,7 @@ Response:
 
 ## Auth
 
-![Auth](screenshots/auth.png)
+![Auth](../screenshots/auth.png)
 
 ### POST /auth/authentication
 
@@ -108,7 +108,7 @@ Response:
 
 ## User
 
-![User](screenshots/user.png)
+![User](../screenshots/user.png)
 
 ### GET    /user/me
 
@@ -197,7 +197,7 @@ Authorization: Bearer <access_token>
 
 ## Tasks
 
-![Tasks](screenshots/tasks.png)
+![Tasks](../screenshots/tasks.png)
 
 ### GET    /tasks/me
 
@@ -314,7 +314,7 @@ Authorization: Bearer <access_token>
 
 ONLY for users with admin role
 
-![Admin](screenshots/admin.png)
+![Admin](../screenshots/admin.png)
 
 ### GET    /admin/users 
 
@@ -549,8 +549,8 @@ Response:
 
 ## Filters
 
-![Tasks_filters](screenshots/tasks_filters.png)
-![Users_filters](screenshots/users_filters.png)
+![Tasks_filters](../screenshots/tasks_filters.png)
+![Users_filters](../screenshots/users_filters.png)
 ```
 GET /tasks/me?task_status=todo
 GET /tasks/me?from_newest=true
