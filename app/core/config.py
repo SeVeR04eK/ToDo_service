@@ -69,6 +69,14 @@ class Settings(BaseSettings):
     #Security headers
     enable_hsts: bool = False
 
+    # Redis Configuration
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    redis_decode_responses: bool = True
+    redis_socket_timeout: float = 1.0
+    redis_socket_connect_timeout: float = 1.0
+
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

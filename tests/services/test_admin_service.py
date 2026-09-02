@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import AsyncMock
 
 from app.application.services import AdminService
+from app.application.interfaces import RoleCache
 from app.domain.interfaces import UnitOfWork
 from app.domain.entities import User, Role, Task
 from app.domain.enums import TaskStatus
@@ -22,7 +23,8 @@ class TestAdminService:
 
         mock_uow.admin_repository.get_users.return_value = Page.create(items=[], page=1, page_size=10, total_items=0)
 
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         result = await service.get_users_service(username=None, limit=None, offset=1)
 
         assert isinstance(result, Page)
@@ -33,7 +35,8 @@ class TestAdminService:
         """Test that username with pagination parameters raises InvalidPaginationParameters."""
         mock_uow = AsyncMock(spec=UnitOfWork)
 
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
 
         with pytest.raises(InvalidPaginationParameters):
             await service.get_users_service(username="testuser", limit=10, offset=None)
@@ -54,7 +57,8 @@ class TestAdminService:
         mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         user = await service.get_user_service(1)
         
         assert user.id == 1
@@ -68,7 +72,8 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         mock_uow.user_repository.get_user_by_id.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(UserNotFoundError):
             await service.get_user_service(99999)
@@ -90,7 +95,8 @@ class TestAdminService:
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         updated = await service.permission_user_service(user_id=1, role_name="admin", is_active=None)
         
         assert updated.role.name == "admin"
@@ -113,7 +119,8 @@ class TestAdminService:
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         updated = await service.permission_user_service(user_id=1, role_name=None, is_active=False)
         
         assert updated.is_active is False
@@ -132,7 +139,8 @@ class TestAdminService:
         mock_uow.admin_repository.get_role_id_by_name.return_value = None
         mock_uow.__aenter__.return_value = mock_uow
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(RoleNotFoundError):
             await service.permission_user_service(user_id=1, role_name="nonexistent", is_active=None)
@@ -147,7 +155,8 @@ class TestAdminService:
         mock_uow.user_repository.get_user_by_id.return_value = None
         mock_uow.__aenter__.return_value = mock_uow
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(UserNotFoundError):
             await service.permission_user_service(user_id=99999, role_name="user", is_active=None)
@@ -166,7 +175,8 @@ class TestAdminService:
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         mock_uow.__aenter__.return_value = mock_uow
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(PermissionDeniedError):
             await service.delete_user_service(1)
@@ -181,7 +191,8 @@ class TestAdminService:
         mock_uow.user_repository.get_user_by_id.return_value = None
         mock_uow.__aenter__.return_value = mock_uow
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(UserNotFoundError):
             await service.delete_user_service(99999)
@@ -200,13 +211,15 @@ class TestAdminService:
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         new_role = CreateRoleDTO(name="moderator")
         role = await service.create_role_service(new_role)
-        
+
         assert role.name == "moderator"
         mock_uow.admin_repository.create_role.assert_called_once()
         mock_uow.commit.assert_awaited_once()
+        mock_role_cache.delete_roles.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_create_role_service_duplicate(self):
@@ -217,7 +230,8 @@ class TestAdminService:
         mock_uow.admin_repository.get_role_id_by_name.return_value = 1
         mock_uow.__aenter__.return_value = mock_uow
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         new_role = CreateRoleDTO(name="moderator")
         
         with pytest.raises(RoleAlreadyExistsError):
@@ -226,13 +240,32 @@ class TestAdminService:
         mock_uow.commit.assert_not_awaited()
 
     @pytest.mark.asyncio
+    async def test_get_roles_service_success(self):
+        """Test getting all roles."""
+        mock_uow = AsyncMock(spec=UnitOfWork)
+        mock_uow.admin_repository = AsyncMock()
+        mock_roles = [Role(id=1, name="user"), Role(id=2, name="admin")]
+        mock_uow.admin_repository.get_roles.return_value = mock_roles
+
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        mock_role_cache.get_roles.return_value = None
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
+        roles = await service.get_roles_service()
+
+        assert len(roles) == 2
+        mock_role_cache.get_roles.assert_called_once()
+        mock_uow.admin_repository.get_roles.assert_called_once()
+        mock_role_cache.set_roles.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_get_tasks_service_user_not_found(self):
         """Test getting tasks for non-existent user raises UserNotFoundError."""
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_uow.user_repository.get_user_by_id.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(UserNotFoundError):
             await service.get_tasks_service(user_id=99999, task_status=None, pagination=TaskPaginationDTO())
@@ -247,7 +280,8 @@ class TestAdminService:
         mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(PermissionDeniedError):
             await service.get_tasks_service(user_id=1, task_status=None, pagination=TaskPaginationDTO())
@@ -259,7 +293,8 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         mock_uow.user_repository.get_user_by_id.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(UserNotFoundError):
             await service.get_task_service(task_id=1, user_id=99999)
@@ -274,7 +309,8 @@ class TestAdminService:
         mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(PermissionDeniedError):
             await service.get_task_service(task_id=1, user_id=1)
@@ -286,7 +322,8 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         mock_uow.user_repository.get_user_by_id.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(UserNotFoundError):
             await service.update_task_service(task_id=1, user_id=99999, task_update=UpdateTaskDTO())
@@ -301,7 +338,8 @@ class TestAdminService:
         mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(PermissionDeniedError):
             await service.update_task_service(task_id=1, user_id=1, task_update=UpdateTaskDTO())
@@ -327,7 +365,8 @@ class TestAdminService:
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         update_data = UpdateTaskDTO(title="Updated Title", content="Updated Content", status=TaskStatus.done)
         
         result = await service.update_task_service(task_id=1, user_id=1, task_update=update_data)
@@ -354,7 +393,8 @@ class TestAdminService:
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         await service.delete_task_service(task_id=1, user_id=1)
         
         mock_uow.task_repository.delete_task.assert_called_once()
@@ -367,7 +407,8 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         mock_uow.user_repository.get_user_by_id.return_value = None
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(UserNotFoundError):
             await service.delete_task_service(task_id=1, user_id=99999)
@@ -382,7 +423,8 @@ class TestAdminService:
         mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
-        service = AdminService(unit_of_work=mock_uow)
+        mock_role_cache = AsyncMock(spec=RoleCache)
+        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
         
         with pytest.raises(PermissionDeniedError):
             await service.delete_task_service(task_id=1, user_id=1)

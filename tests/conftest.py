@@ -30,6 +30,11 @@ from app.presentation.api.dependencies.repositories_dep import (
 
 from app.presentation.api.dependencies.uow import get_unit_of_work
 from app.presentation.api.dependencies.token_hasher_dep import get_token_hasher
+from app.presentation.api.dependencies.cache_dep import (
+    get_user_cache,
+    get_task_cache,
+    get_role_cache
+)
 from app.infrastructure.repositories import (
     SQLAlchemyUserRepository,
     SQLAlchemyTaskRepository,
@@ -37,6 +42,7 @@ from app.infrastructure.repositories import (
     SQLAlchemyAdminRepository,
 )
 from app.infrastructure.unit_of_work import SQLAlchemyUnitOfWork
+from app.application.interfaces import UserCache, TaskCache, RoleCache
 
 # Test database URL (SQLite for testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -58,6 +64,34 @@ TestSessionLocal = async_sessionmaker(
 fake = Faker()
 password_hasher = BcryptPasswordHasher()
 token_hasher = SHA256TokenHasher()
+
+
+@pytest.fixture
+async def mock_user_cache():
+    """Mock UserCache for testing."""
+    from unittest.mock import AsyncMock
+    cache = AsyncMock(spec=UserCache)
+    cache.get_user.return_value = None
+    return cache
+
+
+@pytest.fixture
+async def mock_task_cache():
+    """Mock TaskCache for testing."""
+    from unittest.mock import AsyncMock
+    cache = AsyncMock(spec=TaskCache)
+    cache.get_task.return_value = None
+    cache.get_task_list.return_value = None
+    return cache
+
+
+@pytest.fixture
+async def mock_role_cache():
+    """Mock RoleCache for testing."""
+    from unittest.mock import AsyncMock
+    cache = AsyncMock(spec=RoleCache)
+    cache.get_roles.return_value = None
+    return cache
 
 
 @pytest.fixture(scope="session")
@@ -82,7 +116,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest.fixture(scope="function")
-async def client(db_session: AsyncSession) -> AsyncGenerator:
+async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, mock_role_cache) -> AsyncGenerator:
     """Create a test client with database session override."""
 
 
@@ -107,6 +141,15 @@ async def client(db_session: AsyncSession) -> AsyncGenerator:
     async def override_get_token_hasher():
         yield token_hasher
 
+    async def override_get_user_cache():
+        yield mock_user_cache
+
+    async def override_get_task_cache():
+        yield mock_task_cache
+
+    async def override_get_role_cache():
+        yield mock_role_cache
+
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_user_repository] = override_get_user_repository
     app.dependency_overrides[get_task_repository] = override_get_task_repository
@@ -114,6 +157,9 @@ async def client(db_session: AsyncSession) -> AsyncGenerator:
     app.dependency_overrides[get_admin_repository] = override_get_admin_repository
     app.dependency_overrides[get_unit_of_work] = override_get_unit_of_work
     app.dependency_overrides[get_token_hasher] = override_get_token_hasher
+    app.dependency_overrides[get_user_cache] = override_get_user_cache
+    app.dependency_overrides[get_task_cache] = override_get_task_cache
+    app.dependency_overrides[get_role_cache] = override_get_role_cache
 
     async with AsyncClient(
             transport=ASGITransport(app=app),

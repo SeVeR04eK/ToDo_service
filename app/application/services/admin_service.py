@@ -1,7 +1,9 @@
+import asyncio
 import structlog
 from typing import List, Optional, Union
 
 from app.application.dto import TaskPaginationDTO, UpdateTaskDTO, CreateRoleDTO
+from app.application.interfaces import RoleCache
 from app.domain.value_objects import TaskPaginationData, UpdateTaskData, UserPermissionData, Page
 from app.domain.enums import TaskStatus
 from app.domain.exceptions import UserNotFoundError, RoleNotFoundError, PermissionDeniedError, RoleAlreadyExistsError, TaskNotFoundError, InvalidPaginationParameters
@@ -14,8 +16,9 @@ logger = structlog.get_logger(__name__)
 class AdminService:
     """Service layer for admin-specific business logic."""
 
-    def __init__(self, unit_of_work: UnitOfWork):
+    def __init__(self, unit_of_work: UnitOfWork, role_cache: RoleCache):
         self.unit_of_work = unit_of_work
+        self.role_cache = role_cache
 
     async def get_users_service(
             self,
@@ -158,7 +161,7 @@ class AdminService:
             "Creating role",
             role_name=new_role.name,
         )
-        
+
         role_name = new_role.name
 
         async with self.unit_of_work:
@@ -171,9 +174,12 @@ class AdminService:
                 raise RoleAlreadyExistsError()
 
             role = await self.unit_of_work.admin_repository.create_role(name=role_name)
-            
+
             await self.unit_of_work.commit()
-        
+
+            # Delete cache in background, don't await
+            asyncio.create_task(self.role_cache.delete_roles())
+
         logger.info(
             "Role created",
             role_id=role.id,
@@ -185,7 +191,17 @@ class AdminService:
     async def get_roles_service(self) -> List[Role]:
         """Get all roles."""
 
-        return await self.unit_of_work.admin_repository.get_roles()
+        try:
+            cached_roles = await self.role_cache.get_roles()
+            if cached_roles is not None:
+                return cached_roles
+        except Exception as e:
+            logger.warning("Cache get failed, falling back to database", error=str(e))
+
+        roles = await self.unit_of_work.admin_repository.get_roles()
+        # Set cache in background, don't await
+        asyncio.create_task(self.role_cache.set_roles(roles, ttl=600))
+        return roles
 
     async def get_tasks_service(self, user_id: int, task_status: Optional[TaskStatus], pagination: TaskPaginationDTO) -> Page[Task]:
         """Get tasks for a user with admin protection."""

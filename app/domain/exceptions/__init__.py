@@ -9,9 +9,11 @@ from app.domain.exceptions.user import (
     WeakPasswordError,
     PasswordNotMatchError
 )
+from app.domain.exceptions.redis import SerializationError
 
 
 __all__ = ["InvalidCredentialsError", "InvalidAccessTokenError", "InvalidRefreshTokenError",
            "RoleNotFoundError", "RoleAlreadyExistsError", "TaskNotFoundError",
            "UserNotFoundError", "UsernameAlreadyExistsError", "PermissionDeniedError",
-           "InvalidPaginationParameters", "WeakPasswordError", "PasswordNotMatchError"]
+           "InvalidPaginationParameters", "WeakPasswordError", "PasswordNotMatchError",
+           "SerializationError"]

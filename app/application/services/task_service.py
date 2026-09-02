@@ -1,8 +1,10 @@
+import asyncio
 import structlog
 from typing import List, Optional
 
 from app.domain.enums import TaskStatus
 from app.application.dto import CreateTaskDTO, UpdateTaskDTO, TaskPaginationDTO
+from app.application.interfaces import TaskCache
 from app.domain.exceptions import TaskNotFoundError
 from app.domain.entities import Task
 from app.domain.interfaces import UnitOfWork
@@ -13,8 +15,9 @@ logger = structlog.get_logger(__name__)
 class TaskService:
     """Service layer for task-related business logic."""
 
-    def __init__(self, unit_of_work: UnitOfWork):
+    def __init__(self, unit_of_work: UnitOfWork, task_cache: TaskCache):
         self.unit_of_work = unit_of_work
+        self.task_cache = task_cache
 
     async def create_task_service(self, task: CreateTaskDTO, user_id: int) -> Task:
 
@@ -31,16 +34,19 @@ class TaskService:
                 status=task.status,
                 user_id=user_id
             )
-            
+
             await self.unit_of_work.commit()
-        
+
+            # Delete cache in background, don't await
+            asyncio.create_task(self.task_cache.delete_task_list(user_id))
+
         logger.info(
             "Task created",
             task_id=created_task.id,
             user_id=user_id,
             title=created_task.title,
         )
-        
+
         return created_task
 
     async def get_tasks_service(
@@ -51,7 +57,6 @@ class TaskService:
     ) -> Page[Task]:
         """Get tasks with optional filtering by status, pagination, and sorting."""
 
-
         if pagination.limit is None:
             pagination.limit = 100
 
@@ -61,14 +66,48 @@ class TaskService:
             from_newest=pagination.from_newest
         )
 
-        return await self.unit_of_work.task_repository.get_tasks(
+        task_status_str = task_status.value if task_status else None
+        try:
+            cached_page = await self.task_cache.get_task_list(
+                user_id=user_id,
+                task_status=task_status_str,
+                limit=pagination.limit or 100,
+                offset=pagination.offset or 0,
+                from_newest=pagination.from_newest or True
+            )
+            if cached_page is not None:
+                return cached_page
+        except Exception as e:
+            logger.warning("Cache get failed, falling back to database", error=str(e))
+
+        page = await self.unit_of_work.task_repository.get_tasks(
             user_id=user_id,
             pagination=pagination_data,
             task_status=task_status
         )
 
+        # Set cache in background, don't await
+        asyncio.create_task(self.task_cache.set_task_list(
+            user_id=user_id,
+            task_status=task_status_str,
+            limit=pagination.limit or 100,
+            offset=pagination.offset or 0,
+            from_newest=pagination.from_newest or True,
+            page=page,
+            ttl=30
+        ))
+
+        return page
+
     async def get_task_service(self, task_id: int, user_id: int) -> Task:
         """Get a single task by ID."""
+
+        try:
+            cached_task = await self.task_cache.get_task(user_id=user_id, task_id=task_id)
+            if cached_task is not None:
+                return cached_task
+        except Exception as e:
+            logger.warning("Cache get failed, falling back to database", error=str(e))
 
         task = await self.unit_of_work.task_repository.get_task(task_id=task_id, user_id=user_id)
         if task is None:
@@ -79,6 +118,8 @@ class TaskService:
             )
             raise TaskNotFoundError()
 
+        # Set cache in background, don't await
+        asyncio.create_task(self.task_cache.set_task(user_id=user_id, task_id=task_id, task=task, ttl=60))
         return task
 
     async def update_task_service(
@@ -112,15 +153,19 @@ class TaskService:
             )
 
             updated_task = await self.unit_of_work.task_repository.update_task(task=task, task_update=task_update_data)
-            
+
             await self.unit_of_work.commit()
-        
+
+            # Delete cache in background, don't await
+            asyncio.create_task(self.task_cache.delete_task(user_id=user_id, task_id=task_id))
+            asyncio.create_task(self.task_cache.delete_task_list(user_id=user_id))
+
         logger.info(
             "Task updated",
             task_id=updated_task.id,
             user_id=user_id,
         )
-        
+
         return updated_task
 
     async def delete_task_service(self, task_id: int, user_id: int) -> None:
@@ -143,9 +188,13 @@ class TaskService:
                 raise TaskNotFoundError()
 
             await self.unit_of_work.task_repository.delete_task(task_id=task_id, user_id=user_id)
-            
+
             await self.unit_of_work.commit()
-        
+
+            # Delete cache in background, don't await
+            asyncio.create_task(self.task_cache.delete_task(user_id=user_id, task_id=task_id))
+            asyncio.create_task(self.task_cache.delete_task_list(user_id=user_id))
+
         logger.info(
             "Task deleted",
             task_id=task_id,

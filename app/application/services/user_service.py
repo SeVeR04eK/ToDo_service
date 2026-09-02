@@ -1,5 +1,7 @@
+import asyncio
 import structlog
 from app.application.dto import CreateUserDTO, UpdateUserDTO
+from app.application.interfaces import UserCache
 from app.domain.value_objects import UserUpdateData
 from app.domain.interfaces import UnitOfWork, PasswordValidator, PasswordHasher
 from app.domain.exceptions import (
@@ -15,10 +17,11 @@ logger = structlog.get_logger(__name__)
 
 class UserService:
 
-    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator, password_hasher: PasswordHasher):
+    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator, password_hasher: PasswordHasher, user_cache: UserCache):
         self.unit_of_work = unit_of_work
         self.password_validator = password_validator
         self.password_hasher = password_hasher
+        self.user_cache = user_cache
 
     async def create_user_service(self, user: CreateUserDTO) -> User:
 
@@ -61,6 +64,12 @@ class UserService:
 
 
     async def get_user_service(self, user_id: int) -> User:
+        try:
+            cached_user = await self.user_cache.get_user(user_id)
+            if cached_user is not None:
+                return cached_user
+        except Exception as e:
+            logger.warning("Cache get failed, falling back to database", error=str(e))
 
         user = await self.unit_of_work.user_repository.get_user_by_id(user_id=user_id)
         if user is None:
@@ -70,6 +79,8 @@ class UserService:
             )
             raise UserNotFoundError()
 
+        # Set cache in background, don't await
+        asyncio.create_task(self.user_cache.set_user(user_id, user, ttl=60))
         return user
 
     async def update_user_service(self, user_id: int, user_update: UpdateUserDTO) -> User:
@@ -127,15 +138,18 @@ class UserService:
             )
 
             updated_user = await self.unit_of_work.user_repository.update_user(user=user, user_update=user_update_data)
-            
+
             await self.unit_of_work.commit()
-        
+
+            # Delete cache in background, don't await
+            asyncio.create_task(self.user_cache.delete_user(user_id))
+
         logger.info(
             "User updated",
             user_id=updated_user.id,
             username=updated_user.username,
         )
-        
+
         return updated_user
 
     async def delete_user_service(self, user_id: int) -> None:
@@ -155,9 +169,12 @@ class UserService:
                 raise UserNotFoundError()
 
             await self.unit_of_work.user_repository.delete_user(user=user)
-            
+
             await self.unit_of_work.commit()
-        
+
+            # Delete cache in background, don't await
+            asyncio.create_task(self.user_cache.delete_user(user_id))
+
         logger.info(
             "User deleted",
             user_id=user_id,
