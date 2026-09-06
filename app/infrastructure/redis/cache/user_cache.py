@@ -5,7 +5,7 @@ from typing import Optional
 
 from app.application.interfaces import UserCache
 from app.domain.entities import User
-from app.infrastructure.cache.base_cache import BaseRedisCache
+from app.infrastructure.redis.cache.base_cache import BaseRedisCache
 from app.infrastructure.redis.serializers import serialize_user, deserialize_user
 
 logger = structlog.get_logger(__name__)
@@ -14,7 +14,8 @@ logger = structlog.get_logger(__name__)
 class RedisUserCache(UserCache, BaseRedisCache):
     """Redis implementation of user cache with proper serialization."""
 
-    def _get_key(self, user_id: int) -> str:
+    @staticmethod
+    def _get_key(user_id: int) -> str:
         """Generate cache key for user."""
         return f"user:me:{user_id}"
 

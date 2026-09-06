@@ -3,13 +3,14 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python\&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi\&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql\&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis\&logoColor=white)](https://redis.io/)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00)](https://www.sqlalchemy.org/)
 [![Alembic](https://img.shields.io/badge/Alembic-Migrations-333333)](https://alembic.sqlalchemy.org/)
 [![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?logo=pytest\&logoColor=white)](https://pytest.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker\&logoColor=white)](https://www.docker.com/)
 [![Git](https://img.shields.io/badge/Git-F05032?logo=git\&logoColor=white)](https://git-scm.com/)
 
-**API Version:** 0.3.0
+**API Version:** 0.4.0
 
 ---
 
@@ -27,6 +28,8 @@ The API provides:
 * Role-Based Access Control (RBAC)
 * Task management with filtering and pagination
 * Administrative user and task management
+* Redis-based caching for improved performance
+* Redis-based rate limiting with sliding window algorithms
 * Structured JSON logging with correlation IDs
 * Health checks and database connectivity monitoring
 * Docker-based development and production-oriented configurations
@@ -42,6 +45,8 @@ The API provides:
 | Authentication | JWT access/refresh tokens, rotation, reuse detection                       |
 | Authorization  | Role-Based Access Control (RBAC)                                           |
 | Database       | PostgreSQL, SQLAlchemy 2.0, Alembic migrations                             |
+| Caching        | Redis-based user, task, and role caching                                   |
+| Rate Limiting  | Redis sliding window log and counter algorithms                             |
 | API            | FastAPI, OpenAPI, validation, pagination, filtering                        |
 | Transactions   | Unit of Work with centralized commit/rollback                              |
 | Observability  | Structured JSON logging, correlation IDs, request timing                   |
@@ -107,6 +112,21 @@ The API provides:
 * Correlation IDs
 * Request duration tracking
 
+### Redis Integration
+
+* **Caching**
+  * User, task, and role caching with automatic invalidation
+  * Configurable TTL (Time-To-Live) for cached data
+  * Fail-open behavior when Redis is unavailable
+
+* **Rate Limiting**
+  * Sliding Window Log & Counter algorithms
+  * Per-endpoint rate limits
+  * IP-based & user-based identification
+  * Custom login identifier (IP + username) for login endpoint
+  * `Retry-After` header support
+  * Fail-closed for login, fail-open for non-critical endpoints
+
 ---
 
 ## Architecture
@@ -115,7 +135,7 @@ The application is divided into four main layers:
 
 * **Domain** — entities, value objects, domain exceptions, and interfaces
 * **Application** — use cases, services, and DTOs
-* **Infrastructure** — database, repositories, security, and Unit of Work implementation
+* **Infrastructure** — database, repositories, security, Redis (caching and rate limiting), and Unit of Work implementation
 * **Presentation** — FastAPI routers, schemas, dependencies, middleware, and exception handlers
 
 Dependencies point toward the domain layer, while infrastructure-specific implementations are injected through interfaces and dependencies.
@@ -316,6 +336,8 @@ DEBUG=true
 
 When running with Docker Compose, use `db` as the database hostname instead of `localhost`, because PostgreSQL runs in a separate container.
 
+For Redis, use `redis` as the hostname when running with Docker Compose.
+
 ### 4. Start development environment
 
 ```bash
@@ -326,6 +348,7 @@ This will:
 
 * Build the Docker image using the `dev` stage
 * Start PostgreSQL
+* Start Redis
 * Start the FastAPI backend with hot reload
 * Run database migrations
 * Run development seed scripts
@@ -335,6 +358,7 @@ This will:
 * **Swagger UI:** http://127.0.0.1:8000/docs
 * **ReDoc:** http://127.0.0.1:8000/redoc
 * **Database:** localhost:5432
+* **Redis:** localhost:6379
 
 ### 6. Stop the environment
 

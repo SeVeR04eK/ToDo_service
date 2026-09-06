@@ -4,14 +4,15 @@ from typing import Optional, List
 
 from app.application.interfaces import RoleCache
 from app.domain.entities import Role
-from app.infrastructure.cache.base_cache import BaseRedisCache
+from app.infrastructure.redis.cache.base_cache import BaseRedisCache
 from app.infrastructure.redis.serializers import serialize_roles, deserialize_roles
 
 
 class RedisRoleCache(RoleCache, BaseRedisCache):
     """Redis implementation of role cache with proper serialization."""
 
-    def _get_key(self) -> str:
+    @staticmethod
+    def _get_key() -> str:
         """Generate cache key for roles."""
         return "roles"
 

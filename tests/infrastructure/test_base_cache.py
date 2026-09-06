@@ -1,7 +1,7 @@
 """Tests for BaseRedisCache."""
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from app.infrastructure.cache.base_cache import BaseRedisCache
+from unittest.mock import AsyncMock, patch
+from app.infrastructure.redis.cache.base_cache import BaseRedisCache
 from app.domain.exceptions import SerializationError
 
 
@@ -18,7 +18,7 @@ class TestBaseRedisCache:
     @pytest.fixture
     def cache(self, mock_redis_client):
         """Create a BaseRedisCache instance with mocked client."""
-        with patch('app.infrastructure.cache.base_cache.get_redis_client', return_value=mock_redis_client):
+        with patch('app.infrastructure.redis.cache.base_cache.get_redis_client', return_value=mock_redis_client):
             return BaseRedisCache()
 
     async def test_get_success(self, cache, mock_redis_client):
@@ -43,7 +43,7 @@ class TestBaseRedisCache:
         """Test get operation with serialization error."""
         mock_redis_client.get.return_value = "invalid json"
         
-        with patch('app.infrastructure.cache.base_cache.from_json', side_effect=SerializationError()):
+        with patch('app.infrastructure.redis.cache.base_cache.from_json', side_effect=SerializationError()):
             result = await cache._get("test_key")
             
             assert result is None
@@ -70,7 +70,7 @@ class TestBaseRedisCache:
         class Unserializable:
             pass
         
-        with patch('app.infrastructure.cache.base_cache.to_json', side_effect=SerializationError()):
+        with patch('app.infrastructure.redis.cache.base_cache.to_json', side_effect=SerializationError()):
             result = await cache._set("test_key", Unserializable(), 60)
             
             assert result is False

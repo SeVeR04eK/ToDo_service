@@ -5,9 +5,10 @@ from app.domain.entities import User
 from app.presentation.api.schemas import TaskCreate, TaskRead, TaskUpdate, TasksPagination, PaginatedResponse, PaginationMeta, DataResponse
 from app.domain.enums import TaskStatus
 from app.application.dto import TaskPaginationDTO, CreateTaskDTO, UpdateTaskDTO
-from app.presentation.api.dependencies import require_role, tasks_pagination
+from app.presentation.api.dependencies import require_role, tasks_pagination, rate_limit_auth
 from app.application.services import TaskService
 from app.presentation.api.dependencies.services_dep import get_task_service
+from app.core.config import settings
 
 
 # Tasks router for task management (accessible by users and admins)
@@ -20,7 +21,13 @@ async def create_task(
             Depends(require_role("user", "admin"))
         ],
         task: TaskCreate,
-        service: TaskService = Depends(get_task_service)
+        service: TaskService = Depends(get_task_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="tasks_create",
+            limit=settings.rate_limit_tasks_create_limit,
+            window=settings.rate_limit_tasks_create_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[TaskRead]:
     """Create a new task for the **authenticated** user."""
 
@@ -53,7 +60,13 @@ async def get_tasks(
             Optional[TaskStatus],
             Query(title="Task Status")
         ] = None,
-        pagination: TasksPagination = Depends(tasks_pagination)
+        pagination: TasksPagination = Depends(tasks_pagination),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="tasks_read",
+            limit=settings.rate_limit_tasks_read_limit,
+            window=settings.rate_limit_tasks_read_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
     ) -> PaginatedResponse[TaskRead]:
     """Get all tasks for the **authenticated** user with optional _filtering_ and _pagination_:
     - **task_status**: Optional task status filter
@@ -73,7 +86,7 @@ async def get_tasks(
         task_status=task_status,
         pagination=pagination_dto
     )
-    
+
     return PaginatedResponse[TaskRead](
         data=[
             TaskRead(
@@ -102,7 +115,13 @@ async def get_task(
                     Depends(require_role("user", "admin"))
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
-        service: TaskService = Depends(get_task_service)
+        service: TaskService = Depends(get_task_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="tasks_read",
+            limit=settings.rate_limit_tasks_read_limit,
+            window=settings.rate_limit_tasks_read_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[TaskRead]:
     """Get a specific task by ID for the **authenticated** user."""
 
@@ -175,7 +194,13 @@ async def update_task(
                 }
             )
         ],
-        service: TaskService = Depends(get_task_service)
+        service: TaskService = Depends(get_task_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="tasks_update",
+            limit=settings.rate_limit_tasks_update_limit,
+            window=settings.rate_limit_tasks_update_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[TaskRead]:
     """Update a specific task by ID for the **authenticated** user (_partial update_)."""
 
@@ -204,7 +229,13 @@ async def delete_task(
                     Depends(require_role("user", "admin"))
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
-        service: TaskService = Depends(get_task_service)
+        service: TaskService = Depends(get_task_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="tasks_delete",
+            limit=settings.rate_limit_tasks_delete_limit,
+            window=settings.rate_limit_tasks_delete_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> None:
     """Delete a specific task by ID for the **authenticated** user."""
 

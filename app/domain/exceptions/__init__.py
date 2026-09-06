@@ -10,10 +10,11 @@ from app.domain.exceptions.user import (
     PasswordNotMatchError
 )
 from app.domain.exceptions.redis import SerializationError
+from app.domain.exceptions.rate_limit import RateLimitExceededError
 
 
 __all__ = ["InvalidCredentialsError", "InvalidAccessTokenError", "InvalidRefreshTokenError",
            "RoleNotFoundError", "RoleAlreadyExistsError", "TaskNotFoundError",
            "UserNotFoundError", "UsernameAlreadyExistsError", "PermissionDeniedError",
            "InvalidPaginationParameters", "WeakPasswordError", "PasswordNotMatchError",
-           "SerializationError"]
+           "SerializationError", "RateLimitExceededError"]

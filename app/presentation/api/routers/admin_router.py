@@ -1,14 +1,15 @@
 from fastapi import APIRouter, Depends, status, Path, Query, Body
-from typing import Annotated, Optional, Union, List
+from typing import Annotated, Optional, Union
 
 from app.domain.entities import User
 from app.presentation.api.schemas import UserRead, TaskRead, TaskUpdate, RoleRead, UserPermission, RoleCreate, TasksPagination, PaginatedResponse, PaginationMeta, DataResponse, ListResponse
 from app.application.dto import CreateRoleDTO, UpdateTaskDTO, TaskPaginationDTO
 from app.domain.enums import TaskStatus
-from app.presentation.api.dependencies import require_role, tasks_pagination
+from app.presentation.api.dependencies import require_role, tasks_pagination, rate_limit_auth
 from app.application.services import AdminService
 from app.presentation.api.schemas.user_schema import UserRole
 from app.presentation.api.dependencies.services_dep import get_admin_service
+from app.core.config import settings
 
 # Admin router - all endpoints require admin role authentication
 admin_router = APIRouter(prefix = "/admin", tags = ["admin"])
@@ -32,7 +33,13 @@ async def get_users(
         offset: Annotated[
             Optional[int],
             Query(title="Offset for pagination", ge=1, le=10000)
-        ] = None
+        ] = None,
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_users_list",
+            limit=settings.rate_limit_admin_users_list_limit,
+            window=settings.rate_limit_admin_users_list_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> Union[DataResponse[UserRead], PaginatedResponse[UserRead]]:
     """
     Get all users with optional filtering by username and _pagination_:
@@ -48,7 +55,7 @@ async def get_users(
         limit=limit,
         offset=offset
     )
-    
+
     if isinstance(result, User):
         return DataResponse[UserRead](
             data=UserRead(
@@ -58,7 +65,7 @@ async def get_users(
                 role=UserRole(name=result.role.name) if result.role else None
             )
         )
-    
+
     return PaginatedResponse[UserRead](
         data=[
             UserRead(
@@ -86,7 +93,13 @@ async def get_user(
                     Depends(require_role("admin"))
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_users_get",
+            limit=settings.rate_limit_admin_users_get_limit,
+            window=settings.rate_limit_admin_users_get_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[UserRead]:
     """Get a specific user by ID."""
 
@@ -141,7 +154,13 @@ async def user_permission(
                 }
             )
         ],
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_users_patch",
+            limit=settings.rate_limit_admin_users_patch_limit,
+            window=settings.rate_limit_admin_users_patch_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[UserRead]:
     """Update user permissions (_Partial update_)."""
 
@@ -162,7 +181,13 @@ async def delete_user(
                     Depends(require_role("admin"))
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_users_delete",
+            limit=settings.rate_limit_admin_users_delete_limit,
+            window=settings.rate_limit_admin_users_delete_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> None:
     """Delete a specific user by ID."""
 
@@ -181,6 +206,12 @@ async def get_tasks(
             Query(title="Task Status")
         ] = None,
         pagination: TasksPagination = Depends(tasks_pagination),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_user_tasks_list",
+            limit=settings.rate_limit_admin_user_tasks_list_limit,
+            window=settings.rate_limit_admin_user_tasks_list_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> PaginatedResponse[TaskRead]:
     """Get tasks for a specific user by ID with optional _filtering_ and _pagination_:
     - **task_status**: Filter tasks by status
@@ -230,7 +261,13 @@ async def get_task(
                 ],
         user_id: Annotated[int, Path(..., title="User ID")],
         task_id: Annotated[int, Path(..., title="Task ID")],
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_user_task_get",
+            limit=settings.rate_limit_admin_user_task_get_limit,
+            window=settings.rate_limit_admin_user_task_get_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[TaskRead]:
     """Get a specific task for a user by ID."""
 
@@ -303,7 +340,13 @@ async def update_task(
                 }
             )
         ],
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_user_task_update",
+            limit=settings.rate_limit_admin_user_task_update_limit,
+            window=settings.rate_limit_admin_user_task_update_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[TaskRead]:
     """Update a specific task for a user by ID (_Partial update_")."""
 
@@ -333,7 +376,13 @@ async def delete_task(
                 ],
         task_id: Annotated[int, Path(..., title="Task ID")],
         user_id: Annotated[int, Path(..., title="User ID")],
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_user_task_delete",
+            limit=settings.rate_limit_admin_user_task_delete_limit,
+            window=settings.rate_limit_admin_user_task_delete_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> None:
     """Delete a specific task for a user by ID."""
 
@@ -346,7 +395,13 @@ async def create_role(
                     Depends(require_role("admin"))
                 ],
         new_role: RoleCreate,
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_role_create",
+            limit=settings.rate_limit_admin_role_create_limit,
+            window=settings.rate_limit_admin_role_create_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[RoleRead]:
     """Create a new role."""
 
@@ -367,7 +422,13 @@ async def get_roles(
             User,
             Depends(require_role("admin"))
         ],
-        service: AdminService = Depends(get_admin_service)
+        service: AdminService = Depends(get_admin_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="admin_roles_list",
+            limit=settings.rate_limit_admin_roles_list_limit,
+            window=settings.rate_limit_admin_roles_list_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> ListResponse[RoleRead]:
     roles = await service.get_roles_service()
     return ListResponse[RoleRead](

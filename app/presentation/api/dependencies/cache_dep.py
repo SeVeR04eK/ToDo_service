@@ -1,5 +1,5 @@
 from app.application.interfaces import UserCache, TaskCache, RoleCache
-from app.infrastructure.cache import RedisUserCache, RedisTaskCache, RedisRoleCache
+from app.infrastructure.redis.cache import RedisUserCache, RedisTaskCache, RedisRoleCache
 
 
 def get_user_cache() -> UserCache:

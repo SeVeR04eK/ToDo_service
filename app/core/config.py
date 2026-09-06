@@ -77,6 +77,71 @@ class Settings(BaseSettings):
     redis_socket_timeout: float = 1.0
     redis_socket_connect_timeout: float = 1.0
 
+    # Rate Limit Configuration
+    # Auth endpoints
+    rate_limit_auth_login_limit: int = 5
+    rate_limit_auth_login_window: int = 60
+
+    rate_limit_auth_refresh_limit: int = 30
+    rate_limit_auth_refresh_window: int = 60
+
+    rate_limit_auth_logout_all_limit: int = 5
+    rate_limit_auth_logout_all_window: int = 60
+
+    # User endpoints
+    rate_limit_user_get_limit: int = 60
+    rate_limit_user_get_window: int = 60
+
+    rate_limit_user_patch_limit: int = 10
+    rate_limit_user_patch_window: int = 60
+
+    rate_limit_user_delete_limit: int = 3
+    rate_limit_user_delete_window: int = 3600  # 1 hour
+
+    # Task endpoints
+    rate_limit_tasks_read_limit: int = 120
+    rate_limit_tasks_read_window: int = 60
+
+    rate_limit_tasks_create_limit: int = 30
+    rate_limit_tasks_create_window: int = 60
+
+    rate_limit_tasks_update_limit: int = 60
+    rate_limit_tasks_update_window: int = 60
+
+    rate_limit_tasks_delete_limit: int = 60
+    rate_limit_tasks_delete_window: int = 60
+
+    # Admin endpoints
+    rate_limit_admin_users_list_limit: int = 30
+    rate_limit_admin_users_list_window: int = 60
+
+    rate_limit_admin_users_get_limit: int = 60
+    rate_limit_admin_users_get_window: int = 60
+
+    rate_limit_admin_users_patch_limit: int = 20
+    rate_limit_admin_users_patch_window: int = 60
+
+    rate_limit_admin_users_delete_limit: int = 10
+    rate_limit_admin_users_delete_window: int = 60
+
+    rate_limit_admin_user_tasks_list_limit: int = 60
+    rate_limit_admin_user_tasks_list_window: int = 60
+
+    rate_limit_admin_user_task_get_limit: int = 60
+    rate_limit_admin_user_task_get_window: int = 60
+
+    rate_limit_admin_user_task_update_limit: int = 30
+    rate_limit_admin_user_task_update_window: int = 60
+
+    rate_limit_admin_user_task_delete_limit: int = 20
+    rate_limit_admin_user_task_delete_window: int = 60
+
+    rate_limit_admin_role_create_limit: int = 10
+    rate_limit_admin_role_create_window: int = 60
+
+    rate_limit_admin_roles_list_limit: int = 60
+    rate_limit_admin_roles_list_window: int = 60
+
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:

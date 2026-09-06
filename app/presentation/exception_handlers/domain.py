@@ -23,12 +23,13 @@ ERROR_MAP: Dict[Type[DomainException], Tuple[int, str, str]] = {
     WeakPasswordError: (400, "WEAK_PASSWORD", "Password is too weak"),
     PasswordNotMatchError: (400, "PASSWORD_NOT_MATCH", "Password does not match"),
     SerializationError: (400, "SERIALIZATION_ERROR", "Failed to serialize or deserialize data"),
+    RateLimitExceededError: (429, "RATE_LIMIT_EXCEEDED", "Rate limit exceeded"),
 }
 
 
 async def domain_exception_handler(_request: Request, exc: DomainException):
     status_code, code, message = ERROR_MAP.get(type(exc), (400, "Domain error"))
-    
+
     logger.warning(
         "Domain exception occurred",
         exception_type=type(exc).__name__,
@@ -37,10 +38,16 @@ async def domain_exception_handler(_request: Request, exc: DomainException):
         message=message
     )
 
+    headers = {}
+    # Add Retry-After header for rate limit exceeded
+    if isinstance(exc, RateLimitExceededError) and hasattr(exc, 'retry_after'):
+        headers["Retry-After"] = str(exc.retry_after if exc.retry_after else 60)
+
     return JSONResponse(
         status_code=status_code,
         content={
             "code": code,
             "message": message,
-        }
+        },
+        headers=headers if headers else None
     )

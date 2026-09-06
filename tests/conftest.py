@@ -35,6 +35,8 @@ from app.presentation.api.dependencies.cache_dep import (
     get_task_cache,
     get_role_cache
 )
+from app.presentation.api.dependencies.rate_limit_dep import get_rate_limiter
+from app.infrastructure.redis.rate_limit import RedisSlidingWindowLog, RedisSlidingWindowCounter
 from app.infrastructure.repositories import (
     SQLAlchemyUserRepository,
     SQLAlchemyTaskRepository,
@@ -42,7 +44,7 @@ from app.infrastructure.repositories import (
     SQLAlchemyAdminRepository,
 )
 from app.infrastructure.unit_of_work import SQLAlchemyUnitOfWork
-from app.application.interfaces import UserCache, TaskCache, RoleCache
+from app.application.interfaces import UserCache, TaskCache, RoleCache, RateLimiter
 
 # Test database URL (SQLite for testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -94,6 +96,16 @@ async def mock_role_cache():
     return cache
 
 
+@pytest.fixture
+async def mock_rate_limiter():
+    """Mock RateLimiter for testing."""
+    from unittest.mock import AsyncMock
+    limiter = AsyncMock(spec=RateLimiter)
+    limiter.is_allowed.return_value = True
+    limiter.get_retry_after.return_value = None
+    return limiter
+
+
 @pytest.fixture(scope="session")
 def event_loop() -> Generator:
     """Create an instance of the default event loop for the test session."""
@@ -116,9 +128,9 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest.fixture(scope="function")
-async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, mock_role_cache) -> AsyncGenerator:
+async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, mock_role_cache, mock_rate_limiter) -> AsyncGenerator:
     """Create a test client with database session override."""
-
+    from unittest.mock import patch
 
     async def override_get_session():
         yield db_session
@@ -161,11 +173,18 @@ async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, moc
     app.dependency_overrides[get_task_cache] = override_get_task_cache
     app.dependency_overrides[get_role_cache] = override_get_role_cache
 
-    async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test"
-    ) as ac:
-        yield ac
+    # Patch the Redis rate limiter classes
+    with patch.object(RedisSlidingWindowLog, '__init__', return_value=None):
+        with patch.object(RedisSlidingWindowLog, 'is_allowed', mock_rate_limiter.is_allowed):
+            with patch.object(RedisSlidingWindowLog, 'get_retry_after', mock_rate_limiter.get_retry_after):
+                with patch.object(RedisSlidingWindowCounter, '__init__', return_value=None):
+                    with patch.object(RedisSlidingWindowCounter, 'is_allowed', mock_rate_limiter.is_allowed):
+                        with patch.object(RedisSlidingWindowCounter, 'get_retry_after', mock_rate_limiter.get_retry_after):
+                            async with AsyncClient(
+                                    transport=ASGITransport(app=app),
+                                    base_url="http://test"
+                            ) as ac:
+                                yield ac
 
     app.dependency_overrides.clear()
 

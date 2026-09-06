@@ -5,7 +5,7 @@ from typing import Optional
 from app.application.interfaces import TaskCache
 from app.domain.entities import Task
 from app.domain.value_objects import Page
-from app.infrastructure.cache.base_cache import BaseRedisCache
+from app.infrastructure.redis.cache.base_cache import BaseRedisCache
 from app.infrastructure.redis.serializers import (
     serialize_task,
     deserialize_task,
@@ -17,11 +17,13 @@ from app.infrastructure.redis.serializers import (
 class RedisTaskCache(TaskCache, BaseRedisCache):
     """Redis implementation of task cache with proper serialization."""
 
-    def _get_task_key(self, user_id: int, task_id: int) -> str:
+    @staticmethod
+    def _get_task_key(user_id: int, task_id: int) -> str:
         """Generate cache key for single task."""
         return f"task:{user_id}:{task_id}"
 
-    def _get_task_list_key(self, user_id: int, task_status: Optional[str], limit: int, offset: int, from_newest: bool) -> str:
+    @staticmethod
+    def _get_task_list_key(user_id: int, task_status: Optional[str], limit: int, offset: int, from_newest: bool) -> str:
         """Generate cache key for task list."""
         status_part = f"status:{task_status}" if task_status else "status:all"
         return f"tasks:user:{user_id}:{status_part}:limit:{limit}:offset:{offset}:newest:{from_newest}"

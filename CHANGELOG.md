@@ -3,6 +3,42 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.4.0] - 2026-09-06
+
+### Added
+
+#### Cache
+
+* Redis-backed cache-aside layer for users, roles, tasks, and paginated task lists to reduce database load
+* Cache interfaces and Redis implementations for user, role, and task data
+* JSON serialization for cached domain models and paginated responses
+* Read-through cache lookups and background invalidation integrated into UserService, TaskService, and AdminService
+* Fail-fast Redis configuration and cache dependency providers
+
+#### Rate Limiting
+
+* Redis-based API rate limiting with configurable limits for authentication, user, task, and admin endpoints
+* Sliding window log and sliding window counter algorithms for request limiting
+* Login-specific rate limiting with identifier-based request tracking
+* Fail-closed behavior for authentication rate limiting when Redis is unavailable
+* `RateLimiter` abstraction and domain-level rate limit exceeded exception
+* `Retry-After` headers for rate-limited responses
+
+### Changed
+
+* Added Redis configuration and environment variables for application and test environments
+* Applied rate limiting dependencies to protected API routes
+* Restructured Redis infrastructure to support caching and rate limiting
+
+### Tests
+
+* Added cache, serializer, and Redis integration tests
+* Added rate limiting tests covering both algorithms, endpoint limits, login protection, and failure behavior
+* Updated fixtures and CI to provide Redis for automated tests
+
+
+---
+
 ## [0.3.0] - 2026-08-22
 
 ### Added

@@ -1,7 +1,7 @@
 """Tests for RedisRoleCache."""
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.infrastructure.cache.role_cache import RedisRoleCache
+from app.infrastructure.redis.cache import RedisRoleCache
 from app.domain.entities import Role
 
 
@@ -18,7 +18,7 @@ class TestRedisRoleCache:
     @pytest.fixture
     def cache(self, mock_redis_client):
         """Create a RedisRoleCache instance with mocked client."""
-        with patch('app.infrastructure.cache.base_cache.get_redis_client', return_value=mock_redis_client):
+        with patch('app.infrastructure.redis.cache.base_cache.get_redis_client', return_value=mock_redis_client):
             return RedisRoleCache()
 
     @pytest.fixture

@@ -25,7 +25,7 @@ async def health_check():
         "status": "healthy" if db_status == "healthy" else "degraded",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "ToDo Service API",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "database": {
             "status": db_status,
             "error": db_error

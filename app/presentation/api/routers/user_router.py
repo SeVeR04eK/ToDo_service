@@ -4,9 +4,10 @@ from typing import Annotated
 from app.domain.entities import User
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.presentation.api.schemas import UserRead, UserCreate, UserUpdate, UserRole, DataResponse
-from app.presentation.api.dependencies import require_role
+from app.presentation.api.dependencies import require_role, rate_limit_auth
 from app.application.services import UserService
 from app.presentation.api.dependencies.services_dep import get_user_service
+from app.core.config import settings
 
 # User router for user profile management
 user_router = APIRouter(prefix = "/user", tags = ["user"])
@@ -41,7 +42,13 @@ async def get_user(
             User,
             Depends(require_role("user", "admin"))
         ],
-        service: UserService = Depends(get_user_service)
+        service: UserService = Depends(get_user_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="user_get",
+            limit=settings.rate_limit_user_get_limit,
+            window=settings.rate_limit_user_get_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[UserRead]:
     """Get the **authenticated** user's profile."""
 
@@ -99,7 +106,13 @@ async def update_user(
                 }
             )
         ],
-    service: UserService = Depends(get_user_service)
+    service: UserService = Depends(get_user_service),
+    _rate_limit: Annotated[None, Depends(rate_limit_auth(
+        key_prefix="user_patch",
+        limit=settings.rate_limit_user_patch_limit,
+        window=settings.rate_limit_user_patch_window,
+        algorithm="sliding_window_counter"
+    ))] = None,
 ) -> DataResponse[UserRead]:
     """Update the **authenticated** user's profile (_partial update_)."""
 
@@ -127,7 +140,13 @@ async def delete_user(
                     User,
                     Depends(require_role("user", "admin"))
                 ],
-        service: UserService = Depends(get_user_service)
+        service: UserService = Depends(get_user_service),
+        _rate_limit: Annotated[None, Depends(rate_limit_auth(
+            key_prefix="user_delete",
+            limit=settings.rate_limit_user_delete_limit,
+            window=settings.rate_limit_user_delete_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> None:
     """Delete the **authenticated** user's account."""
 

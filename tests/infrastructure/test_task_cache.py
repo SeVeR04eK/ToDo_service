@@ -1,7 +1,7 @@
 """Tests for RedisTaskCache."""
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.infrastructure.cache.task_cache import RedisTaskCache
+from app.infrastructure.redis.cache import RedisTaskCache
 from app.domain.entities import Task
 from app.domain.enums import TaskStatus
 from app.domain.value_objects import Page
@@ -20,7 +20,7 @@ class TestRedisTaskCache:
     @pytest.fixture
     def cache(self, mock_redis_client):
         """Create a RedisTaskCache instance with mocked client."""
-        with patch('app.infrastructure.cache.base_cache.get_redis_client', return_value=mock_redis_client):
+        with patch('app.infrastructure.redis.cache.base_cache.get_redis_client', return_value=mock_redis_client):
             return RedisTaskCache()
 
     @pytest.fixture

@@ -29,7 +29,7 @@ class AuthService:
         self.token_hasher = token_hasher
 
 
-    async def revoke_token_and_fail(self, db_token: RefreshToken):
+    async def revoke_token_and_raise(self, db_token: RefreshToken):
         await self.unit_of_work.refresh_token_repository.revoke_family_by_id(db_token.family_id)
         await self.unit_of_work.commit()
         raise InvalidRefreshTokenError()
@@ -135,7 +135,7 @@ class AuthService:
                 token_id=db_token.id
             )
             # Revoke the entire family as a security measure
-            await self.revoke_token_and_fail(db_token)
+            await self.revoke_token_and_raise(db_token)
 
         # Check token expiration
         now = datetime.now(timezone.utc)
@@ -155,7 +155,7 @@ class AuthService:
 
         if db_token.family_created_at + settings.family_token_expire_days <= now:
             logger.warning("refresh_failed", user_id=user_id, reason="family_token_expired")
-            await self.revoke_token_and_fail(db_token)
+            await self.revoke_token_and_raise(db_token)
 
         async with self.unit_of_work:
             # Issue new tokens
