@@ -6,26 +6,11 @@
 
 ```
 tests/
-├── conftest.py              # Pytest configuration and shared fixtures
-├── factories.py             # Test data factories
 ├── api/                     # API integration tests (real dependencies)
-│   ├── test_admin_router.py
-│   ├── test_auth_router.py
-│   ├── test_tasks_router.py
-│   └── test_user_router.py
 ├── infrastructure/          # Infrastructure layer tests (real dependencies)
-│   └── test_password_validator.py
 ├── repositories/            # Repository layer tests (real database)
-│   ├── test_admin_repo.py
-│   ├── test_task_repo.py
-│   └── test_user_repo.py
 ├── services/                # Service layer tests (mocked repositories)
-│   ├── test_admin_service.py
-│   ├── test_auth_service.py
-│   ├── test_task_service.py
-│   └── test_user_service.py
 └── use_cases/               # Use case layer tests (mocked dependencies)
-    └── test_authenticate_user.py
 ```
 
 ## Test Strategy

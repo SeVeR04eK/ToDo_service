@@ -21,6 +21,10 @@ Response:
     "database": {
         "status": "healthy",
         "error": null
+    },
+    "redis": {
+        "status": "healthy",
+        "error": null
     }
 }
 ```
