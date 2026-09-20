@@ -25,6 +25,10 @@ Response:
     "redis": {
         "status": "healthy",
         "error": null
+    },
+    "rabbitmq": {
+        "status": "healthy",
+        "error": null
     }
 }
 ```

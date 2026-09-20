@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from app.infrastructure.database import SessionLocal
 from app.infrastructure.redis import get_redis_client
+import aio_pika
+from app.core.config import settings
 
 health_router = APIRouter(prefix="/health", tags=["health"])
 
@@ -31,9 +33,19 @@ async def health_check():
         redis_status = "unhealthy"
         redis_error = str(e)
 
+    rabbitmq_status = "healthy"
+    rabbitmq_error = None
+
+    try:
+        connection = await aio_pika.connect_robust(settings.rabbitmq_url)
+        await connection.close()
+    except Exception as e:
+        rabbitmq_status = "unhealthy"
+        rabbitmq_error = str(e)
+
     overall_status = (
         "healthy"
-        if db_status == "healthy" and redis_status == "healthy"
+        if db_status == "healthy" and redis_status == "healthy" and rabbitmq_status == "healthy"
         else "degraded"
     )
 
@@ -49,5 +61,9 @@ async def health_check():
         "redis": {
             "status": redis_status,
             "error": redis_error,
+        },
+        "rabbitmq": {
+            "status": rabbitmq_status,
+            "error": rabbitmq_error,
         },
     }
