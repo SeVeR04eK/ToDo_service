@@ -19,7 +19,7 @@ class TestRabbitMQConsumer:
         assert consumer.email_service == email_service
         assert consumer._connection is None
         assert consumer._channel is None
-        assert consumer._dlx_queue is None
+        assert consumer._dlq is None
 
     @pytest.mark.asyncio
     async def test_connect(self):
@@ -51,13 +51,12 @@ class TestRabbitMQConsumer:
 
     @pytest.mark.asyncio
     async def test_start_consuming_without_channel(self):
-        """Test that start_consuming returns early when channel is not initialized."""
+        """Test that start_consuming raises error when channel is not initialized."""
         email_service = MagicMock(spec=EmailService)
         consumer = RabbitMQConsumer(email_service=email_service)
         
-        await consumer.start_consuming()
-        
-        # Should not raise an error, just return
+        with pytest.raises(RuntimeError, match="RabbitMQ consumer is not connected"):
+            await consumer.start_consuming()
 
     @pytest.mark.asyncio
     async def test_process_message_success(self):
@@ -113,12 +112,12 @@ class TestRabbitMQConsumer:
             "email": "test@example.com",
             "type": "unknown_type"
         }).encode()
-        mock_message.ack = AsyncMock()
+        mock_message.reject = AsyncMock()
         
         await consumer._process_message(mock_message)
         
         email_service.send_welcome_email.assert_not_called()
-        mock_message.ack.assert_called_once()
+        mock_message.reject.assert_called_once_with(requeue=False)
 
     @pytest.mark.asyncio
     async def test_process_message_email_failure_with_retry(self):
