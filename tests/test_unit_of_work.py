@@ -22,6 +22,7 @@ class TestUnitOfWorkTransactions:
         async with uow:
             user = await uow.user_repository.create_user(
                 username="testuser",
+                email="testuser@example.com",
                 password="TestPassword123!"
             )
             await uow.commit()
@@ -40,6 +41,7 @@ class TestUnitOfWorkTransactions:
         async with uow:
             user = await uow.user_repository.create_user(
                 username="tempuser",
+                email="tempuser@example.com",
                 password="TestPassword123!"
             )
             await uow.rollback()
@@ -58,6 +60,7 @@ class TestUnitOfWorkTransactions:
             async with uow:
                 await uow.user_repository.create_user(
                     username="baduser",
+                    email="baduser@example.com",
                     password="TestPassword123!"
                 )
                 raise ValueError("Simulated error")
@@ -162,6 +165,7 @@ class TestUnitOfWorkTransactions:
         async with SQLAlchemyUnitOfWork(db_session, password_hasher) as uow1:
             user1 = await uow1.user_repository.create_user(
                 username="user1",
+                email="user1@example.com",
                 password="TestPassword123!"
             )
             await uow1.commit()
@@ -169,6 +173,7 @@ class TestUnitOfWorkTransactions:
         async with SQLAlchemyUnitOfWork(db_session, password_hasher) as uow2:
             user2 = await uow2.user_repository.create_user(
                 username="user2",
+                email="user2@example.com",
                 password="TestPassword123!"
             )
             await uow2.commit()

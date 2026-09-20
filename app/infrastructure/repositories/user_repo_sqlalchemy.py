@@ -16,11 +16,12 @@ class SQLAlchemyUserRepository(UserRepository):
         self.session = session
         self.password_hasher = password_hasher
 
-    async def create_user(self, username: str, password: str) -> User:
+    async def create_user(self, username: str, email: str, password: str) -> User:
         """Create a new user with hashed password."""
 
         orm_user = UserORM(
             username=username,
+            email=email,
             hashed_password=self.password_hasher.hash(password)
         )
 
@@ -41,6 +42,17 @@ class SQLAlchemyUserRepository(UserRepository):
         request = (select(UserORM)
                    .options(selectinload(UserORM.role))
                    .where(UserORM.username == username))
+
+        orm_user = await self.session.scalar(request)
+        return user_from_orm(orm_user) if orm_user is not None else None
+
+    async def get_user_by_email(self, email: str) -> User | None:
+        """Get a user by email with role relationship loaded."""
+
+        # selectinload eagerly loads the role relationship to avoid N+1 queries
+        request = (select(UserORM)
+                   .options(selectinload(UserORM.role))
+                   .where(UserORM.email == email))
 
         orm_user = await self.session.scalar(request)
         return user_from_orm(orm_user) if orm_user is not None else None

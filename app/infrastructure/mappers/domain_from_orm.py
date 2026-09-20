@@ -20,6 +20,7 @@ def user_from_orm(orm_user: UserORM) -> User:
     return User(
         id=orm_user.id,
         username=orm_user.username,
+        email=orm_user.email,
         hashed_password=orm_user.hashed_password,
         is_active=orm_user.is_active,
         role_id=orm_user.role_id,

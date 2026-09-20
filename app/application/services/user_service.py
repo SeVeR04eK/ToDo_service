@@ -6,6 +6,7 @@ from app.domain.value_objects import UserUpdateData
 from app.domain.interfaces import UnitOfWork, PasswordValidator, PasswordHasher
 from app.domain.exceptions import (
     UsernameAlreadyExistsError,
+    EmailAlreadyExistsError,
     UserNotFoundError,
     WeakPasswordError,
     InvalidCredentialsError
@@ -17,17 +18,19 @@ logger = structlog.get_logger(__name__)
 
 class UserService:
 
-    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator, password_hasher: PasswordHasher, user_cache: UserCache):
+    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator, password_hasher: PasswordHasher, user_cache: UserCache, rabbitmq_publisher=None):
         self.unit_of_work = unit_of_work
         self.password_validator = password_validator
         self.password_hasher = password_hasher
         self.user_cache = user_cache
+        self.rabbitmq_publisher = rabbitmq_publisher
 
     async def create_user_service(self, user: CreateUserDTO) -> User:
 
         logger.info(
             "Creating user",
             username=user.username,
+            email=user.email,
         )
         
         # Validate password strength
@@ -50,7 +53,16 @@ class UserService:
                 )
                 raise UsernameAlreadyExistsError()
 
-            created_user = await self.unit_of_work.user_repository.create_user(username=user.username, password=user.password)
+            # Check if email already exists
+            existing_email = await self.unit_of_work.user_repository.get_user_by_email(email=user.email)
+            if existing_email is not None:
+                logger.warning(
+                    "Email already exists",
+                    email=user.email,
+                )
+                raise EmailAlreadyExistsError()
+
+            created_user = await self.unit_of_work.user_repository.create_user(username=user.username, email=user.email, password=user.password)
             
             await self.unit_of_work.commit()
         
@@ -58,7 +70,22 @@ class UserService:
             "User created",
             user_id=created_user.id,
             username=created_user.username,
+            email=created_user.email,
         )
+        
+        # Publish welcome email message to RabbitMQ after successful commit
+        if self.rabbitmq_publisher:
+            try:
+                await self.rabbitmq_publisher.publish_welcome_email(
+                    username=created_user.username,
+                    email=created_user.email
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to publish welcome email message",
+                    user_id=created_user.id,
+                    error=str(e)
+                )
         
         return created_user
 
@@ -134,6 +161,7 @@ class UserService:
 
             user_update_data = UserUpdateData(
                 username=user_update.username,
+                email=user_update.email,
                 password=user_update.password
             )
 

@@ -7,6 +7,7 @@ class User:
     """Domain model for User."""
     id: int
     username: str
+    email: str
     hashed_password: str
     is_active: bool
     role_id: int

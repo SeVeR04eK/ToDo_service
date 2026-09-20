@@ -17,6 +17,7 @@ from app.presentation.api.dependencies.password_validator_dep import get_passwor
 from app.presentation.api.dependencies.password_hasher_dep import get_password_hasher
 from app.presentation.api.dependencies.cache_dep import get_user_cache, get_task_cache, get_role_cache
 from app.application.use_cases import AuthenticateUserUseCase
+from app.infrastructure.messaging.rabbitmq_publisher import get_rabbitmq_publisher
 
 
 def get_user_service(
@@ -24,8 +25,9 @@ def get_user_service(
     password_validator: PasswordValidator = Depends(get_password_validator),
     password_hasher: PasswordHasher = Depends(get_password_hasher),
     user_cache: UserCache = Depends(get_user_cache),
+    rabbitmq_publisher = Depends(get_rabbitmq_publisher),
 ) -> UserService:
-    return UserService(unit_of_work, password_validator, password_hasher, user_cache)
+    return UserService(unit_of_work, password_validator, password_hasher, user_cache, rabbitmq_publisher)
 
 
 def get_task_service(

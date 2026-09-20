@@ -77,6 +77,25 @@ class Settings(BaseSettings):
     redis_socket_timeout: float = 1.0
     redis_socket_connect_timeout: float = 1.0
 
+    # RabbitMQ Configuration
+    rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
+    rabbitmq_exchange: str = "todo_service"
+    rabbitmq_welcome_email_queue: str = "welcome_email"
+    rabbitmq_welcome_email_routing_key: str = "welcome.email"
+    rabbitmq_dlx: str = "todo_service_dlx"
+    rabbitmq_retry_queue: str = "welcome_email_retry"
+    rabbitmq_retry_routing_key: str = "welcome.email.retry"
+    rabbitmq_max_retries: int = 3
+    rabbitmq_retry_ttl_ms: int = 5000
+
+    # Email Configuration
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_use_tls: bool = True
+
     # Rate Limit Configuration
     # Auth endpoints
     rate_limit_auth_login_limit: int = 5

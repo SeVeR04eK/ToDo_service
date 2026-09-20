@@ -41,13 +41,16 @@ class UserFactory:
     @staticmethod
     def create(
         username: str | None = None,
+        email: str | None = None,
         password: str = "TestPassword123!",
         is_active: bool = True,
         role_id: int = 1
     ) -> User:
         """Create a User instance."""
+        username = username or fake.user_name()
         return User(
-            username=username or fake.user_name(),
+            username=username,
+            email=email or f"{username}@example.com",
             hashed_password=password_hasher.hash(password),
             is_active=is_active,
             role_id=role_id
@@ -57,12 +60,13 @@ class UserFactory:
     async def create_in_db(
         session: AsyncSession,
         username: str | None = None,
+        email: str | None = None,
         password: str = "TestPassword123!",
         is_active: bool = True,
         role_id: int = 1
     ) -> User:
         """Create and persist a User in the database."""
-        user = UserFactory.create(username, password, is_active, role_id)
+        user = UserFactory.create(username, email, password, is_active, role_id)
         session.add(user)
         await session.commit()
         await session.refresh(user, ["role"])

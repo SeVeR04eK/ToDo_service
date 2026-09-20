@@ -41,7 +41,7 @@ async def health_check():
         "status": overall_status,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "ToDo Service API",
-        "version": "0.4.0",
+        "version": "0.5.0",
         "database": {
             "status": db_status,
             "error": db_error,

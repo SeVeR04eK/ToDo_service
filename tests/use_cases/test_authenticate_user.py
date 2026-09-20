@@ -23,6 +23,7 @@ class TestAuthenticateUserUseCase:
         mock_user = User(
             id=1,
             username="testuser",
+            email="testuser@example.com",
             hashed_password="hashed_password",
             is_active=True,
             role_id=1,
@@ -72,6 +73,7 @@ class TestAuthenticateUserUseCase:
         mock_user = User(
             id=1,
             username="testuser",
+            email="testuser@example.com",
             hashed_password="hashed_password",
             is_active=True,
             role_id=1,

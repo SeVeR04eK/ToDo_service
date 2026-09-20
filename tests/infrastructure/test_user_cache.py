@@ -28,6 +28,7 @@ class TestRedisUserCache:
         return User(
             id=1,
             username="testuser",
+            email="testuser@example.com",
             hashed_password="hashed123",
             is_active=True,
             role_id=1,
@@ -44,12 +45,13 @@ class TestRedisUserCache:
         serialized_user = {
             "id": 1,
             "username": "testuser",
+            "email": "testuser@example.com",
             "hashed_password": "hashed123",
             "is_active": True,
             "role_id": 1,
             "role": {"id": 1, "name": "user"}
         }
-        mock_redis_client.get.return_value = '{"id": 1, "username": "testuser", "hashed_password": "hashed123", "is_active": true, "role_id": 1, "role": {"id": 1, "name": "user"}}'
+        mock_redis_client.get.return_value = '{"id": 1, "username": "testuser", "email": "testuser@example.com", "hashed_password": "hashed123", "is_active": true, "role_id": 1, "role": {"id": 1, "name": "user"}}'
         
         result = await cache.get_user(1)
         

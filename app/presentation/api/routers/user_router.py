@@ -21,6 +21,7 @@ async def create_user(
 
     user_dto = CreateUserDTO(
         username=user.username,
+        email=user.email,
         password=user.password,
         password_confirm=user.password_confirm
     )
@@ -31,6 +32,7 @@ async def create_user(
         data=UserRead(
             id=user.id,
             username=user.username,
+            email=user.email,
             is_active=user.is_active,
             role=UserRole(name=user.role.name) if user.role else None
         )
@@ -57,6 +59,7 @@ async def get_user(
         data=UserRead(
             id=user.id,
             username=user.username,
+            email=user.email,
             is_active=user.is_active,
             role=UserRole(name=user.role.name) if user.role else None
         )
@@ -129,6 +132,7 @@ async def update_user(
         data=UserRead(
             id=user.id,
             username=user.username,
+            email=user.email,
             is_active=user.is_active,
             role=UserRole(name=user.role.name) if user.role else None
         )

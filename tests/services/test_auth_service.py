@@ -24,7 +24,7 @@ class TestAuthService:
         mock_auth_use_case = AsyncMock()
         
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_auth_use_case.execute.return_value = mock_user
         mock_uow.refresh_token_repository.create_refresh_token.return_value = None
         mock_token_service.create_access_token.return_value = "access_token"

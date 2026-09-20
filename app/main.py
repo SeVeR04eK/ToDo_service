@@ -9,6 +9,9 @@ from app.infrastructure.background_tasks import clean_tokens_task
 from app.domain.exceptions.base import DomainException
 from app.presentation.exception_handlers import domain_exception_handler
 from app.presentation.api.middleware import setup_middlewares
+from app.infrastructure.messaging.rabbitmq_consumer import RabbitMQConsumer
+from app.infrastructure.messaging.rabbitmq_publisher import get_rabbitmq_publisher
+from app.infrastructure.services.email_service import EmailService
 
 # Initialize logging before creating the FastAPI app
 # Skip logging setup during tests to avoid pollution
@@ -21,23 +24,51 @@ async def lifespan(_app: FastAPI):
     """Application lifespan manager.
     
     This context manager handles startup and shutdown events:
-    - Startup: Start the background task to clean expired refresh tokens
-    - Shutdown: Cancel the background task gracefully
+    - Startup: Start the background task to clean expired refresh tokens and RabbitMQ consumer
+    - Shutdown: Cancel the background task gracefully and close RabbitMQ connection
     """
     # Start background task for cleaning expired tokens
-    task = asyncio.create_task(clean_tokens_task())
+    token_task = asyncio.create_task(clean_tokens_task())
+    
+    # Start RabbitMQ consumer
+    email_service = EmailService()
+    rabbitmq_consumer = RabbitMQConsumer(email_service)
+    consumer_task = None
+    
+    try:
+        await rabbitmq_consumer.connect()
+        consumer_task = asyncio.create_task(rabbitmq_consumer.start_consuming())
+    except Exception as e:
+        import structlog
+        logger = structlog.get_logger(__name__)
+        logger.error("Failed to start RabbitMQ consumer", error=str(e))
 
     # Properly handle the lifespan
     try:
         yield
     finally:
         # Cancel background task on shutdown
-        task.cancel()
+        token_task.cancel()
+        
+        if consumer_task:
+            consumer_task.cancel()
+        
+        await rabbitmq_consumer.close()
+        
+        # Close RabbitMQ publisher
+        rabbitmq_publisher = get_rabbitmq_publisher()
+        await rabbitmq_publisher.close()
 
         try:
-            await task
+            await token_task
         except asyncio.CancelledError:
             pass
+        
+        if consumer_task:
+            try:
+                await consumer_task
+            except asyncio.CancelledError:
+                pass
 
 
 tags_metadata = [
@@ -78,7 +109,7 @@ This project serves as a practical example of building a well‑organized backen
 It demonstrates how to design a reliable, secure, and easy‑to‑maintain API suitable for real applications and learning.
     """,
     summary="Task management API with authentication.",
-    version="0.4.0",
+    version="0.5.0",
     contact={
         "name": "Andrii Severyn",
         "email": "andrej.chees.bs@gmail.com",

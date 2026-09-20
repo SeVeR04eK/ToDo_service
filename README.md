@@ -4,13 +4,14 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi\&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql\&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis\&logoColor=white)](https://redis.io/)
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00)](https://www.sqlalchemy.org/)
 [![Alembic](https://img.shields.io/badge/Alembic-Migrations-333333)](https://alembic.sqlalchemy.org/)
 [![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?logo=pytest\&logoColor=white)](https://pytest.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker\&logoColor=white)](https://www.docker.com/)
 [![Git](https://img.shields.io/badge/Git-F05032?logo=git\&logoColor=white)](https://git-scm.com/)
 
-**API Version:** 0.4.0
+**API Version:** 0.5.0
 
 ---
 
@@ -30,6 +31,7 @@ The API provides:
 * Administrative user and task management
 * Redis-based caching for improved performance
 * Redis-based rate limiting with sliding window algorithms
+* RabbitMQ-based message queuing for asynchronous task processing
 * Structured JSON logging with correlation IDs
 * Health checks and database connectivity monitoring
 * Docker-based development and production-oriented configurations
@@ -47,6 +49,7 @@ The API provides:
 | Database       | PostgreSQL, SQLAlchemy 2.0, Alembic migrations                             |
 | Caching        | Redis-based user, task, and role caching                                   |
 | Rate Limiting  | Redis sliding window log and counter algorithms                             |
+| Message Queue  | RabbitMQ-based asynchronous task processing                                |
 | API            | FastAPI, OpenAPI, validation, pagination, filtering                        |
 | Transactions   | Unit of Work with centralized commit/rollback                              |
 | Observability  | Structured JSON logging, correlation IDs, request timing                   |
@@ -126,6 +129,15 @@ The API provides:
   * Custom login identifier (IP + username) for login endpoint
   * `Retry-After` header support
   * Fail-closed for login, fail-open for non-critical endpoints
+
+### RabbitMQ Integration
+
+* **Message Queuing**
+  * Asynchronous task processing
+  * Event-driven architecture support
+  * Durable message queues
+  * Message acknowledgment and retry mechanisms
+  * Publisher-consumer pattern for background operations
 
 ---
 

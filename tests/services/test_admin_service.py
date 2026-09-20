@@ -1,5 +1,7 @@
+import asyncio
+
 import pytest
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from app.application.services import AdminService
 from app.application.interfaces import RoleCache
@@ -54,7 +56,7 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
         mock_role_cache = AsyncMock(spec=RoleCache)
@@ -86,11 +88,11 @@ class TestAdminService:
         mock_uow.admin_repository = AsyncMock()
         
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         mock_uow.admin_repository.get_role_id_by_name.return_value = 2
         
-        updated_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=Role(id=2, name="admin"))
+        updated_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=Role(id=2, name="admin"))
         mock_uow.admin_repository.user_perm.return_value = updated_user
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
@@ -111,10 +113,10 @@ class TestAdminService:
         mock_uow.admin_repository = AsyncMock()
         
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
-        updated_user = User(id=1, username="testuser", hashed_password="hashed", is_active=False, role_id=1, role=mock_role)
+        updated_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=False, role_id=1, role=mock_role)
         mock_uow.admin_repository.user_perm.return_value = updated_user
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
@@ -134,7 +136,7 @@ class TestAdminService:
         mock_uow.admin_repository = AsyncMock()
         
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         mock_uow.admin_repository.get_role_id_by_name.return_value = None
         mock_uow.__aenter__.return_value = mock_uow
@@ -171,7 +173,7 @@ class TestAdminService:
         mock_uow.task_repository = AsyncMock()
         
         mock_role = Role(id=1, name="admin")
-        mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="admin", email="admin@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         mock_uow.__aenter__.return_value = mock_uow
         
@@ -201,20 +203,27 @@ class TestAdminService:
 
     @pytest.mark.asyncio
     async def test_create_role_service_success(self):
-        """Test creating a new role."""
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.admin_repository = AsyncMock()
-        
+
         mock_uow.admin_repository.get_role_id_by_name.return_value = None
+
         mock_role = Role(id=1, name="moderator")
         mock_uow.admin_repository.create_role.return_value = mock_role
+
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
-        
-        mock_role_cache = AsyncMock(spec=RoleCache)
-        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
+
+        mock_role_cache = MagicMock(spec=RoleCache)
+
+        service = AdminService(
+            unit_of_work=mock_uow,
+            role_cache=mock_role_cache
+        )
+
         new_role = CreateRoleDTO(name="moderator")
         role = await service.create_role_service(new_role)
+        await asyncio.sleep(0)
 
         assert role.name == "moderator"
         mock_uow.admin_repository.create_role.assert_called_once()
@@ -277,7 +286,7 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         
         mock_role = Role(id=1, name="admin")
-        mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="admin", email="admin@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
         mock_role_cache = AsyncMock(spec=RoleCache)
@@ -306,7 +315,7 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         
         mock_role = Role(id=1, name="admin")
-        mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="admin", email="admin@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
         mock_role_cache = AsyncMock(spec=RoleCache)
@@ -335,7 +344,7 @@ class TestAdminService:
         mock_uow.user_repository = AsyncMock()
         
         mock_role = Role(id=1, name="admin")
-        mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="admin", email="admin@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
         mock_role_cache = AsyncMock(spec=RoleCache)
@@ -354,7 +363,7 @@ class TestAdminService:
         mock_uow.task_repository = AsyncMock()
         
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
         mock_task = Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)
@@ -384,7 +393,7 @@ class TestAdminService:
         mock_uow.task_repository = AsyncMock()
         
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         
         mock_task = Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)
@@ -415,16 +424,30 @@ class TestAdminService:
 
     @pytest.mark.asyncio
     async def test_delete_task_service_permission_denied(self):
-        """Test deleting task for admin user raises PermissionDeniedError."""
         mock_uow = AsyncMock(spec=UnitOfWork)
-        mock_uow.user_repository = AsyncMock()
-        
+
         mock_role = Role(id=1, name="admin")
-        mock_user = User(id=1, username="admin", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
-        mock_uow.user_repository.get_user_by_id.return_value = mock_user
-        
-        mock_role_cache = AsyncMock(spec=RoleCache)
-        service = AdminService(unit_of_work=mock_uow, role_cache=mock_role_cache)
-        
+        mock_user = User(
+            id=1,
+            username="admin",
+            email="admin@example.com",
+            hashed_password="hashed",
+            is_active=True,
+            role_id=1,
+            role=mock_role,
+        )
+
+        mock_uow.user_repository = MagicMock()
+        mock_uow.user_repository.get_user_by_id = AsyncMock(
+            return_value=mock_user
+        )
+
+        mock_role_cache = MagicMock(spec=RoleCache)
+
+        service = AdminService(
+            unit_of_work=mock_uow,
+            role_cache=mock_role_cache,
+        )
+
         with pytest.raises(PermissionDeniedError):
             await service.delete_task_service(task_id=1, user_id=1)

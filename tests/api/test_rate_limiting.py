@@ -193,6 +193,7 @@ class TestRateLimitingIntegration:
         test_user = User(
             id=123,
             username="testuser",
+            email="testuser@example.com",
             is_active=True,
             hashed_password="hashed",
             role_id=1,
@@ -226,7 +227,7 @@ class TestRateLimitingIntegration:
 
         # Test with user 1
         role1 = Role(id=1, name="user")
-        user1 = User(id=1, username="user1", is_active=True, hashed_password="hashed", role_id=1, role=role1)
+        user1 = User(id=1, username="user1", email="user1@example.com", is_active=True, hashed_password="hashed", role_id=1, role=role1)
         async def override_get_user1():
             return user1
 
@@ -241,7 +242,7 @@ class TestRateLimitingIntegration:
 
         # Test with user 2
         role2 = Role(id=1, name="user")
-        user2 = User(id=2, username="user2", is_active=True, hashed_password="hashed", role_id=1, role=role2)
+        user2 = User(id=2, username="user2", email="user2@example.com", is_active=True, hashed_password="hashed", role_id=1, role=role2)
         async def override_get_user2():
             return user2
 
@@ -318,7 +319,7 @@ class TestRateLimitingIntegration:
         from app.presentation.api.dependencies.auth_dep import get_current_user
 
         test_role = Role(id=1, name="user")
-        test_user = User(id=123, username="testuser", is_active=True, hashed_password="hashed", role_id=1, role=test_role)
+        test_user = User(id=123, username="testuser", email="testuser@example.com", is_active=True, hashed_password="hashed", role_id=1, role=test_role)
         async def override_get_current_user():
             return test_user
 
@@ -345,7 +346,7 @@ class TestRateLimitingIntegration:
         from app.presentation.api.dependencies.auth_dep import get_current_user
 
         test_role = Role(id=1, name="admin")
-        test_user = User(id=123, username="admin", is_active=True, hashed_password="hashed", role_id=1, role=test_role)
+        test_user = User(id=123, username="admin", email="admin@example.com", is_active=True, hashed_password="hashed", role_id=1, role=test_role)
         async def override_get_current_user():
             return test_user
 

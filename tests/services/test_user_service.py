@@ -20,8 +20,9 @@ class TestUserService:
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_uow.user_repository.get_user_by_username.return_value = None
+        mock_uow.user_repository.get_user_by_email.return_value = None
         
-        mock_user = User(id=1, username="newuser", hashed_password="hashed", is_active=True, role_id=1, role=Role(id=1, name="user"))
+        mock_user = User(id=1, username="newuser", email="newuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=Role(id=1, name="user"))
         mock_uow.user_repository.create_user.return_value = mock_user
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
@@ -34,6 +35,7 @@ class TestUserService:
         service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher, user_cache=mock_user_cache)
         user_data = CreateUserDTO(
             username="newuser",
+            email="newuser@example.com",
             password="SecurePassword123",
             password_confirm="SecurePassword123"
         )
@@ -53,7 +55,7 @@ class TestUserService:
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
 
         mock_password_validator = MagicMock(spec=PasswordValidator)
@@ -77,11 +79,11 @@ class TestUserService:
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         mock_uow.user_repository.get_user_by_username.return_value = None
 
-        updated_user = User(id=1, username="updated_user", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        updated_user = User(id=1, username="updated_user", email="updated_user@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.update_user.return_value = updated_user
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
@@ -109,10 +111,10 @@ class TestUserService:
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
 
-        updated_user = User(id=1, username="testuser", hashed_password="new_hashed", is_active=True, role_id=1, role=mock_role)
+        updated_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="new_hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.update_user.return_value = updated_user
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
@@ -143,11 +145,11 @@ class TestUserService:
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="testuser", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="testuser", email="testuser@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         mock_uow.user_repository.get_user_by_username.return_value = None
 
-        updated_user = User(id=1, username="updated_user", hashed_password="new_hashed", is_active=True, role_id=1, role=mock_role)
+        updated_user = User(id=1, username="updated_user", email="updated_user@example.com", hashed_password="new_hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.update_user.return_value = updated_user
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
@@ -180,7 +182,7 @@ class TestUserService:
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="to_delete", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="to_delete", email="to_delete@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_id.return_value = mock_user
         mock_uow.user_repository.delete_user.return_value = None
         mock_uow.__aenter__.return_value = mock_uow
@@ -205,8 +207,9 @@ class TestUserService:
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
         mock_role = Role(id=1, name="user")
-        mock_user = User(id=1, username="existing", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
+        mock_user = User(id=1, username="existing", email="existing@example.com", hashed_password="hashed", is_active=True, role_id=1, role=mock_role)
         mock_uow.user_repository.get_user_by_username.return_value = mock_user
+        mock_uow.user_repository.get_user_by_email.return_value = None
         mock_uow.__aenter__.return_value = mock_uow
         
         mock_password_validator = MagicMock(spec=PasswordValidator)
@@ -217,6 +220,7 @@ class TestUserService:
         service = UserService(unit_of_work=mock_uow, password_validator=mock_password_validator, password_hasher=mock_password_hasher, user_cache=mock_user_cache)
         user_data = CreateUserDTO(
             username="existing",
+            email="existing@example.com",
             password="SecurePassword123",
             password_confirm="SecurePassword123"
         )

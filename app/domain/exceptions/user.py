@@ -11,6 +11,11 @@ class UsernameAlreadyExistsError(DomainException):
     pass
 
 
+class EmailAlreadyExistsError(DomainException):
+    """Raised when trying to create a user with an existing email."""
+    pass
+
+
 class PermissionDeniedError(DomainException):
     """Raised when a user lacks permission to perform an action."""
     pass

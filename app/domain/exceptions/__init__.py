@@ -4,6 +4,7 @@ from app.domain.exceptions.tasks import TaskNotFoundError
 from app.domain.exceptions.user import (
     UserNotFoundError,
     UsernameAlreadyExistsError,
+    EmailAlreadyExistsError,
     PermissionDeniedError,
     InvalidPaginationParameters,
     WeakPasswordError,
@@ -15,6 +16,7 @@ from app.domain.exceptions.rate_limit import RateLimitExceededError
 
 __all__ = ["InvalidCredentialsError", "InvalidAccessTokenError", "InvalidRefreshTokenError",
            "RoleNotFoundError", "RoleAlreadyExistsError", "TaskNotFoundError",
-           "UserNotFoundError", "UsernameAlreadyExistsError", "PermissionDeniedError",
+           "UserNotFoundError", "UsernameAlreadyExistsError", "EmailAlreadyExistsError",
+           "PermissionDeniedError",
            "InvalidPaginationParameters", "WeakPasswordError", "PasswordNotMatchError",
            "SerializationError", "RateLimitExceededError"]

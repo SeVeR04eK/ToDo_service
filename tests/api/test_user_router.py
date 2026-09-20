@@ -21,6 +21,7 @@ class TestUserRouter:
             "/user/me",
             json={
                 "username": "newuser",
+                "email": "newuser@example.com",
                 "password": "SecurePassword123",
                 "password_confirm": "SecurePassword123"
             }
@@ -38,6 +39,7 @@ class TestUserRouter:
             "/user/me",
             json={
                 "username": "newuser",
+                "email": "newuser@example.com",
                 "password": "SecurePassword123",
                 "password_confirm": "different123"
             }

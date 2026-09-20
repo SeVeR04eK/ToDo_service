@@ -29,6 +29,7 @@ class TestUserSerializer:
         user = User(
             id=1,
             username="testuser",
+            email="testuser@example.com",
             hashed_password="hashed123",
             is_active=True,
             role_id=1,
@@ -49,6 +50,7 @@ class TestUserSerializer:
         user = User(
             id=1,
             username="testuser",
+            email="testuser@example.com",
             hashed_password="hashed123",
             is_active=True,
             role_id=1,
@@ -63,6 +65,7 @@ class TestUserSerializer:
         data = {
             "id": 1,
             "username": "testuser",
+            "email": "testuser@example.com",
             "hashed_password": "hashed123",
             "is_active": True,
             "role_id": 1,
@@ -84,6 +87,7 @@ class TestUserSerializer:
         data = {
             "id": 1,
             "username": "testuser",
+            "email": "testuser@example.com",
             "hashed_password": "hashed123",
             "is_active": True,
             "role_id": 1,

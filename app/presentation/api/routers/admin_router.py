@@ -61,6 +61,7 @@ async def get_users(
             data=UserRead(
                 id=result.id,
                 username=result.username,
+                email=result.email,
                 is_active=result.is_active,
                 role=UserRole(name=result.role.name) if result.role else None
             )
@@ -71,6 +72,7 @@ async def get_users(
             UserRead(
                 id=user.id,
                 username=user.username,
+                email=user.email,
                 is_active=user.is_active,
                 role=UserRole(name=user.role.name) if user.role else None
             )
@@ -108,6 +110,7 @@ async def get_user(
         data=UserRead(
             id=user.id,
             username=user.username,
+            email=user.email,
             is_active=user.is_active,
             role=UserRole(name=user.role.name) if user.role else None
         )
@@ -169,6 +172,7 @@ async def user_permission(
         data=UserRead(
             id=user.id,
             username=user.username,
+            email=user.email,
             is_active=user.is_active,
             role=UserRole(name=user.role.name) if user.role else None
         )

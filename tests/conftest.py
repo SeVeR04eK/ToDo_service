@@ -218,8 +218,10 @@ async def test_admin_role(db_session: AsyncSession) -> RoleORM:
 @pytest.fixture
 async def test_user(db_session: AsyncSession, test_role: RoleORM) -> UserORM:
     """Create a test user."""
+    username = fake.user_name()
     user = UserORM(
-        username=fake.user_name(),
+        username=username,
+        email=f"{username}@example.com",
         hashed_password=password_hasher.hash("TestPassword123!"),
         is_active=True,
         role_id=test_role.id
@@ -233,8 +235,10 @@ async def test_user(db_session: AsyncSession, test_role: RoleORM) -> UserORM:
 @pytest.fixture
 async def test_admin_user(db_session: AsyncSession, test_admin_role: RoleORM) -> UserORM:
     """Create a test admin user."""
+    username = fake.user_name()
     user = UserORM(
-        username=fake.user_name(),
+        username=username,
+        email=f"{username}@example.com",
         hashed_password=password_hasher.hash("AdminPassword123!"),
         is_active=True,
         role_id=test_admin_role.id

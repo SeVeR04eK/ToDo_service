@@ -6,6 +6,7 @@ from app.domain.exceptions import PasswordNotMatchError
 class UserBase(BaseModel):
     """Base user schema with common fields."""
     username: str
+    email: str
 
 class UserRole(BaseModel):
     """Nested schema for user role information in responses."""
@@ -20,6 +21,10 @@ class UserCreate(UserBase):
     username: Annotated[
         str,
         Field(..., min_length=1, title="Username")
+    ]
+    email: Annotated[
+        str,
+        Field(..., min_length=1, title="Email")
     ]
     password: Annotated[
         str,
@@ -45,6 +50,7 @@ class UserCreate(UserBase):
             "examples": [
                 {
                     "username": "user",
+                    "email": "user@example.com",
                     "password": "user12345",
                     "password_confirm": "user12345"
                 }
@@ -64,6 +70,10 @@ class UserUpdate(UserBase):
     username: Annotated[
         str,
         Field(default=None, min_length=1, title="Username")
+    ]
+    email: Annotated[
+        str,
+        Field(default=None, min_length=1, title="Email")
     ]
     password: Annotated[
         str,
@@ -104,6 +114,7 @@ class UserUpdate(UserBase):
 class UserRead(UserBase):
     """Schema for user response (includes database-generated fields)."""
     username: Annotated[str, Field(title="Username")]
+    email: Annotated[str, Field(title="Email")]
     id: Annotated[int, Field(title="User ID")]
     is_active: Annotated[bool, Field(title="User Active Status")]
     role: UserRole
@@ -115,6 +126,7 @@ class UserRead(UserBase):
             "examples": [
                 {
                     "username": "user",
+                    "email": "user@example.com",
                     "id": 1,
                     "is_active": True,
                     "role": {

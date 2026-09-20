@@ -21,12 +21,14 @@ class TestSQLAlchemyUserRepository:
         
         user = await repo.create_user(
             username="testuser",
+            email="testuser@example.com",
             password="TestPassword123!"
         )
         await db_session.commit()
         
         assert user.id is not None
         assert user.username == "testuser"
+        assert user.email == "testuser@example.com"
         assert user.hashed_password is not None
         assert user.is_active is True
         assert user.role_id == test_role.id
@@ -156,6 +158,7 @@ class TestSQLAlchemyUserRepository:
         
         await repo.create_user(
             username="duplicate_user",
+            email="duplicate_user@example.com",
             password="TestPassword123!"
         )
         await db_session.commit()
@@ -164,5 +167,6 @@ class TestSQLAlchemyUserRepository:
         with pytest.raises(Exception):  # Should raise integrity error
             await repo.create_user(
                 username="duplicate_user",
+                email="duplicate_user2@example.com",
                 password="TestPassword123!"
             )

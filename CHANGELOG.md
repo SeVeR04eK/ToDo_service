@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.5.0] - 2026-09-20
+
+### Added
+
+#### Email
+- Added required email field for users
+- Added email uniqueness validation
+- Added SMTP welcome email service
+
+#### RabbitMQ
+- Added asynchronous welcome email processing
+- Added RabbitMQ publisher and consumer
+- Added retry queue and dead-letter exchange
+- Added message acknowledgement and retry handling
+
+### Changed
+
+- User registration now requires an email
+- Updated repositories, services, DTOs, and API responses to support email
+- Added RabbitMQ and SMTP configuration
+- Updated application startup and shutdown handling
+
+### Tests
+
+- Added RabbitMQ and email service tests
+- Updated existing tests and fixtures for the required email field
+- Added tests for email validation and message processing
+
+### Documentation
+
+- Updated README with RabbitMQ integration
+- Added RabbitMQ to the technology stack
+
+---
+
 ## [0.4.0] - 2026-09-06
 
 ### Added
