@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.5.1] - 2026-09-20
+
+### Added
+
+#### RabbitMQ
+- Added RabbitMQ connectivity check to the health endpoint
+- Added TTL-based retry handling with retry count
+- Added dead-letter handling for exhausted and invalid messages
+
+### Changed
+
+- Updated RabbitMQ retry flow to return failed messages to the main queue after the retry delay
+- Updated message acknowledgement and rejection handling
+- Updated RabbitMQ consumer tests
+- Updated API documentation with RabbitMQ health status
+
+### Fixed
+
+- Fixed failed messages bypassing the retry queue and being sent directly to the dead-letter queue
+
+---
+
 ## [0.5.0] - 2026-09-20
 
 ### Added
