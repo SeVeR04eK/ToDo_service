@@ -6,13 +6,14 @@ import aio_pika
 from aio_pika import ExchangeType, Message
 
 from app.core.config import settings
+from app.application.interfaces import MessagePublisher
 
 logger = structlog.get_logger(__name__)
 
 _publisher: RabbitMQPublisher | None = None
 
 
-class RabbitMQPublisher:
+class RabbitMQPublisher(MessagePublisher):
     """RabbitMQ publisher for sending messages."""
 
     def __init__(self, url: str):

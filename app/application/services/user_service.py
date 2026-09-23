@@ -1,7 +1,7 @@
 import asyncio
 import structlog
 from app.application.dto import CreateUserDTO, UpdateUserDTO
-from app.application.interfaces import UserCache
+from app.application.interfaces import UserCache, MessagePublisher
 from app.domain.value_objects import UserUpdateData
 from app.domain.interfaces import UnitOfWork, PasswordValidator, PasswordHasher
 from app.domain.exceptions import (
@@ -18,12 +18,12 @@ logger = structlog.get_logger(__name__)
 
 class UserService:
 
-    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator, password_hasher: PasswordHasher, user_cache: UserCache, rabbitmq_publisher=None):
+    def __init__(self, unit_of_work: UnitOfWork, password_validator: PasswordValidator, password_hasher: PasswordHasher, user_cache: UserCache, message_publisher: MessagePublisher = None):
         self.unit_of_work = unit_of_work
         self.password_validator = password_validator
         self.password_hasher = password_hasher
         self.user_cache = user_cache
-        self.rabbitmq_publisher = rabbitmq_publisher
+        self.message_publisher = message_publisher
 
     async def create_user_service(self, user: CreateUserDTO) -> User:
 
@@ -73,10 +73,10 @@ class UserService:
             email=created_user.email,
         )
         
-        # Publish welcome email message to RabbitMQ after successful commit
-        if self.rabbitmq_publisher:
+        # Publish welcome email message after successful commit
+        if self.message_publisher:
             try:
-                await self.rabbitmq_publisher.publish_welcome_email(
+                await self.message_publisher.publish_welcome_email(
                     username=created_user.username,
                     email=created_user.email
                 )

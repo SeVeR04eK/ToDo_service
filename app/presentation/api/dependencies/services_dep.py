@@ -7,7 +7,7 @@ from app.domain.interfaces import (
     PasswordValidator,
     PasswordHasher
 )
-from app.application.interfaces import UserCache, TaskCache, RoleCache
+from app.application.interfaces import UserCache, TaskCache, RoleCache, MessagePublisher
 from app.application.services import UserService, TaskService, AuthService, AdminService
 from app.presentation.api.dependencies.uow import get_unit_of_work
 from app.presentation.api.dependencies.tokens_dep import get_token_service
@@ -25,9 +25,9 @@ def get_user_service(
     password_validator: PasswordValidator = Depends(get_password_validator),
     password_hasher: PasswordHasher = Depends(get_password_hasher),
     user_cache: UserCache = Depends(get_user_cache),
-    rabbitmq_publisher = Depends(get_rabbitmq_publisher),
+    message_publisher: MessagePublisher = Depends(get_rabbitmq_publisher),
 ) -> UserService:
-    return UserService(unit_of_work, password_validator, password_hasher, user_cache, rabbitmq_publisher)
+    return UserService(unit_of_work, password_validator, password_hasher, user_cache, message_publisher)
 
 
 def get_task_service(
