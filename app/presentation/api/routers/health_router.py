@@ -37,7 +37,7 @@ async def health_check():
     rabbitmq_error = None
 
     try:
-        connection = await aio_pika.connect_robust(settings.rabbitmq_url)
+        connection = await aio_pika.connect_robust(settings.celery_broker_url)
         await connection.close()
     except Exception as e:
         rabbitmq_status = "unhealthy"

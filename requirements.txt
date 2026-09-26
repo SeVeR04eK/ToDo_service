@@ -16,5 +16,6 @@ aiosqlite
 email-validator
 structlog
 redis
+aio_pika
 aiosmtplib
 celery
