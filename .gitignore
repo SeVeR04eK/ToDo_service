@@ -25,3 +25,6 @@ build/
 htmlcov/
 .pytest_cache/
 .pytest-cache*
+
+celerybeat-schedule
+celerybeat-schedule.*

@@ -77,16 +77,17 @@ class Settings(BaseSettings):
     redis_socket_timeout: float = 1.0
     redis_socket_connect_timeout: float = 1.0
 
-    # RabbitMQ Configuration
-    rabbitmq_url: str = "amqp://guest:guest@localhost:5672/"
-    rabbitmq_exchange: str = "todo_service"
-    rabbitmq_welcome_email_queue: str = "welcome_email"
-    rabbitmq_welcome_email_routing_key: str = "welcome.email"
-    rabbitmq_dlx: str = "todo_service_dlx"
-    rabbitmq_retry_queue: str = "welcome_email_retry"
-    rabbitmq_retry_routing_key: str = "welcome.email.retry"
-    rabbitmq_max_retries: int = 3
-    rabbitmq_retry_ttl_ms: int = 5000
+    # Celery Configuration
+    celery_broker_url: str = "amqp://guest:guest@localhost:5672/"
+    celery_result_backend: str = "redis://localhost:6379/0"
+    celery_task_track_started: bool = True
+    celery_task_time_limit: int = 300  # 5 minutes
+    celery_task_soft_time_limit: int = 240  # 4 minutes
+    celery_worker_prefetch_multiplier: int = 4
+    celery_worker_max_tasks_per_child: int = 1000
+    celery_email_max_retries: int = 3
+    celery_email_retry_backoff: int = 60  # seconds
+    celery_token_cleanup_interval_hours: int = 2
 
     # Email Configuration
     smtp_host: str = "smtp.gmail.com"

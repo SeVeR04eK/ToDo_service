@@ -44,7 +44,8 @@ from app.infrastructure.repositories import (
     SQLAlchemyAdminRepository,
 )
 from app.infrastructure.unit_of_work import SQLAlchemyUnitOfWork
-from app.application.interfaces import UserCache, TaskCache, RoleCache, RateLimiter
+from app.application.interfaces import UserCache, TaskCache, RoleCache, RateLimiter, MessagePublisher
+from app.infrastructure.celery import get_celery_publisher
 
 # Test database URL (SQLite for testing)
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -106,6 +107,14 @@ async def mock_rate_limiter():
     return limiter
 
 
+@pytest.fixture
+async def mock_message_publisher():
+    """Mock MessagePublisher for testing."""
+    from unittest.mock import AsyncMock
+    publisher = AsyncMock(spec=MessagePublisher)
+    return publisher
+
+
 @pytest.fixture(scope="session")
 def event_loop() -> Generator:
     """Create an instance of the default event loop for the test session."""
@@ -128,7 +137,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest.fixture(scope="function")
-async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, mock_role_cache, mock_rate_limiter) -> AsyncGenerator:
+async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, mock_role_cache, mock_rate_limiter, mock_message_publisher) -> AsyncGenerator:
     """Create a test client with database session override."""
     from unittest.mock import patch
 
@@ -162,6 +171,9 @@ async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, moc
     async def override_get_role_cache():
         yield mock_role_cache
 
+    async def override_get_message_publisher():
+        yield mock_message_publisher
+
     app.dependency_overrides[get_session] = override_get_session
     app.dependency_overrides[get_user_repository] = override_get_user_repository
     app.dependency_overrides[get_task_repository] = override_get_task_repository
@@ -172,6 +184,7 @@ async def client(db_session: AsyncSession, mock_user_cache, mock_task_cache, moc
     app.dependency_overrides[get_user_cache] = override_get_user_cache
     app.dependency_overrides[get_task_cache] = override_get_task_cache
     app.dependency_overrides[get_role_cache] = override_get_role_cache
+    app.dependency_overrides[get_celery_publisher] = override_get_message_publisher
 
     # Patch the Redis rate limiter classes
     with patch.object(RedisSlidingWindowLog, '__init__', return_value=None):

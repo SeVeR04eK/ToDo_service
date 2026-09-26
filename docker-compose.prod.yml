@@ -68,6 +68,48 @@ services:
     networks:
       - app_network
 
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    env_file:
+      - .env.prod
+    environment:
+      - ENVIRONMENT=prod
+    command: celery -A app.infrastructure.celery.celery_app worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    env_file:
+      - .env.prod
+    environment:
+      - ENVIRONMENT=prod
+    command: celery -A app.infrastructure.celery.celery_app beat --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app_network
+
 volumes:
   postgres_data:
 

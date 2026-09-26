@@ -1,10 +1,14 @@
 # ToDo Service Backend API
 
+> Production-oriented REST API for task and user management,
+> built with FastAPI, PostgreSQL, Redis, RabbitMQ, and Celery.
+
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python\&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi\&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql\&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis\&logoColor=white)](https://redis.io/)
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
+[![Celery](https://img.shields.io/badge/Celery-37814A?logo=celery&logoColor=white)](https://docs.celeryq.dev/)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00)](https://www.sqlalchemy.org/)
 [![Alembic](https://img.shields.io/badge/Alembic-Migrations-333333)](https://alembic.sqlalchemy.org/)
 [![Pytest](https://img.shields.io/badge/Pytest-0A9EDC?logo=pytest\&logoColor=white)](https://pytest.org/)
@@ -17,45 +21,65 @@
 
 ## Overview
 
-ToDo Service is a REST API for task and user management built with FastAPI and PostgreSQL.
+ToDo Service is a production-oriented REST API for task and user management,
+built with FastAPI and PostgreSQL.
 
-The project focuses on practical backend engineering, including application architecture, authentication and authorization, database transactions, testing, observability, security, and containerization.
+The project demonstrates:
 
-The API provides:
+- Clean Architecture and dependency inversion
+- JWT authentication with refresh-token rotation and reuse detection
+- Redis caching and distributed rate limiting
+- Asynchronous background processing with Celery and RabbitMQ
+- Periodic task scheduling with Celery Beat
+- Automated testing and structured observability
+- Docker-based development and deployment
 
-* User registration and account management
-* JWT-based authentication with access and refresh tokens
-* Refresh token rotation, token families, and reuse detection
-* Role-Based Access Control (RBAC)
-* Task management with filtering and pagination
-* Administrative user and task management
-* Redis-based caching for improved performance
-* Redis-based rate limiting with sliding window algorithms
-* RabbitMQ-based message queuing for asynchronous task processing
-* Structured JSON logging with correlation IDs
-* Health checks and database connectivity monitoring
-* Docker-based development and production-oriented configurations
-* Unit, repository, and API/integration tests
+### Main Capabilities
+
+- User registration and account management
+- JWT authentication and session management
+- Role-Based Access Control (RBAC)
+- Task management with filtering and pagination
+- Administrative user and task management
+- Redis caching and rate limiting
+- Asynchronous welcome email delivery
+- Periodic expired-token cleanup
+---
+
+## Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Database Design](#database-design)
+- [Authentication Flow](#authentication-flow)
+- [API](#api)
+- [Configuration](#configuration)
+- [Running the Project](#running-the-project)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [License](#license)
 
 ---
 
 ## Engineering Highlights
 
-| Area           | Implementation                                                             |
-| -------------- |----------------------------------------------------------------------------|
-| Architecture   | Clean Architecture, Repository Pattern, Dependency Injection, Unit of Work |
-| Authentication | JWT access/refresh tokens, rotation, reuse detection                       |
-| Authorization  | Role-Based Access Control (RBAC)                                           |
-| Database       | PostgreSQL, SQLAlchemy 2.0, Alembic migrations                             |
-| Caching        | Redis-based user, task, and role caching                                   |
-| Rate Limiting  | Redis sliding window log and counter algorithms                             |
-| Message Queue  | RabbitMQ-based asynchronous task processing                                |
-| API            | FastAPI, OpenAPI, validation, pagination, filtering                        |
-| Transactions   | Unit of Work with centralized commit/rollback                              |
-| Observability  | Structured JSON logging, correlation IDs, request timing                   |
-| Security       | bcrypt, refresh token hashing, ownership checks, security headers, HSTS    |
-| Testing        | Unit, repository, and API/integration tests                                |
-| Infrastructure | Docker, Docker Compose, multi-stage builds                                 |
+| Area             | Implementation                                                             |
+| ---------------- | -------------------------------------------------------------------------- |
+| Architecture     | Clean Architecture, Repository Pattern, Dependency Injection, Unit of Work |
+| Authentication   | JWT access/refresh tokens, rotation, reuse detection                       |
+| Authorization    | Role-Based Access Control (RBAC)                                           |
+| Database         | PostgreSQL, SQLAlchemy 2.0, Alembic migrations                             |
+| Caching          | Redis-based application caching                                            |
+| Rate Limiting    | Redis sliding window log and counter algorithms                            |
+| Async Processing | Celery workers with RabbitMQ as the message broker                         |
+| Scheduling       | Celery Beat for periodic task scheduling                                   |
+| Reliability      | Automatic retries, exponential backoff, retry jitter, late acknowledgments |
+| Transactions     | Unit of Work with centralized commit/rollback                              |
+| Observability    | Structured JSON logging, correlation IDs, request timing                   |
+| Security         | bcrypt, refresh token hashing, ownership checks, security headers, HSTS    |
+| Testing          | Unit, repository, API/integration, and infrastructure tests                |
+| Infrastructure   | Docker, Docker Compose, multi-stage builds                                 |
 
 ---
 
@@ -63,83 +87,58 @@ The API provides:
 
 ### Authentication & Authorization
 
-* User registration and authentication
-* JWT access and refresh tokens
-* OAuth2-compatible Bearer authentication
-* Refresh token rotation
-* SHA-256 hashed refresh tokens
-* Token family tracking
-* Refresh token reuse detection and family revocation
-* Session revocation and logout
-* Role-Based Access Control (RBAC)
+- User registration and authentication
+- JWT access and refresh tokens
+- Refresh token rotation and reuse detection
+- Session revocation and logout
+- Role-Based Access Control (RBAC)
 
 ### User Management
 
-* Account information retrieval and updates
-* Password change with previous-password verification
-* Account deletion
-* Active/inactive account handling
+- Account information retrieval and updates
+- Password changes with previous-password verification
+- Account deletion
+- Account activation and deactivation
 
 ### Task Management
 
-* Create, update, retrieve, and delete tasks
-* Task status management
-* Ownership enforcement
-* Filtering
-* Pagination
+- Create, update, retrieve, and delete tasks
+- Task status management
+- Ownership enforcement
+- Filtering and pagination
 
 ### Administration
 
-* User listing and search
-* User blocking and unblocking
-* Role management
-* Administrative task management
-* Pagination and filtering
+- User listing and search
+- User blocking and unblocking
+- Role management
+- Administrative task management
 
 ### Security
 
-* bcrypt password hashing
-* Refresh token hashing
-* Ownership checks
-* RBAC protection
-* Security headers
-* Optional HSTS
-* CORS configuration
-* Request validation
+- bcrypt password hashing
+- Hashed refresh tokens
+- Resource ownership enforcement
+- Security headers
+- CORS configuration
+- Request validation
 
 ### Observability
 
-* Health check endpoint
-* Database connectivity checks
-* Structured JSON logging
-* Correlation IDs
-* Request duration tracking
+- Health checks
+- Database and Redis connectivity checks
+- Structured JSON logging
+- Correlation IDs
+- Request duration tracking
 
-### Redis Integration
+### Background Processing
 
-* **Caching**
-  * User, task, and role caching with automatic invalidation
-  * Configurable TTL (Time-To-Live) for cached data
-  * Fail-open behavior when Redis is unavailable
-
-* **Rate Limiting**
-  * Sliding Window Log & Counter algorithms
-  * Per-endpoint rate limits
-  * IP-based & user-based identification
-  * Custom login identifier (IP + username) for login endpoint
-  * `Retry-After` header support
-  * Fail-closed for login, fail-open for non-critical endpoints
-
-### RabbitMQ Integration
-
-* **Message Queuing**
-  * Asynchronous task processing
-  * Event-driven architecture support
-  * Durable message queues
-  * Message acknowledgment and retry mechanisms
-  * Publisher-consumer pattern for background operations
-
+- Asynchronous welcome email delivery
+- Automatic task retries with backoff and jitter
+- Periodic expired refresh-token cleanup
+- Celery workers and Celery Beat
 ---
+
 
 ## Architecture
 
@@ -147,7 +146,7 @@ The application is divided into four main layers:
 
 * **Domain** — entities, value objects, domain exceptions, and interfaces
 * **Application** — use cases, services, and DTOs
-* **Infrastructure** — database, repositories, security, Redis (caching and rate limiting), and Unit of Work implementation
+* **Infrastructure** — database, repositories, security, Redis (caching and rate limiting), Celery, RabbitMQ, and Unit of Work implementation
 * **Presentation** — FastAPI routers, schemas, dependencies, middleware, and exception handlers
 
 Dependencies point toward the domain layer, while infrastructure-specific implementations are injected through interfaces and dependencies.
@@ -173,18 +172,17 @@ app/presentation/api/middleware/setup.py
 
 ---
 
-## Database Design
+## Database
 
-The service uses PostgreSQL with SQLAlchemy 2.0, and all schema changes are managed through Alembic migrations.
-The data model includes four core entities:
+The service uses PostgreSQL with SQLAlchemy 2.0, and schema changes
+are managed through Alembic migrations.
 
-Users — authentication, roles, account status
+Core entities:
 
-Tasks — user‑owned tasks with status tracking
-
-Refresh Tokens — hashed tokens with rotation, families, and reuse detection
-
-Roles — simple role definitions for RBAC
+- **Users** — accounts, authentication, and roles
+- **Tasks** — user-owned tasks with status tracking
+- **Refresh Tokens** — hashed rotating tokens with family tracking
+- **Roles** — RBAC role definitions
 
 ### Detailed schema definitions are available in the **[docs/database.md](docs/database.md)**.
 
@@ -192,9 +190,10 @@ Roles — simple role definitions for RBAC
 
 ## Authentication Flow
 
-The system uses short‑lived JWT access tokens and rotating refresh tokens.
-Refresh tokens are stored only as SHA‑256 hashes and rotated on every use.
-Reuse of a revoked token invalidates the entire token family, and logout supports single‑session or full‑account revocation.
+The system uses short-lived JWT access tokens and rotating refresh tokens.
+
+Refresh tokens are stored as SHA-256 hashes and rotated on every use.
+Reuse of a revoked token invalidates the entire token family.
 
 ### Detailed information and refresh token lifecycle is available in the **[docs/authentication.md](docs/authentication.md)**.
 
@@ -202,86 +201,40 @@ Reuse of a revoked token invalidates the entire token family, and logout support
 
 ## API
 
-The application provides a REST API with authentication, user management, task management, and administrative endpoints.
+The service provides REST endpoints for:
+
+- Authentication and session management
+- User management
+- Task management
+- Administrative operations
+- Health monitoring
 
 Interactive documentation:
 
-* Swagger UI: `/docs`
-* ReDoc: `/redoc`
+- Swagger UI: `/docs`
+- ReDoc: `/redoc`
 
-### Authentication
-
-![Auth](screenshots/auth.png)
-
-**POST `/auth/authentication`**
-
-Request:
-
-```text
-Content-Type: application/x-www-form-urlencoded
-
-username=user
-password=user12345
-```
-
-Response:
-
-```json
-{
-    "refresh_token": "example.refresh.token",
-    "access_token": "example.access.token",
-    "token_type": "bearer",
-    "expires_in": 900
-}
-```
-
-### Tasks
+Examples: 
+![Authentication](screenshots/auth.png)
 
 ![Tasks](screenshots/tasks.png)
 
-**GET `/tasks/me`**
-
-Request:
-
-```http
-Authorization: Bearer <access_token>
-```
-
-Response:
-
-```json
-{
-    "data": [
-        {
-            "id": 1,
-            "title": "example title",
-            "content": "example content",
-            "status": "todo",
-            "user_id": 1
-        }
-    ],
-    "meta": {
-        "page": 1,
-        "page_size": 10,
-        "total_items": 1,
-        "total_pages": 1,
-        "has_next": false,
-        "has_previous": false
-    }
-}
-```
-
-### Filtering & Pagination
-
 ![Task Filters](screenshots/tasks_filters.png)
 
-```http
-GET /tasks/me?task_status=todo
-GET /tasks/me?from_newest=true
-GET /tasks/me?limit=10&offset=0
-```
+### For complete endpoint documentation, request/response examples, filters, pagination, and response formats, see **[docs/api.md](docs/api.md)**.
 
-### For complete endpoint documentation, see **[docs/api.md](docs/api.md)**.
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | Application architecture and design principles |
+| [Authentication](docs/authentication.md) | JWT and refresh-token lifecycle |
+| [Database](docs/database.md) | Database schema and relationships |
+| [API](docs/api.md) | API endpoints and usage |
+| [Running](docs/running.md) | Development and deployment instructions |
+| [Testing](docs/testing.md) | Testing strategy and test execution |
 
 ---
 
@@ -307,88 +260,86 @@ The project supports three execution modes:
 
 * **Docker DEV** — local development with hot reload and bind mounts
 * **Docker PROD** — production-oriented container configuration
-* **Manual Setup** — run without Docker using your own environment
+* **Manual Setup** — run the application without Docker
 
-Detailed instructions for other execution modes are available in **[docs/running.md](docs/running.md)**.
+### Quick Start
 
-### Docker Development
-
-The development environment uses a multi-stage Docker build with:
-
-* Hot reload
-* Source-code bind mounts
-* Development dependencies
-* Automatic database migrations
-* Development seed scripts
-
-### 1. Clone repository
+Clone the repository:
 
 ```bash
 git clone https://github.com/SeVeR04eK/ToDo_service.git
 cd ToDo_service
 ```
 
-### 2. Generate a secret key
+Generate a secret key:
 
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 3. Configure environment variables
+Configure `.env.dev` and replace the default `SECRET_KEY` with the generated value.
 
-The `.env.dev` file is provided with default values. Replace `SECRET_KEY` with your generated key.
-
-```env
-DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
-SECRET_KEY=your_generated_secret_key_here
-FIRST_ADMIN_USERNAME=admin
-FIRST_ADMIN_PASSWORD=admin123
-DEBUG=true
-```
-
-When running with Docker Compose, use `db` as the database hostname instead of `localhost`, because PostgreSQL runs in a separate container.
-
-For Redis, use `redis` as the hostname when running with Docker Compose.
-
-### 4. Start development environment
+Start the development environment:
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-This will:
+The development environment starts:
 
-* Build the Docker image using the `dev` stage
-* Start PostgreSQL
-* Start Redis
-* Start the FastAPI backend with hot reload
-* Run database migrations
-* Run development seed scripts
+* FastAPI
+* PostgreSQL
+* Redis
+* RabbitMQ
+* Celery Worker
+* Celery Beat
 
-### 5. Access the application
+Database migrations and development seed scripts are executed automatically.
 
-* **Swagger UI:** http://127.0.0.1:8000/docs
-* **ReDoc:** http://127.0.0.1:8000/redoc
-* **Database:** localhost:5432
-* **Redis:** localhost:6379
+### Services
 
-### 6. Stop the environment
+| Service                | Address                       |
+| ---------------------- | ----------------------------- |
+| Swagger UI             | `http://127.0.0.1:8000/docs`  |
+| ReDoc                  | `http://127.0.0.1:8000/redoc` |
+| PostgreSQL             | `localhost:5432`              |
+| Redis                  | `localhost:6379`              |
+| RabbitMQ Management UI | `http://127.0.0.1:15672`      |
+
+When running with Docker Compose, use the service names `db` and `redis` as hostnames inside the application configuration instead of `localhost`.
+
+### Environment Configuration
+
+The `ENVIRONMENT` variable determines which configuration file is loaded:
+
+| Environment | Configuration |
+| ----------- | ------------- |
+| `local`     | `.env`        |
+| `dev`       | `.env.dev`    |
+| `prod`      | `.env.prod`   |
+
+The default environment is `local`.
+
+### Stopping the Development Environment
 
 ```bash
 docker compose -f docker-compose.dev.yml down
 ```
 
-To remove database volumes:
+To remove the database volume as well:
 
 ```bash
 docker compose -f docker-compose.dev.yml down -v
 ```
 
+### Detailed instructions for Docker PROD, manual installation, environment variables, database setup, migrations, and deployment are available in **[docs/running.md](docs/running.md)**.
+
 ---
 
 ## Testing
 
-The project includes tests for API endpoints, services, repositories, and use cases.
+The project includes tests for API endpoints, services, repositories,
+use cases, and Celery background tasks.
 
 ### Running Tests
 
@@ -407,6 +358,7 @@ pytest --cov=app --cov-report=html
 ```text
 tests/
 ├── api/             # API integration tests
+├── infrastructure/  # Infrastructure tests
 ├── services/        # Unit tests with mocked dependencies
 ├── repositories/    # Database integration tests
 └── use_cases/      # Business logic tests
@@ -420,7 +372,7 @@ Every push and pull request runs:
 * Application checks
 * Docker build verification
 
-For more details, see **[docs/testing.md](docs/testing.md)**.
+### For more details, see **[docs/testing.md](docs/testing.md)**.
 
 ---
 

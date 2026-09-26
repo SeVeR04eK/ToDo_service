@@ -121,6 +121,21 @@ The test database is:
 - Configured using the application's SQLAlchemy models
 ---
 
+## Celery Task Testing
+
+Celery tasks are tested independently from the worker process.
+
+Tests cover:
+
+* Successful task execution
+* Email service failures
+* Exception propagation for automatic retries
+* Token cleanup execution
+* Database/session failures
+* Task result handling
+
+---
+
 ## Coverage 
 
 Latest coverage: 93%

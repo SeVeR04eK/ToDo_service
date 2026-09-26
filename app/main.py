@@ -1,17 +1,12 @@
 import os
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-import asyncio
 
 from app.core.logging import setup_logging, settings
 from app.presentation.api import api_router
-from app.infrastructure.background_tasks import clean_tokens_task
 from app.domain.exceptions.base import DomainException
 from app.presentation.exception_handlers import domain_exception_handler
 from app.presentation.api.middleware import setup_middlewares
-from app.infrastructure.messaging.rabbitmq_consumer import RabbitMQConsumer
-from app.infrastructure.messaging.rabbitmq_publisher import get_rabbitmq_publisher
-from app.infrastructure.services.email_service import EmailService
 
 # Initialize logging before creating the FastAPI app
 # Skip logging setup during tests to avoid pollution
@@ -23,52 +18,15 @@ if os.getenv("PYTEST_RUNNING") != "true":
 async def lifespan(_app: FastAPI):
     """Application lifespan manager.
     
-    This context manager handles startup and shutdown events:
-    - Startup: Start the background task to clean expired refresh tokens and RabbitMQ consumer
-    - Shutdown: Cancel the background task gracefully and close RabbitMQ connection
+    This context manager handles startup and shutdown events.
+    Background tasks (email sending and token cleanup) are now handled by Celery workers.
     """
-    # Start background task for cleaning expired tokens
-    token_task = asyncio.create_task(clean_tokens_task())
-    
-    # Start RabbitMQ consumer
-    email_service = EmailService()
-    rabbitmq_consumer = RabbitMQConsumer(email_service)
-    consumer_task = None
-    
-    try:
-        await rabbitmq_consumer.connect()
-        consumer_task = asyncio.create_task(rabbitmq_consumer.start_consuming())
-    except Exception as e:
-        import structlog
-        logger = structlog.get_logger(__name__)
-        logger.error("Failed to start RabbitMQ consumer", error=str(e))
-
     # Properly handle the lifespan
     try:
         yield
     finally:
-        # Cancel background task on shutdown
-        token_task.cancel()
-        
-        if consumer_task:
-            consumer_task.cancel()
-        
-        await rabbitmq_consumer.close()
-        
-        # Close RabbitMQ publisher
-        rabbitmq_publisher = get_rabbitmq_publisher()
-        await rabbitmq_publisher.close()
-
-        try:
-            await token_task
-        except asyncio.CancelledError:
-            pass
-        
-        if consumer_task:
-            try:
-                await consumer_task
-            except asyncio.CancelledError:
-                pass
+        # No background tasks to clean up - handled by Celery
+        pass
 
 
 tags_metadata = [

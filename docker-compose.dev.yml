@@ -61,6 +61,48 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    env_file:
+      - .env.dev
+    environment:
+      - ENVIRONMENT=dev
+    command: celery -A app.infrastructure.celery.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    env_file:
+      - .env.dev
+    environment:
+      - ENVIRONMENT=dev
+    command: celery -A app.infrastructure.celery.celery_app beat --loglevel=info
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
 volumes:
   postgres_data:
 
