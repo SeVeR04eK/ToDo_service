@@ -5,6 +5,7 @@ from celery import Task
 
 from app.core.config import settings
 from app.infrastructure.celery.celery_app import celery_app
+from app.infrastructure.redis.client import get_redis_client
 from app.infrastructure.services.email_service import EmailService
 
 
@@ -25,6 +26,36 @@ class EmailTask(Task):
         return self._email_service
 
 
+async def _send_welcome_email(
+    email_service: EmailService,
+    redis,
+    username: str,
+    email: str,
+    idempotency_key: str,
+) -> bool:
+    """Send welcome email with Redis-based idempotency."""
+
+    # Check whether the email was already sent.
+    if await redis.exists(idempotency_key):
+        return True
+
+    # Send the email.
+    result = await email_service.send_welcome_email(
+        username,
+        email,
+    )
+
+    # Mark as sent only after successful delivery.
+    if result:
+        await redis.set(
+            idempotency_key,
+            "sent",
+            ex=60 * 60 * 24 * 30,
+        )
+
+    return result
+
+
 @celery_app.task(
     bind=True,
     base=EmailTask,
@@ -43,20 +74,28 @@ def send_welcome_email_task(
 
     The task is automatically retried when an exception occurs.
 
+    Redis is used for idempotency. A key is created only after
+    the email has been successfully sent.
+
     Args:
         username: Username of the new user.
         email: Email address of the new user.
 
     Returns:
-        True if the email was sent successfully.
-        False if the email service intentionally reports that
-        the email was not sent.
+        True if the email was sent successfully or was already sent.
+        False if the email service intentionally did not send it.
 
-    Important: no idempotency is implemented yet!
+    Raises:
+        Exception: If Redis or the email service raises an exception.
+            Celery will automatically retry the task.
     """
+
+    idempotency_key = f"welcome-email:{email}"
+    redis = get_redis_client()
+
     try:
         logger.info(
-            "Sending welcome email via Celery",
+            "Processing welcome email task",
             username=username,
             email=email,
             task_id=self.request.id,
@@ -64,9 +103,12 @@ def send_welcome_email_task(
         )
 
         result = asyncio.run(
-            self.email_service.send_welcome_email(
-                username,
-                email,
+            _send_welcome_email(
+                email_service=self.email_service,
+                redis=redis,
+                username=username,
+                email=email,
+                idempotency_key=idempotency_key,
             )
         )
 
@@ -89,14 +131,13 @@ def send_welcome_email_task(
 
     except Exception:
         logger.exception(
-            "Failed to send welcome email via Celery",
+            "Failed to process welcome email task",
             username=username,
             email=email,
             task_id=self.request.id,
             retry_count=self.request.retries,
         )
 
-        # Very important:
-        # the exception must escape the task so that
-        # Celery's autoretry_for can retry it.
+        # The exception must escape the task so that
+        # autoretry_for can retry it.
         raise
