@@ -15,7 +15,7 @@
 [![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker\&logoColor=white)](https://www.docker.com/)
 [![Git](https://img.shields.io/badge/Git-F05032?logo=git\&logoColor=white)](https://git-scm.com/)
 
-**API Version:** 0.5.1
+**API Version:** 0.5.2
 
 ---
 
@@ -134,6 +134,7 @@ The project demonstrates:
 ### Background Processing
 
 - Asynchronous welcome email delivery
+- Redis-based idempotency for welcome email delivery
 - Automatic task retries with backoff and jitter
 - Periodic expired refresh-token cleanup
 - Celery workers and Celery Beat

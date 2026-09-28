@@ -3,6 +3,43 @@
 All notable changes to this project will be documented in this file.
 
 
+## [0.5.2] - 2026-09-29
+
+### Added
+
+#### Celery
+
+* Added Celery-based background task processing
+* Added Celery Worker for asynchronous task execution
+* Added Celery Beat for periodic task scheduling
+* Added automatic task retries with exponential backoff and jitter
+* Added Redis-based idempotency for email tasks to prevent duplicate welcome email delivery
+
+#### Messaging
+
+* Added dependency inversion for messaging infrastructure
+
+### Changed
+
+* Migrated background email processing from custom RabbitMQ publisher/consumer to Celery
+* Updated Docker services and networking for the new Celery-based architecture
+
+### Removed
+
+* Removed obsolete custom RabbitMQ publisher and consumer implementation
+* Removed obsolete RabbitMQ messaging infrastructure used for background email processing
+
+### Tests
+
+* Updated background task tests for Celery-based processing
+* Updated messaging-related tests to use the `MessagePublisher` abstraction
+
+### Documentation
+
+* Updated README and technical documentation with Celery, Celery Beat, and Redis result backend
+* Updated architecture documentation to reflect the new messaging and background processing flow
+---
+
 ## [0.5.1] - 2026-09-20
 
 ### Added

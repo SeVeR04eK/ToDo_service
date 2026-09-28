@@ -67,7 +67,7 @@ This project serves as a practical example of building a well‑organized backen
 It demonstrates how to design a reliable, secure, and easy‑to‑maintain API suitable for real applications and learning.
     """,
     summary="Task management API with authentication.",
-    version="0.5.1",
+    version="0.5.2",
     contact={
         "name": "Andrii Severyn",
         "email": "andrej.chees.bs@gmail.com",
