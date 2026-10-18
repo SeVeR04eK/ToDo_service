@@ -119,21 +119,24 @@ class TestRedisSlidingWindowCounter:
 
         assert mock_script.call_count == 3
 
-    async def test_get_retry_after_with_current_window(self, rate_limiter, mock_redis_client):
-        """Test retry-after calculation with current window data."""
-        now = time.time()
-        current_window = math.floor(now / 60)
-        elapsed_in_current = now % 60
-
-        # Mock hget to return current window count
+    async def test_get_retry_after_with_current_window(
+            self,
+            rate_limiter,
+            mock_redis_client,
+    ):
+        now = 1234567890.5
         mock_redis_client.hget.return_value = "5"
 
-        retry_after = await rate_limiter.get_retry_after("test_key", 60)
+        with patch(
+                "app.infrastructure.redis.rate_limit.redis_sliding_window_counter.time.time",
+                return_value=now,
+        ):
+            retry_after = await rate_limiter.get_retry_after("test_key", 60)
 
-        # Should return time until window rolls over
         assert retry_after is not None
-        expected_retry = int(60 - elapsed_in_current)
-        assert abs(retry_after - expected_retry) <= 2  # Allow small tolerance
+
+        expected_retry = int(60 - (now % 60))
+        assert abs(retry_after - expected_retry) <= 2
 
     async def test_get_retry_after_no_data(self, rate_limiter, mock_redis_client):
         """Test retry-after when no data exists."""

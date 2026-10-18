@@ -17,7 +17,7 @@ Response:
     "status": "healthy",
     "timestamp": "2026-08-15T12:00:00.000000",
     "service": "ToDo Service API",
-    "version": "0.5.2",
+    "version": "0.6.0",
     "database": {
         "status": "healthy",
         "error": null
