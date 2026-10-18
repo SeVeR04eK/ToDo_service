@@ -47,6 +47,7 @@ jobs:
                      -e DATABASE_URL=sqlite+aiosqlite:///:memory: \
                      -e FIRST_ADMIN_USERNAME=admin \
                      -e FIRST_ADMIN_PASSWORD=admin123 \
+                     -e FIRST_ADMIN_EMAIL=admin@example.com \
                      -e REDIS_HOST=redis \
                      -e REDIS_PORT=6379 \
                      -e REDIS_DB=0 \
