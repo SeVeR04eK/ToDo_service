@@ -28,3 +28,5 @@ htmlcov/
 
 celerybeat-schedule
 celerybeat-schedule.*
+
+nginx/certs/*.pem

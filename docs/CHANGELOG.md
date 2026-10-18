@@ -3,6 +3,75 @@
 All notable changes to this project will be documented in this file.
 
 
+
+## [0.6.0] - 2026-10-18
+
+### Added
+
+#### Nginx
+
+- Added Nginx as a reverse proxy and public entry point
+- Added HTTPS termination with TLS certificates
+- Added HTTP-to-HTTPS redirection
+- Added load balancing across multiple FastAPI backend replicas
+- Added separate Nginx configurations for development and production environments
+- Added forwarding of client information through proxy headers
+
+#### Docker
+
+- Added dedicated Docker network for inter-service communication
+- Added production deployment with multiple backend replicas
+- Added health checks for PostgreSQL, Redis, and RabbitMQ
+- Added dedicated `init-db` service for database initialization
+- Added environment-specific Docker Compose configurations
+- Added production-oriented service restart policies
+
+#### Database Initialization
+
+- Added dedicated database initialization flow
+- Added centralized Alembic migration execution through `init-db`
+- Added development-only database seed execution
+- Prevented multiple application services from running migrations concurrently
+
+#### Configuration
+
+- Added initial admin email configuration
+- Added configurable RabbitMQ credentials for production
+- Added `INSTANCE_ID` for backend replicas
+- Added Docker-specific environment configuration
+
+### Changed
+
+- Changed production architecture from a single backend container to three horizontally scalable backend replicas
+- Changed backend and infrastructure communication to use the internal Docker network
+- Changed backend services from published host ports to internal `expose` ports
+- Changed application access from direct FastAPI port `8000` to Nginx over HTTPS
+- Changed database migrations and seed execution from application startup to the dedicated `init-db` service
+- Changed production Gunicorn configuration from four workers to one worker per backend container
+- Migrated PostgreSQL driver from Psycopg 2 to Psycopg 3
+- Updated Docker Compose service dependencies to wait for health checks and successful database initialization
+
+### Removed
+
+- Removed database migration execution from the main Docker entrypoint
+- Removed automatic production seed execution
+- Removed direct host port exposure for backend, Redis, and RabbitMQ AMQP services in production
+
+### Tests
+
+- Updated tests and environment configuration to support the new infrastructure architecture
+- Updated application startup and integration flows for dedicated database initialization
+
+### Documentation
+
+- Updated README with Nginx, HTTPS, reverse proxy, and load balancing
+- Updated architecture documentation with Docker, Nginx, HTTPS, and horizontal scaling architecture
+- Added documentation for the dedicated database initialization flow
+- Updated deployment and running documentation for Docker DEV and PROD environments
+- Updated service access URLs to use Nginx over HTTPS
+- Updated documentation to reflect multi-container production deployment
+---
+
 ## [0.5.2] - 2026-09-29
 
 ### Added

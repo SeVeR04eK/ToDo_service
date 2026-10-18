@@ -6,6 +6,7 @@
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python\&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi\&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql\&logoColor=white)](https://www.postgresql.org/)
+[![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white)](https://nginx.org/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis\&logoColor=white)](https://redis.io/)
 [![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?logo=rabbitmq&logoColor=white)](https://www.rabbitmq.com/)
 [![Celery](https://img.shields.io/badge/Celery-37814A?logo=celery&logoColor=white)](https://docs.celeryq.dev/)
@@ -22,7 +23,8 @@
 ## Overview
 
 ToDo Service is a production-oriented REST API for task and user management,
-built with FastAPI and PostgreSQL.
+built with FastAPI and a PostgreSQL-based backend, with Redis, RabbitMQ,
+Celery, and Nginx for caching, background processing, and infrastructure.
 
 The project demonstrates:
 
@@ -31,19 +33,10 @@ The project demonstrates:
 - Redis caching and distributed rate limiting
 - Asynchronous background processing with Celery and RabbitMQ
 - Periodic task scheduling with Celery Beat
+- Reverse proxy, HTTPS termination, and load balancing with Nginx
 - Automated testing and structured observability
 - Docker-based development and deployment
 
-### Main Capabilities
-
-- User registration and account management
-- JWT authentication and session management
-- Role-Based Access Control (RBAC)
-- Task management with filtering and pagination
-- Administrative user and task management
-- Redis caching and rate limiting
-- Asynchronous welcome email delivery
-- Periodic expired-token cleanup
 ---
 
 ## Contents
@@ -51,7 +44,7 @@ The project demonstrates:
 - [Overview](#overview)
 - [Features](#features)
 - [Architecture](#architecture)
-- [Database Design](#database-design)
+- [Database Design](#database)
 - [Authentication Flow](#authentication-flow)
 - [API](#api)
 - [Configuration](#configuration)
@@ -80,6 +73,7 @@ The project demonstrates:
 | Security         | bcrypt, refresh token hashing, ownership checks, security headers, HSTS    |
 | Testing          | Unit, repository, API/integration, and infrastructure tests                |
 | Infrastructure   | Docker, Docker Compose, multi-stage builds                                 |
+| Reverse Proxy | Nginx, HTTPS termination, reverse proxy, load balancing |
 
 ---
 
@@ -93,18 +87,11 @@ The project demonstrates:
 - Session revocation and logout
 - Role-Based Access Control (RBAC)
 
-### User Management
+### User & Task Management
 
-- Account information retrieval and updates
-- Password changes with previous-password verification
-- Account deletion
-- Account activation and deactivation
-
-### Task Management
-
-- Create, update, retrieve, and delete tasks
-- Task status management
-- Ownership enforcement
+- Account management and password changes
+- Account activation and deletion
+- Task CRUD with ownership enforcement
 - Filtering and pagination
 
 ### Administration
@@ -118,26 +105,16 @@ The project demonstrates:
 
 - bcrypt password hashing
 - Hashed refresh tokens
-- Resource ownership enforcement
-- Security headers
-- CORS configuration
+- Security headers and CORS
 - Request validation
-
-### Observability
-
-- Health checks
-- Database and Redis connectivity checks
-- Structured JSON logging
-- Correlation IDs
-- Request duration tracking
 
 ### Background Processing
 
 - Asynchronous welcome email delivery
-- Redis-based idempotency for welcome email delivery
-- Automatic task retries with backoff and jitter
-- Periodic expired refresh-token cleanup
-- Celery workers and Celery Beat
+- Idempotent email processing
+- Automatic retries with backoff and jitter
+- Periodic expired-token cleanup with Celery Beat
+
 ---
 
 
@@ -156,34 +133,10 @@ Dependencies point toward the domain layer, while infrastructure-specific implem
 
 ---
 
-## Middleware
-
-The API uses middleware for cross-cutting HTTP concerns:
-
-* **Correlation ID** — assigns a unique identifier to each request
-* **Request Logging** — records HTTP requests and response duration
-* **Security Headers** — adds security-related HTTP headers
-* **CORS** — controls allowed cross-origin requests
-
-Middleware is configured in:
-
-```text
-app/presentation/api/middleware/setup.py
-```
-
----
-
 ## Database
 
 The service uses PostgreSQL with SQLAlchemy 2.0, and schema changes
 are managed through Alembic migrations.
-
-Core entities:
-
-- **Users** — accounts, authentication, and roles
-- **Tasks** — user-owned tasks with status tracking
-- **Refresh Tokens** — hashed rotating tokens with family tracking
-- **Roles** — RBAC role definitions
 
 ### Detailed schema definitions are available in the **[docs/database.md](docs/database.md)**.
 
@@ -215,7 +168,7 @@ Interactive documentation:
 - Swagger UI: `/docs`
 - ReDoc: `/redoc`
 
-Examples: 
+### API Examples: 
 ![Authentication](screenshots/auth.png)
 
 ![Tasks](screenshots/tasks.png)
@@ -236,22 +189,7 @@ Examples:
 | [API](docs/api.md) | API endpoints and usage |
 | [Running](docs/running.md) | Development and deployment instructions |
 | [Testing](docs/testing.md) | Testing strategy and test execution |
-
----
-
-## Configuration
-
-The application uses environment-based configuration with Pydantic Settings.
-
-The `ENVIRONMENT` variable controls which `.env` file is loaded:
-
-| Environment | File        |
-| ----------- | ----------- |
-| `local`     | `.env`      |
-| `dev`       | `.env.dev`  |
-| `prod`      | `.env.prod` |
-
-In `app/core/config.py`, `local` is used as the default environment.
+| [Changelog](docs/changelog.md) | Project history of changes |
 
 ---
 
@@ -262,6 +200,8 @@ The project supports three execution modes:
 * **Docker DEV** — local development with hot reload and bind mounts
 * **Docker PROD** — production-oriented container configuration
 * **Manual Setup** — run the application without Docker
+
+In `app/core/config.py`, `local` is used as the default environment.
 
 ### Quick Start
 
@@ -288,38 +228,25 @@ docker compose -f docker-compose.dev.yml up --build
 
 The development environment starts:
 
-* FastAPI
-* PostgreSQL
-* Redis
-* RabbitMQ
-* Celery Worker
-* Celery Beat
+- Nginx
+- FastAPI
+- PostgreSQL
+- Redis
+- RabbitMQ
+- Celery Worker
+- Celery Beat
 
 Database migrations and development seed scripts are executed automatically.
 
 ### Services
 
-| Service                | Address                       |
-| ---------------------- | ----------------------------- |
-| Swagger UI             | `http://127.0.0.1:8000/docs`  |
-| ReDoc                  | `http://127.0.0.1:8000/redoc` |
-| PostgreSQL             | `localhost:5432`              |
-| Redis                  | `localhost:6379`              |
-| RabbitMQ Management UI | `http://127.0.0.1:15672`      |
+| Service | Address |
+|---------|---------|
+| API / Swagger UI | `https://localhost/docs` |
+| ReDoc | `https://localhost/redoc` |
+| RabbitMQ Management UI | `http://127.0.0.1:15672` |
 
 When running with Docker Compose, use the service names `db` and `redis` as hostnames inside the application configuration instead of `localhost`.
-
-### Environment Configuration
-
-The `ENVIRONMENT` variable determines which configuration file is loaded:
-
-| Environment | Configuration |
-| ----------- | ------------- |
-| `local`     | `.env`        |
-| `dev`       | `.env.dev`    |
-| `prod`      | `.env.prod`   |
-
-The default environment is `local`.
 
 ### Stopping the Development Environment
 

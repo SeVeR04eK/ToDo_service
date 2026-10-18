@@ -8,21 +8,52 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-todo_service}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-todo_service}"
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
+
     restart: unless-stopped
+
+    networks:
+      - app_network
+
+  init-db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+
+    env_file:
+      - .env.prod
+
+    environment:
+      - ENVIRONMENT=prod
+
+    command: [ "/app/scripts/init-db.sh" ]
+
+    depends_on:
+      db:
+        condition: service_healthy
+
     networks:
       - app_network
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+
+    expose:
+      - "6379"
+
     restart: unless-stopped
+
     networks:
       - app_network
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -31,40 +62,117 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+
+    expose:
+      - "5672"
     ports:
-      - "5672:5672"
       - "15672:15672"
+
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+
     restart: unless-stopped
+
     networks:
       - app_network
+
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  backend:
+  backend-1:
     build:
       context: .
       dockerfile: Dockerfile
       target: prod
+
     env_file:
       - .env.prod
+
     environment:
-      - ENVIRONMENT=prod
-    ports:
-      - "8000:8000"
+      ENVIRONMENT: prod
+      INSTANCE_ID: backend-1
+
+    expose:
+      - "8000"
+
     depends_on:
+      init-db:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
     restart: unless-stopped
+
+    networks:
+      - app_network
+
+  backend-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+
+    env_file:
+      - .env.prod
+
+    environment:
+      ENVIRONMENT: prod
+      INSTANCE_ID: backend-2
+
+    expose:
+      - "8000"
+
+    depends_on:
+      init-db:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - app_network
+
+  backend-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+
+    env_file:
+      - .env.prod
+
+    environment:
+      ENVIRONMENT: prod
+      INSTANCE_ID: backend-3
+
+    expose:
+      - "8000"
+
+    depends_on:
+      init-db:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+    restart: unless-stopped
+
     networks:
       - app_network
 
@@ -73,19 +181,27 @@ services:
       context: .
       dockerfile: Dockerfile
       target: prod
+
     env_file:
       - .env.prod
+
     environment:
-      - ENVIRONMENT=prod
+      ENVIRONMENT: prod
+
     command: celery -A app.infrastructure.celery.celery_app worker --loglevel=info
+
     depends_on:
+      init-db:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
     restart: unless-stopped
+
     networks:
       - app_network
 
@@ -94,24 +210,55 @@ services:
       context: .
       dockerfile: Dockerfile
       target: prod
+
     env_file:
       - .env.prod
+
     environment:
-      - ENVIRONMENT=prod
+      ENVIRONMENT: prod
+
     command: celery -A app.infrastructure.celery.celery_app beat --loglevel=info
+
     depends_on:
+      init-db:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+
     restart: unless-stopped
+
     networks:
       - app_network
 
+  nginx:
+    image: nginx:alpine
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+
+    depends_on:
+      - backend-1
+      - backend-2
+      - backend-3
+
+    restart: unless-stopped
+
+    networks:
+      - app_network
+
+
 volumes:
   postgres_data:
+
 
 networks:
   app_network:

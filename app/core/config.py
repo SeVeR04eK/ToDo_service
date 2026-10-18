@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     # Admin User (for initial seeding)
     first_admin_username: str
     first_admin_password: SecretStr
+    first_admin_email: str
     
     # JWT Token Configuration
     access_token_expire_minutes: timedelta = timedelta(minutes=15)

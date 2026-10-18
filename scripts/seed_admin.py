@@ -29,6 +29,7 @@ async def seed_admin() -> None:
         admin = User(
             username=settings.first_admin_username,
             hashed_password=password_hasher.hash(settings.first_admin_password.get_secret_value()),
+            email=settings.first_admin_email,
             role_id=admin_role.id,
             is_active=True,
         )

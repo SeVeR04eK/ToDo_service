@@ -1,5 +1,21 @@
 # Running the Project
 
+## Configuration
+
+The application uses environment-based configuration with Pydantic Settings.
+
+The `ENVIRONMENT` variable controls which `.env` file is loaded:
+
+| Environment | File        |
+| ----------- | ----------- |
+| `local`     | `.env`      |
+| `dev`       | `.env.dev`  |
+| `prod`      | `.env.prod` |
+
+In `app/core/config.py`, `local` is used as the default environment.
+
+---
+
 The project supports three execution modes:
 
 **Docker DEV** — local development with hot‑reload and bind‑mount
@@ -53,6 +69,7 @@ SECRET_KEY=your_generated_secret_key_here
 FIRST_ADMIN_USERNAME=admin
 FIRST_ADMIN_PASSWORD=admin123
 DEBUG=true
+...
 ```
 
 **⚠️ Important**: When running with Docker DEV mode, ensure the `DATABASE_URL` uses `db` as the hostname (not `localhost`), as the database runs in a separate Docker container within the same network.
@@ -76,7 +93,7 @@ This will:
 
 ### 5. Access the application
 
-- **API Documentation**: http://127.0.0.1:8000/docs
+- **API Documentation**: https://localhost/docs
 - **Database**: localhost:5432
 
 ---
@@ -120,15 +137,19 @@ cd ToDo_service
 
 ### 2. Setup environment variables
 
-Create `.env.prod` with production values:
+Fill `.env.prod` file with proper values:
 
 ```bash
-# .env.prod
+# example
 DATABASE_URL=postgresql+asyncpg://user:password@db:5432/todo_service
 SECRET_KEY=your_production_secret_key_minimum_32_characters
 FIRST_ADMIN_USERNAME=admin
 FIRST_ADMIN_PASSWORD=your_secure_admin_password
+FIRST_ADMIN_EMAIL=admin@example.com
 DEBUG=false
+RABBITMQ_USER=todo_service
+RABBITMQ_PASSWORD=...
+...
 ```
 
 **⚠️ Security Notice**: In production, use proper secrets management (HashiCorp Vault, AWS Secrets Manager, etc.) instead of environment files.
@@ -144,22 +165,17 @@ docker compose -f docker-compose.prod.yml up --build -d
 This will:
 - Build the Docker image using the `prod` stage
 - Start PostgreSQL with health checks
-- Start FastAPI with Gunicorn (4 workers)
+- Start FastAPI with Gunicorn
 - Run database migrations automatically
 - Configure restart policies
 
 **Note**: Seed scripts are NOT run in production. Run them manually if needed:
 
-```bash
-docker compose -f docker-compose.prod.yml exec backend python -m scripts.seed_roles
-docker compose -f docker-compose.prod.yml exec backend python -m scripts.seed_admin
-```
-
 ---
 
 ### 4. Access the application
 
-- **API Documentation**: http://127.0.0.1:8000/docs
+- **API Documentation**: https://localhost/docs
 - **Database**: localhost:5432
 
 ---

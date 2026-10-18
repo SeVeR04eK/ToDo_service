@@ -5,7 +5,7 @@ starlette
 pydantic
 sqlalchemy[asyncio]
 asyncpg
-psycopg2-binary
+psycopg[binary]
 pydantic_settings
 alembic
 passlib
