@@ -279,7 +279,7 @@ class TestRateLimitingIntegration:
 
     async def test_health_endpoint_no_rate_limit(self, client_with_mock_rate_limiter, mock_rate_limiter):
         """Test that health endpoint is not rate limited."""
-        response = await client_with_mock_rate_limiter.get("/health/")
+        response = await client_with_mock_rate_limiter.get("/health/live")
 
         # Health endpoint should not have rate limiting
         assert response.status_code == 200

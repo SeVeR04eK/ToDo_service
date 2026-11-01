@@ -314,7 +314,7 @@ async def update_task(
                             "title": "example new title"
                         }
                     },
-                    "partial_сontent": {
+                    "partial_content": {
                         "summary": "Update user task with only the provided content.",
                         "description": "Update user task with only the provided field: content",
                         "value": {

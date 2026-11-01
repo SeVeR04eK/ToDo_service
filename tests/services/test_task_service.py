@@ -15,7 +15,7 @@ from app.domain.exceptions import TaskNotFoundError
 @pytest.mark.tasks
 class TestTaskService:
     """Test suite for TaskService."""
-    
+
     @pytest.mark.asyncio
     async def test_create_task_service_success(self):
         """Test successful task creation through service."""
@@ -25,11 +25,11 @@ class TestTaskService:
         mock_uow.task_repository.create_task.return_value = mock_task
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
-        
+
         mock_task_cache = AsyncMock(spec=TaskCache)
         service = TaskService(unit_of_work=mock_uow, task_cache=mock_task_cache)
         task_data = CreateTaskDTO(title="Test Task", content="Test Content", status=TaskStatus.todo)
-        
+
         task_read = await service.create_task_service(task_data, 1)
 
         assert task_read.id is not None
@@ -39,7 +39,7 @@ class TestTaskService:
         assert task_read.user_id == 1
         mock_uow.task_repository.create_task.assert_called_once()
         mock_uow.commit.assert_awaited_once()
-        mock_task_cache.delete_task_list.assert_called_once_with(1)
+        mock_task_cache.delete_task_list.assert_called_once_with(user_id=1)
     
     @pytest.mark.asyncio
     async def test_get_tasks_service_no_filters(self):
@@ -93,7 +93,7 @@ class TestTaskService:
         assert todo_tasks.items[0].status == TaskStatus.todo
         mock_uow.task_repository.get_tasks.assert_called_once()
         mock_task_cache.set_task_list.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_get_tasks_service_with_limit(self):
         """Test getting tasks with limit through service."""
@@ -120,7 +120,7 @@ class TestTaskService:
         assert len(tasks.items) == 3
         mock_uow.task_repository.get_tasks.assert_called_once()
         mock_task_cache.set_task_list.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_get_tasks_service_with_offset(self):
         """Test getting tasks with offset through service."""
@@ -147,7 +147,7 @@ class TestTaskService:
         assert len(tasks.items) == 5
         mock_uow.task_repository.get_tasks.assert_called_once()
         mock_task_cache.set_task_list.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_get_tasks_service_with_from_newest(self):
         """Test getting tasks sorted by newest first through service."""
@@ -179,7 +179,7 @@ class TestTaskService:
         assert newest_tasks.items[-1].id == 0
         mock_uow.task_repository.get_tasks.assert_called_once()
         mock_task_cache.set_task_list.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_get_tasks_service_empty_result(self):
         """Test getting tasks when user has no tasks."""
@@ -202,7 +202,7 @@ class TestTaskService:
         assert tasks.items == []
         mock_uow.task_repository.get_tasks.assert_called_once()
         mock_task_cache.set_task_list.assert_called_once()
-    
+
     @pytest.mark.asyncio
     async def test_get_task_service_success(self):
         """Test getting a specific task through service."""
@@ -258,12 +258,12 @@ class TestTaskService:
         mock_uow.task_repository = AsyncMock()
         mock_task = Task(id=1, title="Task", content="Content", status=TaskStatus.todo, user_id=1)
         mock_uow.task_repository.get_task.return_value = mock_task
-        
+
         updated_task = Task(id=1, title="Updated Title", content="Updated Content", status=TaskStatus.done, user_id=1)
         mock_uow.task_repository.update_task.return_value = updated_task
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
-        
+
         mock_task_cache = AsyncMock(spec=TaskCache)
         service = TaskService(unit_of_work=mock_uow, task_cache=mock_task_cache)
         update_data = UpdateTaskDTO(
@@ -271,7 +271,7 @@ class TestTaskService:
             content="Updated Content",
             status=TaskStatus.done
         )
-        
+
         result = await service.update_task_service(1, 1, update_data)
 
         assert result.id == 1
@@ -354,7 +354,7 @@ class TestTaskService:
         mock_uow.task_repository.delete_task.return_value = None
         mock_uow.__aenter__.return_value = mock_uow
         mock_uow.commit.return_value = None
-        
+
         mock_task_cache = AsyncMock(spec=TaskCache)
         service = TaskService(unit_of_work=mock_uow, task_cache=mock_task_cache)
         await service.delete_task_service(1, 1)

@@ -71,7 +71,7 @@ services:
     environment:
       - ENVIRONMENT=dev
 
-    command: [ "/app/scripts/init-db.sh" ]
+    command: ["/app/scripts/init-db.sh"]
 
     depends_on:
       db:
@@ -98,6 +98,13 @@ services:
     volumes:
       - .:/app
       - /app/__pycache__
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
 
     depends_on:
       init-db:

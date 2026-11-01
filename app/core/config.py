@@ -119,6 +119,9 @@ class Settings(BaseSettings):
     rate_limit_user_delete_limit: int = 3
     rate_limit_user_delete_window: int = 3600  # 1 hour
 
+    rate_limit_user_create_limit: int = 5
+    rate_limit_user_create_window: int = 3600  # 1 hour
+
     # Task endpoints
     rate_limit_tasks_read_limit: int = 120
     rate_limit_tasks_read_window: int = 60

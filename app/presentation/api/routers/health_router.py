@@ -1,4 +1,5 @@
-from fastapi import APIRouter, status
+import structlog
+from fastapi import APIRouter, status, HTTPException
 from datetime import datetime, timezone
 from sqlalchemy import text
 from app.infrastructure.database import SessionLocal
@@ -6,64 +7,68 @@ from app.infrastructure.redis import get_redis_client
 import aio_pika
 from app.core.config import settings
 
+logger = structlog.get_logger(__name__)
 health_router = APIRouter(prefix="/health", tags=["health"])
 
 
-@health_router.get("/", status_code=status.HTTP_200_OK, summary="Health check")
+@health_router.get("/ready", summary="Readiness check")
 async def health_check():
-    """Health check endpoint to verify service dependencies."""
+    """Checks whether the application is ready to serve requests by verifying its service dependencies."""
 
     db_status = "healthy"
-    db_error = None
 
     try:
         async with SessionLocal() as session:
             await session.execute(text("SELECT 1"))
-    except Exception as e:
+    except Exception:
+        logger.exception("PostgreSQL health check failed")
         db_status = "unhealthy"
-        db_error = str(e)
 
     redis_status = "healthy"
-    redis_error = None
 
     try:
         redis = get_redis_client()
         await redis.ping()
-    except Exception as e:
+    except Exception:
+        logger.exception("Redis health check failed")
         redis_status = "unhealthy"
-        redis_error = str(e)
 
     rabbitmq_status = "healthy"
-    rabbitmq_error = None
 
     try:
         connection = await aio_pika.connect_robust(settings.celery_broker_url)
         await connection.close()
-    except Exception as e:
+    except Exception:
+        logger.exception("RabbitMQ health check failed")
         rabbitmq_status = "unhealthy"
-        rabbitmq_error = str(e)
 
-    overall_status = (
-        "healthy"
-        if db_status == "healthy" and redis_status == "healthy" and rabbitmq_status == "healthy"
-        else "degraded"
+    overall_healthy = (
+        db_status == "healthy"
+        and redis_status == "healthy"
+        and rabbitmq_status == "healthy"
     )
 
-    return {
-        "status": overall_status,
+    response = {
+        "status": "healthy" if overall_healthy else "degraded",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": "ToDo Service API",
-        "version": "0.6.0",
-        "database": {
-            "status": db_status,
-            "error": db_error,
-        },
-        "redis": {
-            "status": redis_status,
-            "error": redis_error,
-        },
-        "rabbitmq": {
-            "status": rabbitmq_status,
-            "error": rabbitmq_error,
+        "version": "1.0.0",
+        "dependencies": {
+            "database": db_status,
+            "redis": redis_status,
+            "rabbitmq": rabbitmq_status,
         },
     }
+
+    if not overall_healthy:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=response
+        )
+
+    return response
+
+@health_router.get("/live", status_code=status.HTTP_200_OK, summary="Liveness check")
+async def live():
+    """Liveness check to verify that the application is running."""
+    return {"status": "alive"}

@@ -1,6 +1,5 @@
-import asyncio
 import structlog
-from typing import List, Optional
+from typing import Optional
 
 from app.domain.enums import TaskStatus
 from app.application.dto import CreateTaskDTO, UpdateTaskDTO, TaskPaginationDTO
@@ -37,8 +36,8 @@ class TaskService:
 
             await self.unit_of_work.commit()
 
-            # Delete cache in background, don't await
-            asyncio.create_task(self.task_cache.delete_task_list(user_id))
+            # Delete cache
+            await self._safe_cache_delete_task_list(user_id)
 
         logger.info(
             "Task created",
@@ -73,7 +72,7 @@ class TaskService:
                 task_status=task_status_str,
                 limit=pagination.limit or 100,
                 offset=pagination.offset or 0,
-                from_newest=pagination.from_newest or True
+                from_newest=pagination.from_newest
             )
             if cached_page is not None:
                 return cached_page
@@ -86,16 +85,16 @@ class TaskService:
             task_status=task_status
         )
 
-        # Set cache in background, don't await
-        asyncio.create_task(self.task_cache.set_task_list(
+        # Set cache
+        await self._safe_cache_set_task_list(
             user_id=user_id,
             task_status=task_status_str,
             limit=pagination.limit or 100,
             offset=pagination.offset or 0,
-            from_newest=pagination.from_newest or True,
+            from_newest=pagination.from_newest,
             page=page,
             ttl=30
-        ))
+        )
 
         return page
 
@@ -118,9 +117,49 @@ class TaskService:
             )
             raise TaskNotFoundError()
 
-        # Set cache in background, don't await
-        asyncio.create_task(self.task_cache.set_task(user_id=user_id, task_id=task_id, task=task, ttl=60))
+        # Set cache
+        await self._safe_cache_set_task(user_id=user_id, task_id=task_id, task=task, ttl=60)
         return task
+
+    async def _safe_cache_set_task(self, user_id: int, task_id: int, task: Task, ttl: int) -> None:
+        """Safely set task cache with error handling."""
+        try:
+            await self.task_cache.set_task(user_id=user_id, task_id=task_id, task=task, ttl=ttl)
+        except Exception as e:
+            logger.warning("Cache set task failed", user_id=user_id, task_id=task_id, error=str(e))
+
+    async def _safe_cache_set_task_list(self, user_id: int, task_status: str | None, limit: int, offset: int, from_newest: bool, page: Page[Task], ttl: int) -> None:
+        """Safely set task list cache with error handling."""
+        try:
+            await self.task_cache.set_task_list(
+                user_id=user_id,
+                task_status=task_status,
+                limit=limit,
+                offset=offset,
+                from_newest=from_newest,
+                page=page,
+                ttl=ttl
+            )
+        except Exception as e:
+            logger.warning("Cache set task list failed", user_id=user_id, task_status=task_status, error=str(e))
+
+    async def _safe_cache_delete_task(self, user_id: int, task_id: int) -> None:
+        """Safely delete task cache with error handling."""
+        try:
+            await self.task_cache.delete_task(user_id=user_id, task_id=task_id)
+        except Exception as e:
+            logger.warning("Cache delete task failed", user_id=user_id, task_id=task_id, error=str(e))
+
+    async def _safe_cache_delete_task_list(self, user_id: int) -> None:
+        """Safely delete task list cache with error handling."""
+        try:
+            await self.task_cache.delete_task_list(user_id=user_id)
+        except Exception as e:
+            logger.warning(
+                "Cache delete task list failed",
+                user_id=user_id,
+                error=str(e)
+            )
 
     async def update_task_service(
             self,
@@ -156,9 +195,9 @@ class TaskService:
 
             await self.unit_of_work.commit()
 
-            # Delete cache in background, don't await
-            asyncio.create_task(self.task_cache.delete_task(user_id=user_id, task_id=task_id))
-            asyncio.create_task(self.task_cache.delete_task_list(user_id=user_id))
+            # Delete cache
+            await self._safe_cache_delete_task(user_id=user_id, task_id=task_id)
+            await self._safe_cache_delete_task_list(user_id=user_id)
 
         logger.info(
             "Task updated",
@@ -191,9 +230,9 @@ class TaskService:
 
             await self.unit_of_work.commit()
 
-            # Delete cache in background, don't await
-            asyncio.create_task(self.task_cache.delete_task(user_id=user_id, task_id=task_id))
-            asyncio.create_task(self.task_cache.delete_task_list(user_id=user_id))
+            # Delete cache
+            await self._safe_cache_delete_task(user_id=user_id, task_id=task_id)
+            await self._safe_cache_delete_task_list(user_id=user_id)
 
         logger.info(
             "Task deleted",

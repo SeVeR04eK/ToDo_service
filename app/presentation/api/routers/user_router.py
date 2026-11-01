@@ -4,7 +4,7 @@ from typing import Annotated
 from app.domain.entities import User
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.presentation.api.schemas import UserRead, UserCreate, UserUpdate, UserRole, DataResponse
-from app.presentation.api.dependencies import require_role, rate_limit_auth
+from app.presentation.api.dependencies import require_role, rate_limit_auth, rate_limit
 from app.application.services import UserService
 from app.presentation.api.dependencies.services_dep import get_user_service
 from app.core.config import settings
@@ -15,7 +15,13 @@ user_router = APIRouter(prefix = "/user", tags = ["user"])
 @user_router.post("/me", status_code = status.HTTP_201_CREATED, response_model = DataResponse[UserRead], summary="User registration")
 async def create_user(
         user: UserCreate,
-        service: UserService = Depends(get_user_service)
+        service: UserService = Depends(get_user_service),
+        _rate_limit: Annotated[None, Depends(rate_limit(
+            key_prefix="user_create",
+            limit=settings.rate_limit_user_create_limit,
+            window=settings.rate_limit_user_create_window,
+            algorithm="sliding_window_counter"
+        ))] = None,
 ) -> DataResponse[UserRead]:
     """Register a new user (_public endpoint, no authentication required_)."""
 

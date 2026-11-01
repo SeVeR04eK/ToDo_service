@@ -33,3 +33,8 @@ class WeakPasswordError(DomainException):
 class PasswordNotMatchError(DomainException):
     """Raised when the provided password does not match the user's password."""
     pass
+
+
+class InvalidEmailError(DomainException):
+    """Raised when an email address has an invalid format."""
+    pass

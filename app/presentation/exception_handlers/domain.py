@@ -25,6 +25,7 @@ ERROR_MAP: Dict[Type[DomainException], Tuple[int, str, str]] = {
     SerializationError: (400, "SERIALIZATION_ERROR", "Failed to serialize or deserialize data"),
     RateLimitExceededError: (429, "RATE_LIMIT_EXCEEDED", "Rate limit exceeded"),
     EmailAlreadyExistsError: (409, "EMAIL_ALREADY_EXISTS", "Email already exists"),
+    InvalidEmailError: (400, "INVALID_EMAIL", "Invalid email format"),
 }
 
 

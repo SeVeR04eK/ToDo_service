@@ -4,6 +4,70 @@ All notable changes to this project will be documented in this file.
 
 
 
+## [1.0.0] - 2026-11-02
+
+### Added
+
+#### Health Checks
+- Added `/health/ready` readiness endpoint
+- Added `/health/live` liveness endpoint
+- Added PostgreSQL, Redis, and RabbitMQ checks to the readiness endpoint
+- Added `503 Service Unavailable` response when the service is not ready
+- Added health check logging with `structlog`
+- Added Docker health check using `/health/live`
+- Added development Docker Compose health check using `/health/live`
+
+#### Rate Limiting
+- Added configurable rate limiting for user registration
+- Added `rate_limit_user_create_limit` configuration
+- Added `rate_limit_user_create_window` configuration
+- Added `sliding_window_counter` rate limiting to the user registration endpoint
+
+#### Email Validation
+- Added `InvalidEmailError`
+- Added email format validation using `email-validator`
+- Added `INVALID_EMAIL` error response with HTTP 400
+
+#### Cache Handling
+- Added safe cache set/delete helper methods in `UserService`
+- Added safe cache set/delete helper methods in `TaskService`
+- Added cache error logging
+- Added awaited cache operations instead of `asyncio.create_task()` for user and task cache operations
+
+### Changed
+
+- Changed the health endpoint from `/health` to `/health/ready`
+- Added a separate `/health/live` endpoint for liveness checks
+- Changed task list caching to use the actual `pagination.from_newest` value
+- Changed task cache operations to execute after database commits
+- Changed Celery email and token cleanup tasks to use a managed event loop
+- Updated health API documentation for the new readiness and liveness endpoints
+- Updated Celery tests to test `run_until_complete()` instead of `asyncio.run()`
+
+### Fixed
+
+- Fixed `CELERY_BROKER_URL` value in `.env.prod`
+- Fixed `partial_сontent` schema example typo
+- Fixed task list cache handling of the `from_newest` parameter
+- Fixed task cache invalidation to use awaited cache operations
+- Fixed user cache invalidation to use awaited cache operations
+
+### Tests
+
+- Updated health endpoint tests for `/health/live`
+- Updated Celery email task tests
+- Updated Celery token cleanup task tests
+- Updated task service tests for cache operations
+- Updated user service tests
+- Updated rate limiting tests
+
+### Documentation
+
+- Updated `docs/api.md` with `/health/ready`
+- Added `/health/live` documentation
+- Updated health check response examples
+---
+
 ## [0.6.0] - 2026-10-18
 
 ### Added

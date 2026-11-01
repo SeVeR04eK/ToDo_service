@@ -29,18 +29,18 @@ class TestCeleryEmailTask:
         assert service1 is not None
         mock_email_service_class.assert_called_once()
 
-    @patch("app.infrastructure.celery.email_task.asyncio.run")
+    @patch("app.infrastructure.celery.email_task.EmailTask.loop")
     @patch("app.infrastructure.celery.email_task.EmailService")
     def test_send_welcome_email_task_success(
         self,
         mock_email_service_class,
-        mock_asyncio_run,
+        mock_loop,
     ):
         """Test successful email sending via Celery task."""
         mock_email_service = MagicMock()
         mock_email_service_class.return_value = mock_email_service
 
-        mock_asyncio_run.return_value = True
+        mock_loop.run_until_complete.return_value = True
 
         result = send_welcome_email_task(
             "testuser",
@@ -49,21 +49,21 @@ class TestCeleryEmailTask:
 
         assert result is True
 
-        mock_asyncio_run.assert_called_once()
+        mock_loop.run_until_complete.assert_called_once()
         mock_email_service_class.assert_called_once()
 
-    @patch("app.infrastructure.celery.email_task.asyncio.run")
+    @patch("app.infrastructure.celery.email_task.EmailTask.loop")
     @patch("app.infrastructure.celery.email_task.EmailService")
     def test_send_welcome_email_task_no_credentials(
         self,
         mock_email_service_class,
-        mock_asyncio_run,
+        mock_loop,
     ):
         """Test email sending when credentials are not configured."""
         mock_email_service = MagicMock()
         mock_email_service_class.return_value = mock_email_service
 
-        mock_asyncio_run.return_value = False
+        mock_loop.run_until_complete.return_value = False
 
         result = send_welcome_email_task(
             "testuser",
@@ -72,20 +72,20 @@ class TestCeleryEmailTask:
 
         assert result is False
 
-        mock_asyncio_run.assert_called_once()
+        mock_loop.run_until_complete.assert_called_once()
 
-    @patch("app.infrastructure.celery.email_task.asyncio.run")
+    @patch("app.infrastructure.celery.email_task.EmailTask.loop")
     @patch("app.infrastructure.celery.email_task.EmailService")
     def test_send_welcome_email_task_failure_with_retry(
         self,
         mock_email_service_class,
-        mock_asyncio_run,
+        mock_loop,
     ):
         """Test email sending failure triggers exception for Celery retry."""
         mock_email_service = MagicMock()
         mock_email_service_class.return_value = mock_email_service
 
-        mock_asyncio_run.side_effect = Exception("SMTP error")
+        mock_loop.run_until_complete.side_effect = Exception("SMTP error")
 
         with pytest.raises(Exception, match="SMTP error"):
             send_welcome_email_task(
@@ -93,20 +93,20 @@ class TestCeleryEmailTask:
                 "test@example.com",
             )
 
-        mock_asyncio_run.assert_called_once()
+        mock_loop.run_until_complete.assert_called_once()
 
-    @patch("app.infrastructure.celery.email_task.asyncio.run")
+    @patch("app.infrastructure.celery.email_task.EmailTask.loop")
     @patch("app.infrastructure.celery.email_task.EmailService")
     def test_send_welcome_email_task_max_retries_exceeded(
         self,
         mock_email_service_class,
-        mock_asyncio_run,
+        mock_loop,
     ):
         """Test that task raises an exception when email sending fails."""
         mock_email_service = MagicMock()
         mock_email_service_class.return_value = mock_email_service
 
-        mock_asyncio_run.side_effect = Exception("SMTP error")
+        mock_loop.run_until_complete.side_effect = Exception("SMTP error")
 
         with pytest.raises(Exception, match="SMTP error"):
             send_welcome_email_task(
@@ -114,4 +114,4 @@ class TestCeleryEmailTask:
                 "test@example.com",
             )
 
-        mock_asyncio_run.assert_called_once()
+        mock_loop.run_until_complete.assert_called_once()

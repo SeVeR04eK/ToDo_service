@@ -16,6 +16,7 @@ class EmailTask(Task):
     """Base task for email operations."""
 
     _email_service: EmailService | None = None
+    _loop: asyncio.AbstractEventLoop | None = None
 
     @property
     def email_service(self) -> EmailService:
@@ -24,6 +25,14 @@ class EmailTask(Task):
             self._email_service = EmailService()
 
         return self._email_service
+
+    @property
+    def loop(self) -> asyncio.AbstractEventLoop:
+        """Get or create event loop for this worker process."""
+        if self._loop is None or self._loop.is_closed():
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+        return self._loop
 
 
 async def _send_welcome_email(
@@ -102,7 +111,9 @@ def send_welcome_email_task(
             retry_count=self.request.retries,
         )
 
-        result = asyncio.run(
+        # Use the worker's event loop instead of asyncio.run()
+        loop = self.loop
+        result = loop.run_until_complete(
             _send_welcome_email(
                 email_service=self.email_service,
                 redis=redis,

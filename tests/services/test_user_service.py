@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.application.services import UserService
 from app.application.dto import CreateUserDTO, UpdateUserDTO
@@ -7,6 +7,21 @@ from app.application.interfaces import UserCache
 from app.domain.interfaces import UnitOfWork, PasswordValidator, PasswordHasher
 from app.domain.entities import User, Role
 from app.domain.exceptions import UsernameAlreadyExistsError, UserNotFoundError
+
+
+@pytest.fixture
+def sync_cache_tasks():
+    """Fixture to make background cache operations synchronous for testing."""
+    import asyncio
+    original_create_task = asyncio.create_task
+
+    async def _await_coro(coro):
+        """Helper to await coroutine immediately."""
+        return await coro
+
+    asyncio.create_task = _await_coro
+    yield
+    asyncio.create_task = original_create_task
 
 
 @pytest.mark.unit
@@ -50,7 +65,7 @@ class TestUserService:
         mock_uow.commit.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_get_user_service_success(self):
+    async def test_get_user_service_success(self, sync_cache_tasks):
         """Test getting user info."""
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
@@ -74,7 +89,7 @@ class TestUserService:
         mock_user_cache.set_user.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_user_service_username(self):
+    async def test_update_user_service_username(self, sync_cache_tasks):
         """Test updating user username."""
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
@@ -106,7 +121,7 @@ class TestUserService:
         mock_user_cache.delete_user.assert_called_once_with(1)
 
     @pytest.mark.asyncio
-    async def test_update_user_service_password(self):
+    async def test_update_user_service_password(self, sync_cache_tasks):
         """Test updating user password."""
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
@@ -140,7 +155,7 @@ class TestUserService:
         mock_user_cache.delete_user.assert_called_once_with(1)
 
     @pytest.mark.asyncio
-    async def test_update_user_service_both_fields(self):
+    async def test_update_user_service_both_fields(self, sync_cache_tasks):
         """Test updating both username and password."""
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()
@@ -177,7 +192,7 @@ class TestUserService:
         mock_user_cache.delete_user.assert_called_once_with(1)
 
     @pytest.mark.asyncio
-    async def test_delete_user_service_success(self):
+    async def test_delete_user_service_success(self, sync_cache_tasks):
         """Test deleting a user."""
         mock_uow = AsyncMock(spec=UnitOfWork)
         mock_uow.user_repository = AsyncMock()

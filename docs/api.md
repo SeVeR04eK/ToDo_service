@@ -8,32 +8,39 @@
 
 Request:
 ```
-GET /health
+GET /health/ready
 ```
 
 Response:
 ```
 {
-    "status": "healthy",
-    "timestamp": "2026-08-15T12:00:00.000000",
-    "service": "ToDo Service API",
-    "version": "0.6.0",
-    "database": {
-        "status": "healthy",
-        "error": null
-    },
-    "redis": {
-        "status": "healthy",
-        "error": null
-    },
-    "rabbitmq": {
-        "status": "healthy",
-        "error": null
-    }
+  "status": "healthy",
+  "timestamp": "2026-11-01T23:47:38.015423+00:00",
+  "service": "ToDo Service API",
+  "version": "1.0.0",
+  "dependencies": {
+    "database": "healthy",
+    "redis": "healthy",
+    "rabbitmq": "healthy"
+  }
 }
 ```
 
-**Note:** Use this endpoint for service monitoring and health checks in production environments.
+**Note:** Use this endpoint for service monitoring and readiness checks in production environments.
+
+### GET /health
+
+Request:
+```
+GET /health/live
+```
+
+Response:
+```
+{
+  "status": "alive"
+}
+```
 
 ---
 

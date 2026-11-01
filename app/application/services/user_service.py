@@ -1,5 +1,6 @@
 import asyncio
 import structlog
+from email_validator import validate_email, EmailNotValidError
 from app.application.dto import CreateUserDTO, UpdateUserDTO
 from app.application.interfaces import UserCache, MessagePublisher
 from app.domain.value_objects import UserUpdateData
@@ -9,7 +10,8 @@ from app.domain.exceptions import (
     EmailAlreadyExistsError,
     UserNotFoundError,
     WeakPasswordError,
-    InvalidCredentialsError
+    InvalidCredentialsError,
+    InvalidEmailError
 )
 from app.domain.entities import User
 
@@ -32,7 +34,19 @@ class UserService:
             username=user.username,
             email=user.email,
         )
-        
+
+        # Validate email format
+        try:
+            validate_email(user.email, check_deliverability=False)
+        except EmailNotValidError as e:
+            logger.warning(
+                "Email validation failed",
+                username=user.username,
+                email=user.email,
+                reason=str(e)
+            )
+            raise InvalidEmailError()
+
         # Validate password strength
         is_valid, error_message = self.password_validator.validate(user.password)
         if not is_valid:
@@ -106,9 +120,23 @@ class UserService:
             )
             raise UserNotFoundError()
 
-        # Set cache in background, don't await
-        asyncio.create_task(self.user_cache.set_user(user_id, user, ttl=60))
+        # Set cache
+        await self._safe_cache_set(user_id, user, ttl=60)
         return user
+
+    async def _safe_cache_set(self, user_id: int, user: User, ttl: int) -> None:
+        """Safely set cache with error handling."""
+        try:
+            await self.user_cache.set_user(user_id, user, ttl=ttl)
+        except Exception as e:
+            logger.warning("Cache set failed", user_id=user_id, error=str(e))
+
+    async def _safe_cache_delete(self, user_id: int) -> None:
+        """Safely delete cache with error handling."""
+        try:
+            await self.user_cache.delete_user(user_id)
+        except Exception as e:
+            logger.warning("Cache delete failed", user_id=user_id, error=str(e))
 
     async def update_user_service(self, user_id: int, user_update: UpdateUserDTO) -> User:
 
@@ -169,8 +197,8 @@ class UserService:
 
             await self.unit_of_work.commit()
 
-            # Delete cache in background, don't await
-            asyncio.create_task(self.user_cache.delete_user(user_id))
+            # Delete cache
+            await self._safe_cache_delete(user_id)
 
         logger.info(
             "User updated",
@@ -200,8 +228,8 @@ class UserService:
 
             await self.unit_of_work.commit()
 
-            # Delete cache in background, don't await
-            asyncio.create_task(self.user_cache.delete_user(user_id))
+            # Delete cache
+            await self._safe_cache_delete(user_id)
 
         logger.info(
             "User deleted",

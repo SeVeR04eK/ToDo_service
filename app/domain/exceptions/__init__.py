@@ -8,7 +8,8 @@ from app.domain.exceptions.user import (
     PermissionDeniedError,
     InvalidPaginationParameters,
     WeakPasswordError,
-    PasswordNotMatchError
+    PasswordNotMatchError,
+    InvalidEmailError
 )
 from app.domain.exceptions.redis import SerializationError
 from app.domain.exceptions.rate_limit import RateLimitExceededError
@@ -19,4 +20,5 @@ __all__ = ["InvalidCredentialsError", "InvalidAccessTokenError", "InvalidRefresh
            "UserNotFoundError", "UsernameAlreadyExistsError", "EmailAlreadyExistsError",
            "PermissionDeniedError",
            "InvalidPaginationParameters", "WeakPasswordError", "PasswordNotMatchError",
+           "InvalidEmailError",
            "SerializationError", "RateLimitExceededError"]
